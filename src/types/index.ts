@@ -34,6 +34,12 @@ export interface Program extends BaseEntity {
   requirements: string[];
   learningObjectives: string[];
   createdBy: string; // User ID
+  // New fields for enhanced program management
+  hours: number; // Total program hours
+  lessonLength: number; // Length of each lesson in minutes
+  kind: "academic" | "vocational" | "certification" | "workshop";
+  sharedWithMFs: string[]; // Array of MF scope IDs that can see this program
+  visibility: "private" | "shared" | "public";
 }
 
 export interface SubProgram extends BaseEntity {
