@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuthStore } from "@/store/auth";
-import { getRoleDisplayName } from "@/lib/rbac";
-import { LogOut, User, Building2 } from "lucide-react";
+import { getRoleDisplayName, getScopeDisplayName } from "@/lib/rbac";
+import { LogOut, User, Building2, Globe } from "lucide-react";
 
 export function Topbar() {
   const { user, selectedAccount, logout } = useAuthStore();
@@ -19,6 +19,10 @@ export function Topbar() {
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <User className="h-4 w-4" />
             <span>{getRoleDisplayName(user.role)}</span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <Globe className="h-4 w-4" />
+            <span>{getScopeDisplayName(user.scope)}</span>
           </div>
         </div>
 

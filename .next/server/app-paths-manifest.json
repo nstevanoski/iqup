@@ -1,12 +1,8 @@
 {
   "/login/page": "app/login/page.js",
-  "/page": "app/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/programs/page": "app/programs/page.js",
-  "/contacts/students/page": "app/contacts/students/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/contacts/teachers/page": "app/contacts/teachers/page.js",
-  "/learning-groups/page": "app/learning-groups/page.js",
-  "/reports/students/page": "app/reports/students/page.js",
-  "/trainings/page": "app/trainings/page.js"
+  "/subprograms/page": "app/subprograms/page.js",
+  "/accounts/page": "app/accounts/page.js",
+  "/demo/page": "app/demo/page.js",
+  "/programs/page": "app/programs/page.js"
 }

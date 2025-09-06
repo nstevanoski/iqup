@@ -17,7 +17,7 @@ import {
   UserPlus
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
-import { hasPermission, getRoleDisplayName, Permission } from "@/lib/rbac";
+import { hasPermission, getRoleDisplayName, getScopeDisplayName, Permission } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 
 interface SidebarLink {
@@ -128,7 +128,14 @@ export function Sidebar() {
         <div className="px-4 mb-4">
           <div className="text-sm text-gray-400 mb-1">Logged in as</div>
           <div className="font-medium">{user.name}</div>
-          <div className="text-xs text-gray-400">{getRoleDisplayName(user.role)}</div>
+          <div className="text-xs text-gray-400">
+            {getRoleDisplayName(user.role)} - {getScopeDisplayName(user.scope)}
+          </div>
+          {user.scopeId && (
+            <div className="text-xs text-gray-500 mt-1">
+              Scope ID: {user.scopeId}
+            </div>
+          )}
         </div>
         
         <nav className="space-y-1 px-2">

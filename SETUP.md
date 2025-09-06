@@ -33,15 +33,25 @@ Make sure you have Node.js and npm/pnpm installed on your system.
    pnpm install
    ```
 
-2. **Start the development server:**
+2. **Install additional dependencies for DataTable and Forms:**
+   ```bash
+   ./install-missing-deps.sh
+   # or manually:
+   npm install @hookform/resolvers@^3.9.1
+   ```
+
+3. **Start the development server:**
    ```bash
    npm run dev
    # or
    pnpm dev
    ```
 
-3. **Open your browser:**
+4. **Open your browser:**
    Navigate to [http://localhost:3000](http://localhost:3000)
+   
+   **Demo the DataTable and Forms:**
+   Visit [http://localhost:3000/demo](http://localhost:3000/demo) to see the complete DataTable and Forms system in action!
 
 ## Project Structure
 
@@ -130,6 +140,7 @@ MSW (Mock Service Worker) is configured to mock API endpoints:
 - **Zustand** - Lightweight state management
 - **MSW** - API mocking library
 - **React Hook Form** - Form handling
+- **@hookform/resolvers** - Form validation resolvers
 - **Zod** - Schema validation
 - **TanStack Query** - Data fetching and caching
 - **TanStack Table** - Data table components
