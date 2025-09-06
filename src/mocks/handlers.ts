@@ -413,6 +413,102 @@ export const subProgramHandlers = [
   }),
 ];
 
+// Teachers handlers
+export const teacherHandlers = [
+  // Get all teachers
+  http.get("/api/teachers", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let teachers = db.getTeachers();
+    
+    // Apply filters
+    if (filters.search) {
+      teachers = teachers.filter(t => 
+        t.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        t.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        t.email.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        t.specialization.some(s => s.toLowerCase().includes(filters.search!.toLowerCase()))
+      );
+    }
+    
+    if (filters.status) {
+      teachers = teachers.filter(t => t.status === filters.status);
+    }
+    
+    // Apply sorting
+    if (filters.sortBy) {
+      teachers.sort((a, b) => {
+        const aVal = (a as any)[filters.sortBy!];
+        const bVal = (b as any)[filters.sortBy!];
+        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        return filters.sortOrder === "desc" ? -result : result;
+      });
+    }
+    
+    const response = createPaginatedResponse(teachers, filters.page, filters.limit);
+    return HttpResponse.json(response);
+  }),
+
+  // Get teacher by ID
+  http.get("/api/teachers/:id", ({ params }) => {
+    const teacher = db.getTeacherById(params.id as string);
+    if (!teacher) {
+      return HttpResponse.json(
+        { success: false, message: "Teacher not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(teacher));
+  }),
+
+  // Create teacher
+  http.post("/api/teachers", async ({ request }) => {
+    try {
+      const teacherData = await request.json() as Omit<Teacher, "id" | "createdAt" | "updatedAt">;
+      const teacher = db.createTeacher(teacherData);
+      return HttpResponse.json(createResponse(teacher, "Teacher created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update teacher
+  http.put("/api/teachers/:id", async ({ params, request }) => {
+    try {
+      const updates = await request.json() as Partial<Teacher>;
+      const teacher = db.updateTeacher(params.id as string, updates);
+      if (!teacher) {
+        return HttpResponse.json(
+          { success: false, message: "Teacher not found" },
+          { status: 404 }
+        );
+      }
+      return HttpResponse.json(createResponse(teacher, "Teacher updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Delete teacher
+  http.delete("/api/teachers/:id", ({ params }) => {
+    const success = db.deleteTeacher(params.id as string);
+    if (!success) {
+      return HttpResponse.json(
+        { success: false, message: "Teacher not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(null, "Teacher deleted successfully"));
+  }),
+];
+
 // Students handlers
 export const studentHandlers = [
   // Get all students
@@ -495,45 +591,6 @@ export const studentHandlers = [
       );
     }
     return HttpResponse.json(createResponse(null, "Student deleted successfully"));
-  }),
-];
-
-// Teachers handlers
-export const teacherHandlers = [
-  // Get all teachers
-  http.get("/api/teachers", ({ request }) => {
-    const url = new URL(request.url);
-    const filters = parseQueryParams(url);
-    
-    let teachers = db.getTeachers();
-    
-    // Apply filters
-    if (filters.search) {
-      teachers = teachers.filter(t => 
-        t.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        t.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        t.email.toLowerCase().includes(filters.search!.toLowerCase())
-      );
-    }
-    
-    if (filters.status) {
-      teachers = teachers.filter(t => t.status === filters.status);
-    }
-    
-    const response = createPaginatedResponse(teachers, filters.page, filters.limit);
-    return HttpResponse.json(response);
-  }),
-
-  // Get teacher by ID
-  http.get("/api/teachers/:id", ({ params }) => {
-    const teacher = db.getTeacherById(params.id as string);
-    if (!teacher) {
-      return HttpResponse.json(
-        { success: false, message: "Teacher not found" },
-        { status: 404 }
-      );
-    }
-    return HttpResponse.json(createResponse(teacher));
   }),
 ];
 

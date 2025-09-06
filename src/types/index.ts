@@ -91,6 +91,28 @@ export interface Teacher extends BaseEntity, ContactInfo {
   availability: Availability[];
   bio?: string;
   avatar?: string;
+  // New fields for enhanced teacher management
+  education: {
+    degree: string;
+    institution: string;
+    graduationYear: number;
+    fieldOfStudy: string;
+  }[];
+  trainings: {
+    trainingId: string;
+    trainingName: string;
+    completedDate: string;
+    status: "completed" | "in_progress" | "scheduled";
+    certification?: string;
+  }[];
+  centers: {
+    centerId: string;
+    centerName: string;
+    role: string;
+    startDate: string;
+    endDate?: string;
+    isActive: boolean;
+  }[];
 }
 
 export interface Availability {

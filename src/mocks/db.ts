@@ -394,6 +394,57 @@ export const teachers: Teacher[] = [
       zipCode: "02101",
       country: "USA",
     },
+    education: [
+      {
+        degree: "PhD",
+        institution: "Harvard University",
+        graduationYear: 2008,
+        fieldOfStudy: "English Literature",
+      },
+      {
+        degree: "MA",
+        institution: "Oxford University",
+        graduationYear: 2005,
+        fieldOfStudy: "Linguistics",
+      },
+    ],
+    trainings: [
+      {
+        trainingId: "train_1",
+        trainingName: "Advanced Teaching Methods",
+        completedDate: "2024-01-15",
+        status: "completed",
+        certification: "Advanced Teaching Certificate",
+      },
+      {
+        trainingId: "train_2",
+        trainingName: "Digital Learning Tools",
+        completedDate: "2024-02-20",
+        status: "completed",
+      },
+      {
+        trainingId: "train_3",
+        trainingName: "Student Assessment Techniques",
+        completedDate: "2024-03-10",
+        status: "in_progress",
+      },
+    ],
+    centers: [
+      {
+        centerId: "center_1",
+        centerName: "Boston Learning Center",
+        role: "Senior English Instructor",
+        startDate: "2018-01-15",
+        isActive: true,
+      },
+      {
+        centerId: "center_2",
+        centerName: "Cambridge Education Hub",
+        role: "Literature Consultant",
+        startDate: "2020-06-01",
+        isActive: true,
+      },
+    ],
     createdAt: createDate(120),
     updatedAt: createDate(7),
   },
@@ -421,6 +472,44 @@ export const teachers: Teacher[] = [
       zipCode: "98101",
       country: "USA",
     },
+    education: [
+      {
+        degree: "PhD",
+        institution: "MIT",
+        graduationYear: 2011,
+        fieldOfStudy: "Mathematics",
+      },
+      {
+        degree: "MSc",
+        institution: "Stanford University",
+        graduationYear: 2009,
+        fieldOfStudy: "Statistics",
+      },
+    ],
+    trainings: [
+      {
+        trainingId: "train_1",
+        trainingName: "Advanced Teaching Methods",
+        completedDate: "2024-01-15",
+        status: "completed",
+        certification: "Advanced Teaching Certificate",
+      },
+      {
+        trainingId: "train_4",
+        trainingName: "Data Analysis Tools",
+        completedDate: "2024-02-28",
+        status: "completed",
+      },
+    ],
+    centers: [
+      {
+        centerId: "center_3",
+        centerName: "Seattle Math Academy",
+        role: "Head of Mathematics Department",
+        startDate: "2019-09-01",
+        isActive: true,
+      },
+    ],
     createdAt: createDate(100),
     updatedAt: createDate(4),
   },
@@ -449,7 +538,101 @@ export const teachers: Teacher[] = [
       zipCode: "73301",
       country: "USA",
     },
+    education: [
+      {
+        degree: "PhD",
+        institution: "Caltech",
+        graduationYear: 2013,
+        fieldOfStudy: "Physics",
+      },
+      {
+        degree: "BSc",
+        institution: "UC Berkeley",
+        graduationYear: 2009,
+        fieldOfStudy: "Chemistry",
+      },
+    ],
+    trainings: [
+      {
+        trainingId: "train_5",
+        trainingName: "Laboratory Safety Protocols",
+        completedDate: "2024-01-30",
+        status: "completed",
+      },
+      {
+        trainingId: "train_6",
+        trainingName: "Modern Physics Teaching",
+        completedDate: "2024-03-15",
+        status: "scheduled",
+      },
+    ],
+    centers: [
+      {
+        centerId: "center_4",
+        centerName: "Austin Science Center",
+        role: "Physics Instructor",
+        startDate: "2020-08-15",
+        isActive: true,
+      },
+      {
+        centerId: "center_5",
+        centerName: "Texas Learning Hub",
+        role: "Chemistry Lab Coordinator",
+        startDate: "2021-01-10",
+        endDate: "2023-12-31",
+        isActive: false,
+      },
+    ],
     createdAt: createDate(80),
+    updatedAt: createDate(2),
+  },
+  {
+    id: generateId("tea"),
+    firstName: "David",
+    lastName: "Wilson",
+    title: "Mr.",
+    email: "david.wilson@example.com",
+    phone: "+1-555-1004",
+    specialization: ["Computer Science", "Programming"],
+    experience: 8,
+    qualifications: ["MS in Computer Science", "Software Engineering Certificate"],
+    status: "on_leave",
+    hourlyRate: 85,
+    availability: [],
+    bio: "Experienced software engineer turned educator, specializing in modern programming languages.",
+    address: {
+      street: "456 Tech Blvd",
+      city: "San Francisco",
+      state: "CA",
+      zipCode: "94102",
+      country: "USA",
+    },
+    education: [
+      {
+        degree: "MS",
+        institution: "Stanford University",
+        graduationYear: 2015,
+        fieldOfStudy: "Computer Science",
+      },
+    ],
+    trainings: [
+      {
+        trainingId: "train_7",
+        trainingName: "Modern Programming Languages",
+        completedDate: "2024-02-10",
+        status: "completed",
+      },
+    ],
+    centers: [
+      {
+        centerId: "center_6",
+        centerName: "San Francisco Tech Academy",
+        role: "Senior Programming Instructor",
+        startDate: "2019-03-01",
+        isActive: true,
+      },
+    ],
+    createdAt: createDate(60),
     updatedAt: createDate(2),
   },
 ];
@@ -966,6 +1149,36 @@ export class MockDatabase {
 
   getTeacherById(id: string): Teacher | undefined {
     return teachers.find(t => t.id === id);
+  }
+
+  createTeacher(teacher: Omit<Teacher, "id" | "createdAt" | "updatedAt">): Teacher {
+    const newTeacher: Teacher = {
+      ...teacher,
+      id: generateId("tea"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    teachers.push(newTeacher);
+    return newTeacher;
+  }
+
+  updateTeacher(id: string, updates: Partial<Teacher>): Teacher | null {
+    const index = teachers.findIndex(t => t.id === id);
+    if (index === -1) return null;
+    
+    teachers[index] = {
+      ...teachers[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return teachers[index];
+  }
+
+  deleteTeacher(id: string): boolean {
+    const index = teachers.findIndex(t => t.id === id);
+    if (index === -1) return false;
+    teachers.splice(index, 1);
+    return true;
   }
 
   // Orders
