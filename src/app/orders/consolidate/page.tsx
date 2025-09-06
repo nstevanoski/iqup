@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { OrderConsolidationForm } from "@/components/forms/OrderConsolidationForm";
 import { useUser } from "@/store/auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Order } from "@/types";
 import { ArrowLeft } from "lucide-react";
@@ -115,7 +115,7 @@ const sampleOrders: Order[] = [
   },
 ];
 
-export default function ConsolidateOrdersPage() {
+function ConsolidateOrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useUser();
@@ -216,5 +216,22 @@ export default function ConsolidateOrdersPage() {
         />
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function ConsolidateOrdersPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <ConsolidateOrdersContent />
+    </Suspense>
   );
 }

@@ -144,7 +144,7 @@ export function processBulkInventoryReduction(
   });
 
   // Process each product
-  for (const [productId, productReductions] of reductionMap) {
+  for (const [productId, productReductions] of Array.from(reductionMap.entries())) {
     const product = productMap.get(productId);
     if (!product) {
       failedReductions.push(...productReductions);
@@ -241,7 +241,7 @@ export function validateInventoryOperation(
     reductionMap.set(reduction.productId, current + reduction.quantity);
   });
 
-  for (const [productId, totalReduction] of reductionMap) {
+  for (const [productId, totalReduction] of Array.from(reductionMap.entries())) {
     const product = productMap.get(productId);
     if (product) {
       if (product.qty < totalReduction) {

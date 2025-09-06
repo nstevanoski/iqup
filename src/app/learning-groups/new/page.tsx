@@ -30,6 +30,11 @@ interface FormData {
     discount?: number;
     finalPrice: number;
     currency: string;
+    coursePrice: number;
+    numberOfPayments?: number;
+    gapBetweenPayments?: number;
+    pricePerMonth?: number;
+    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
   };
   owner: {
     id: string;
@@ -71,6 +76,11 @@ const initialFormData: FormData = {
     discount: 0,
     finalPrice: 0,
     currency: "USD",
+    coursePrice: 0,
+    numberOfPayments: 1,
+    gapBetweenPayments: 0,
+    pricePerMonth: 0,
+    paymentMethod: "one-time",
   },
   owner: {
     id: "",
@@ -105,6 +115,7 @@ export default function NewLearningGroupPage() {
         ...prev.pricingSnapshot,
         totalPrice: total,
         finalPrice: finalPrice,
+        coursePrice: finalPrice,
       },
     }));
   };

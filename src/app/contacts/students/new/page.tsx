@@ -105,6 +105,11 @@ const mockLearningGroups: LearningGroup[] = [
       totalPrice: 399.98,
       finalPrice: 399.98,
       currency: "USD",
+      coursePrice: 399.98,
+      numberOfPayments: 3,
+      gapBetweenPayments: 30,
+      pricePerMonth: 133.33,
+      paymentMethod: "installments",
     },
     owner: {
       id: "user_1",

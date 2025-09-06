@@ -7,6 +7,7 @@ import { useUser } from "@/store/auth";
 import { Product } from "@/types";
 import { useState } from "react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { ArrowLeft } from "lucide-react";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -60,6 +61,20 @@ export default function NewProductPage() {
       <div className="space-y-6">
         <Breadcrumbs items={breadcrumbItems} />
         
+        {/* Header */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={handleCancel}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Add New Product</h1>
+            <p className="text-gray-600">Create a new product with all necessary details</p>
+          </div>
+        </div>
+
         <ProductForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}

@@ -30,6 +30,11 @@ interface FormData {
     discount?: number;
     finalPrice: number;
     currency: string;
+    coursePrice: number;
+    numberOfPayments?: number;
+    gapBetweenPayments?: number;
+    pricePerMonth?: number;
+    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
   };
   owner: {
     id: string;
@@ -92,6 +97,11 @@ export default function EditLearningGroupPage() {
       discount: 50.00,
       finalPrice: 399.98,
       currency: "USD",
+      coursePrice: 399.98,
+      numberOfPayments: 3,
+      gapBetweenPayments: 30,
+      pricePerMonth: 133.33,
+      paymentMethod: "installments",
     },
     owner: {
       id: "owner_1",

@@ -204,20 +204,12 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {product ? "Edit Product" : "Add New Product"}
-          </h2>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Basic Information</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Product Name *
@@ -248,9 +240,14 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
                 <option value="discontinued">Discontinued</option>
               </select>
             </div>
+            </div>
           </div>
 
-          <div>
+          {/* Description */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Description</h2>
+            
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Description *
             </label>
@@ -264,10 +261,14 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
               placeholder="Enter product description"
             />
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+            </div>
           </div>
 
           {/* Product Codes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Product Codes</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 SKU *
@@ -299,10 +300,14 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
               />
               {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
             </div>
+            </div>
           </div>
 
           {/* Category and Supplier */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Category & Supplier</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category *
@@ -337,11 +342,15 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
               />
               {errors.supplier && <p className="text-red-500 text-sm mt-1">{errors.supplier}</p>}
             </div>
+            </div>
           </div>
 
           {/* Pricing */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Pricing Information</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <DollarSign className="h-5 w-5 inline mr-2" />
+              Pricing Information
+            </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
@@ -409,8 +418,11 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           </div>
 
           {/* Inventory */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Inventory Information</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <Package className="h-5 w-5 inline mr-2" />
+              Inventory Information
+            </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
@@ -497,7 +509,8 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           </div>
 
           {/* Tags */}
-          <div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Tags</h2>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tags
             </label>
@@ -538,7 +551,8 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           </div>
 
           {/* Specifications */}
-          <div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Specifications</h2>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Specifications
             </label>
@@ -583,7 +597,7 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6 border-t">
+          <div className="flex justify-end space-x-4 pt-6">
             <button
               type="button"
               onClick={onCancel}
@@ -601,8 +615,6 @@ export function ProductForm({ product, onSubmit, onCancel, loading = false }: Pr
               {product ? "Update Product" : "Create Product"}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+    </form>
   );
 }

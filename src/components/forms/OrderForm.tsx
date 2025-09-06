@@ -368,20 +368,15 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {order ? "Edit Order" : "Create New Order"}
-          </h2>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-8">
           {/* Order Information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <Package className="h-5 w-5 inline mr-2" />
+              Order Information
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Order Number *
@@ -423,10 +418,17 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
                 <option value="urgent">Urgent</option>
               </select>
             </div>
+            </div>
           </div>
 
           {/* From/To Entities */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <Building className="h-5 w-5 inline mr-2" />
+              From/To Entities
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 From *
@@ -458,10 +460,15 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
               />
               {errors.toEntity && <p className="text-red-500 text-sm mt-1">{errors.toEntity}</p>}
             </div>
+            </div>
           </div>
 
           {/* Order Items */}
-          <div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <Package className="h-5 w-5 inline mr-2" />
+              Order Items
+            </h2>
             <div className="flex items-center justify-between mb-4">
               <label className="block text-sm font-medium text-gray-700">
                 Order Items *
@@ -544,8 +551,13 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
           </div>
 
           {/* Order Summary */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <DollarSign className="h-5 w-5 inline mr-2" />
+              Order Summary
+            </h2>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subtotal</label>
@@ -571,11 +583,15 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
                 <div className="text-xl font-bold text-blue-600">${formData.total.toFixed(2)}</div>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Shipping Address */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Address</h3>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <Building className="h-5 w-5 inline mr-2" />
+              Shipping Address
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Street Address *</label>
@@ -634,7 +650,13 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
           </div>
 
           {/* Payment Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <DollarSign className="h-5 w-5 inline mr-2" />
+              Payment Information
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Payment Status
@@ -663,10 +685,12 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
                 placeholder="e.g., Credit Card, Bank Transfer"
               />
             </div>
+            </div>
           </div>
 
           {/* Notes */}
-          <div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Additional Notes</h2>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Notes
             </label>
@@ -680,7 +704,7 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6 border-t">
+          <div className="flex justify-end space-x-4 pt-6">
             <button
               type="button"
               onClick={onCancel}
@@ -698,8 +722,6 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
               {order ? "Update Order" : "Create Order"}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+    </form>
   );
 }
