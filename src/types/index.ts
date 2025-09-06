@@ -77,6 +77,98 @@ export interface Student extends BaseEntity, ContactInfo {
   emergencyContact: ContactInfo;
   notes?: string;
   avatar?: string;
+  
+  // New required fields
+  parentInfo: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+  };
+  lastCurrentLG?: {
+    id: string;
+    name: string;
+    programName: string;
+    startDate: Date;
+    endDate?: Date;
+  };
+  product?: {
+    id: string;
+    name: string;
+    description: string;
+    materials: string[];
+    purchaseDate: Date;
+  };
+  contactOwner: {
+    id: string;
+    name: string;
+    role: "HQ" | "MF" | "LC";
+  };
+  accountFranchise: {
+    id: string;
+    name: string;
+    type: "MF" | "LC";
+  };
+  mfName: string;
+  programHistory: ProgramHistoryEntry[];
+  payments: StudentPayment[];
+  certificates: StudentCertificate[];
+}
+
+export interface ProgramHistoryEntry {
+  id: string;
+  programId: string;
+  programName: string;
+  subProgramId?: string;
+  subProgramName?: string;
+  learningGroupId?: string;
+  learningGroupName?: string;
+  startDate: Date;
+  endDate?: Date;
+  status: "completed" | "dropped" | "transferred";
+  completionDate?: Date;
+  grade?: number;
+  certificateId?: string;
+}
+
+export interface StudentPayment {
+  id: string;
+  studentId: string;
+  learningGroupId: string;
+  learningGroupName: string;
+  month: string; // YYYY-MM format
+  amount: number;
+  dueDate: Date;
+  paymentDate?: Date;
+  status: "pending" | "paid" | "partial" | "overdue" | "waived";
+  paymentMethod?: "bank_transfer" | "cash" | "credit_card";
+  reference?: string;
+  notes?: string;
+  discount?: {
+    amount: number;
+    reason: string;
+    appliedBy: string;
+    appliedAt: Date;
+  };
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface StudentCertificate {
+  id: string;
+  studentId: string;
+  programId: string;
+  programName: string;
+  subProgramId?: string;
+  subProgramName?: string;
+  certificateCode: string; // Unique certificate code
+  issuedDate: Date;
+  validUntil?: Date;
+  status: "active" | "revoked";
+  downloadUrl?: string;
+  issuedBy: string;
+  createdAt: Date;
 }
 
 export interface Teacher extends BaseEntity, ContactInfo {

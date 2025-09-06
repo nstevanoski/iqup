@@ -3,7 +3,10 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
+import { useUser } from "@/store/auth";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Eye, Edit, Trash2, DollarSign, Award } from "lucide-react";
 
 // Student data type
 interface Student {
@@ -162,6 +165,8 @@ const columns: Column<Student>[] = [
 ];
 
 export default function StudentsPage() {
+  const router = useRouter();
+  const user = useUser();
   const [data, setData] = useState<Student[]>(sampleStudents);
 
   const handleRowAction = (action: string, row: Student) => {
@@ -169,10 +174,16 @@ export default function StudentsPage() {
     
     switch (action) {
       case "view":
-        alert(`Viewing student: ${row.firstName} ${row.lastName}`);
+        router.push(`/contacts/students/${row.id}`);
         break;
       case "edit":
-        alert(`Editing student: ${row.firstName} ${row.lastName}`);
+        router.push(`/contacts/students/${row.id}/edit`);
+        break;
+      case "payments":
+        router.push(`/contacts/students/${row.id}/payments`);
+        break;
+      case "certificates":
+        router.push(`/contacts/students/${row.id}/certificates`);
         break;
       case "delete":
         if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
@@ -221,9 +232,15 @@ export default function StudentsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Students</h1>
             <p className="text-gray-600">Manage student contacts and information</p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Add Student
-          </button>
+          {(user?.role === "LC" || user?.role === "MF") && (
+            <button 
+              onClick={() => router.push("/contacts/students/new")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Student
+            </button>
+          )}
         </div>
         
         <div>
