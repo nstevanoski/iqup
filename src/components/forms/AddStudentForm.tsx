@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Student, Product } from "@/types";
-import { X, Plus, Save, Loader2, User, Calendar, Package, DollarSign } from "lucide-react";
+import { X, Plus, Save, Loader2, User, Calendar, Package, DollarSign, AlertTriangle } from "lucide-react";
+import { 
+  calculateStudentProductAssignment, 
+  hasSufficientStock, 
+  getStockStatus,
+  validateInventoryOperation 
+} from "@/lib/inventory";
 
 interface AddStudentFormProps {
   learningGroupId: string;
@@ -342,6 +348,7 @@ const initialFormData: FormData = {
 export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loading = false }: AddStudentFormProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [stockWarnings, setStockWarnings] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -357,6 +364,22 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
         ...prev,
         [field]: "",
       }));
+    }
+
+    // Check stock availability when product changes
+    if (field === "productId" && value) {
+      const product = sampleProducts.find(p => p.id === value);
+      if (product) {
+        setSelectedProduct(product);
+        const stockStatus = getStockStatus(product);
+        if (stockStatus.status === "out_of_stock") {
+          setStockWarnings([`${product.name} is out of stock`]);
+        } else if (stockStatus.status === "low_stock") {
+          setStockWarnings([`${product.name} is low on stock (${product.qty} remaining)`]);
+        } else {
+          setStockWarnings([]);
+        }
+      }
     }
   };
 
@@ -384,6 +407,14 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
     // Validate date logic
     if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
       newErrors.endDate = "End date must be after start date";
+    }
+
+    // Check stock availability
+    if (formData.productId) {
+      const product = sampleProducts.find(p => p.id === formData.productId);
+      if (product && !hasSufficientStock(product, 1)) {
+        newErrors.productId = `${product.name} is out of stock`;
+      }
     }
 
     setErrors(newErrors);
@@ -575,6 +606,29 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                       Assigning this product will decrement the LC inventory by 1 unit.
                       Current stock: {selectedProduct.qty} units.
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stock Warnings */}
+          {stockWarnings.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-yellow-400" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Stock Warning
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <ul className="list-disc list-inside">
+                      {stockWarnings.map((warning, index) => (
+                        <li key={index}>{warning}</li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
