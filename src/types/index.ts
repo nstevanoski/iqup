@@ -190,6 +190,42 @@ export interface Product extends BaseEntity {
   tags: string[];
   images: string[];
   specifications: Record<string, any>;
+  // New fields for enhanced product management
+  code: string; // Product code for easy identification
+  qty: number; // Available quantity
+  minStock: number; // Minimum stock level for alerts
+  maxStock: number; // Maximum stock level
+  unit: string; // Unit of measurement (pieces, kg, etc.)
+  supplier: string; // Supplier information
+  markup: number; // Markup percentage
+  sellingPrice: number; // Final selling price
+  productLists: string[]; // Array of product list IDs this product belongs to
+}
+
+export interface ProductList extends BaseEntity {
+  name: string;
+  description: string;
+  status: "active" | "inactive" | "draft";
+  createdBy: string; // User ID
+  sharedWithMFs: string[]; // Array of MF scope IDs that can see this list
+  visibility: "private" | "shared" | "public";
+  products: {
+    productId: string;
+    sellingPrice: number;
+    discount?: number;
+    finalPrice: number;
+  }[];
+}
+
+export interface ProductPrice extends BaseEntity {
+  productId: string;
+  productListId: string;
+  mfId: string; // MF that set this price
+  lcId: string; // LC this price is for
+  basePrice: number;
+  markup: number;
+  finalPrice: number;
+  status: "active" | "inactive";
 }
 
 export interface InventoryItem extends BaseEntity {
@@ -219,6 +255,24 @@ export interface Order extends BaseEntity {
   billingAddress: Address;
   notes?: string;
   processedBy?: string; // User ID
+  // New fields for enhanced order management
+  orderType: "hq_to_mf" | "mf_to_lc" | "lc_to_student";
+  fromEntity: {
+    id: string;
+    name: string;
+    type: "HQ" | "MF" | "LC";
+  };
+  toEntity: {
+    id: string;
+    name: string;
+    type: "HQ" | "MF" | "LC";
+  };
+  consolidationId?: string; // For consolidated orders
+  isConsolidated: boolean;
+  consolidatedOrders?: string[]; // Array of order IDs that were consolidated
+  priority: "low" | "medium" | "high" | "urgent";
+  expectedDeliveryDate?: Date;
+  actualDeliveryDate?: Date;
 }
 
 export interface OrderItem {

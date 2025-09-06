@@ -5,6 +5,8 @@ import {
   Teacher,
   LearningGroup,
   Product,
+  ProductList,
+  ProductPrice,
   InventoryItem,
   Order,
   Training,
@@ -829,6 +831,15 @@ export const products: Product[] = [
       language: "English",
       level: "Intermediate",
     },
+    code: "EGW-001",
+    qty: 150,
+    minStock: 10,
+    maxStock: 200,
+    unit: "pieces",
+    supplier: "Educational Books Inc.",
+    markup: 100,
+    sellingPrice: 29.99,
+    productLists: ["list_1", "list_2"],
     createdAt: createDate(60),
     updatedAt: createDate(10),
   },
@@ -848,8 +859,194 @@ export const products: Product[] = [
       display: "LCD",
       battery: "Solar + Battery",
     },
+    code: "MC-001",
+    qty: 75,
+    minStock: 15,
+    maxStock: 150,
+    unit: "pieces",
+    supplier: "Tech Supplies Ltd.",
+    markup: 100,
+    sellingPrice: 89.99,
+    productLists: ["list_1", "list_3"],
     createdAt: createDate(45),
     updatedAt: createDate(5),
+  },
+  {
+    id: generateId("prod"),
+    name: "Physics Lab Kit",
+    description: "Complete physics experiment kit for hands-on learning",
+    category: "Equipment",
+    sku: "PLK-001",
+    price: 149.99,
+    cost: 75.00,
+    status: "active",
+    tags: ["physics", "lab", "equipment"],
+    images: ["physics-kit.jpg"],
+    specifications: {
+      weight: "2.5kg",
+      experiments: 15,
+      level: "Advanced",
+    },
+    code: "PLK-001",
+    qty: 25,
+    minStock: 5,
+    maxStock: 50,
+    unit: "kits",
+    supplier: "Science Equipment Co.",
+    markup: 100,
+    sellingPrice: 149.99,
+    productLists: ["list_2", "list_3"],
+    createdAt: createDate(30),
+    updatedAt: createDate(2),
+  },
+  {
+    id: generateId("prod"),
+    name: "Chemistry Test Tubes Set",
+    description: "Set of 12 glass test tubes with rack",
+    category: "Equipment",
+    sku: "CTT-001",
+    price: 24.99,
+    cost: 12.00,
+    status: "active",
+    tags: ["chemistry", "test-tubes", "glassware"],
+    images: ["test-tubes.jpg"],
+    specifications: {
+      count: 12,
+      material: "borosilicate glass",
+      capacity: "15ml each",
+    },
+    code: "CTT-001",
+    qty: 50,
+    minStock: 10,
+    maxStock: 100,
+    unit: "sets",
+    supplier: "Lab Supplies Inc.",
+    markup: 108,
+    sellingPrice: 24.99,
+    productLists: ["list_2"],
+    createdAt: createDate(20),
+    updatedAt: createDate(1),
+  },
+];
+
+// Seed data for Product Lists
+export const productLists: ProductList[] = [
+  {
+    id: "list_1",
+    name: "Essential Learning Materials",
+    description: "Core educational materials for all programs",
+    status: "active",
+    createdBy: "user_1",
+    sharedWithMFs: ["mf_region_1", "mf_region_2"],
+    visibility: "shared",
+    products: [
+      {
+        productId: products[0].id,
+        sellingPrice: 29.99,
+        finalPrice: 29.99,
+      },
+      {
+        productId: products[1].id,
+        sellingPrice: 89.99,
+        finalPrice: 89.99,
+      },
+    ],
+    createdAt: createDate(50),
+    updatedAt: createDate(10),
+  },
+  {
+    id: "list_2",
+    name: "Science Equipment Bundle",
+    description: "Complete science laboratory equipment",
+    status: "active",
+    createdBy: "user_1",
+    sharedWithMFs: ["mf_region_1", "mf_region_3"],
+    visibility: "shared",
+    products: [
+      {
+        productId: products[0].id,
+        sellingPrice: 29.99,
+        finalPrice: 29.99,
+      },
+      {
+        productId: products[2].id,
+        sellingPrice: 149.99,
+        finalPrice: 149.99,
+      },
+      {
+        productId: products[3].id,
+        sellingPrice: 24.99,
+        finalPrice: 24.99,
+      },
+    ],
+    createdAt: createDate(40),
+    updatedAt: createDate(8),
+  },
+  {
+    id: "list_3",
+    name: "Advanced Study Materials",
+    description: "Advanced materials for specialized programs",
+    status: "active",
+    createdBy: "user_1",
+    sharedWithMFs: ["mf_region_2", "mf_region_3"],
+    visibility: "shared",
+    products: [
+      {
+        productId: products[1].id,
+        sellingPrice: 89.99,
+        finalPrice: 89.99,
+      },
+      {
+        productId: products[2].id,
+        sellingPrice: 149.99,
+        finalPrice: 149.99,
+      },
+    ],
+    createdAt: createDate(35),
+    updatedAt: createDate(6),
+  },
+];
+
+// Seed data for Product Prices
+export const productPrices: ProductPrice[] = [
+  {
+    id: generateId("price"),
+    productId: products[0].id,
+    productListId: "list_1",
+    mfId: "mf_region_1",
+    lcId: "lc_region_1",
+    basePrice: 29.99,
+    markup: 15,
+    finalPrice: 34.49,
+    status: "active",
+    createdAt: createDate(30),
+    updatedAt: createDate(5),
+  },
+  {
+    id: generateId("price"),
+    productId: products[1].id,
+    productListId: "list_1",
+    mfId: "mf_region_1",
+    lcId: "lc_region_1",
+    basePrice: 89.99,
+    markup: 20,
+    finalPrice: 107.99,
+    status: "active",
+    createdAt: createDate(25),
+    updatedAt: createDate(4),
+  },
+  {
+    id: generateId("price"),
+    productId: products[0].id,
+    productListId: "list_1",
+    mfId: "mf_region_2",
+    lcId: "lc_region_2",
+    basePrice: 29.99,
+    markup: 10,
+    finalPrice: 32.99,
+    status: "active",
+    createdAt: createDate(20),
+    updatedAt: createDate(3),
   },
 ];
 
@@ -907,6 +1104,21 @@ export const orders: Order[] = [
     shippingAddress: students[0].address!,
     billingAddress: students[0].address!,
     processedBy: "user_1",
+    orderType: "lc_to_student",
+    fromEntity: {
+      id: "lc_region_1",
+      name: "Boston Learning Center",
+      type: "LC",
+    },
+    toEntity: {
+      id: students[0].id,
+      name: `${students[0].firstName} ${students[0].lastName}`,
+      type: "LC",
+    },
+    isConsolidated: false,
+    priority: "medium",
+    expectedDeliveryDate: createDate(18),
+    actualDeliveryDate: createDate(15),
     createdAt: createDate(20),
     updatedAt: createDate(15),
   },
@@ -930,8 +1142,128 @@ export const orders: Order[] = [
     paymentStatus: "pending",
     shippingAddress: students[1].address!,
     billingAddress: students[1].address!,
+    orderType: "lc_to_student",
+    fromEntity: {
+      id: "lc_region_2",
+      name: "Seattle Learning Center",
+      type: "LC",
+    },
+    toEntity: {
+      id: students[1].id,
+      name: `${students[1].firstName} ${students[1].lastName}`,
+      type: "LC",
+    },
+    isConsolidated: false,
+    priority: "low",
+    expectedDeliveryDate: createDate(10),
     createdAt: createDate(5),
     updatedAt: createDate(5),
+  },
+  {
+    id: generateId("ord"),
+    orderNumber: "ORD-2024-003",
+    studentId: "mf_region_1",
+    items: [
+      {
+        productId: products[0].id,
+        quantity: 50,
+        unitPrice: 29.99,
+        totalPrice: 1499.50,
+      },
+      {
+        productId: products[1].id,
+        quantity: 25,
+        unitPrice: 89.99,
+        totalPrice: 2249.75,
+      },
+    ],
+    status: "processing",
+    subtotal: 3749.25,
+    tax: 299.94,
+    discount: 0,
+    total: 4049.19,
+    paymentStatus: "paid",
+    paymentMethod: "Bank Transfer",
+    shippingAddress: {
+      street: "123 Business Ave",
+      city: "Boston",
+      state: "MA",
+      zipCode: "02101",
+      country: "USA",
+    },
+    billingAddress: {
+      street: "123 Business Ave",
+      city: "Boston",
+      state: "MA",
+      zipCode: "02101",
+      country: "USA",
+    },
+    processedBy: "user_1",
+    orderType: "hq_to_mf",
+    fromEntity: {
+      id: "hq_main",
+      name: "Headquarters",
+      type: "HQ",
+    },
+    toEntity: {
+      id: "mf_region_1",
+      name: "Boston MF Region",
+      type: "MF",
+    },
+    isConsolidated: false,
+    priority: "high",
+    expectedDeliveryDate: createDate(12),
+    createdAt: createDate(8),
+    updatedAt: createDate(6),
+  },
+  {
+    id: generateId("ord"),
+    orderNumber: "ORD-2024-004",
+    studentId: "lc_region_1",
+    items: [
+      {
+        productId: products[0].id,
+        quantity: 20,
+        unitPrice: 34.49,
+        totalPrice: 689.80,
+      },
+    ],
+    status: "confirmed",
+    subtotal: 689.80,
+    tax: 55.18,
+    discount: 0,
+    total: 744.98,
+    paymentStatus: "pending",
+    shippingAddress: {
+      street: "456 Learning St",
+      city: "Boston",
+      state: "MA",
+      zipCode: "02102",
+      country: "USA",
+    },
+    billingAddress: {
+      street: "456 Learning St",
+      city: "Boston",
+      state: "MA",
+      zipCode: "02102",
+      country: "USA",
+    },
+    orderType: "mf_to_lc",
+    fromEntity: {
+      id: "mf_region_1",
+      name: "Boston MF Region",
+      type: "MF",
+    },
+    toEntity: {
+      id: "lc_region_1",
+      name: "Boston Learning Center",
+      type: "LC",
+    },
+    isConsolidated: false,
+    priority: "medium",
+    expectedDeliveryDate: createDate(7),
+    createdAt: createDate(3),
+    updatedAt: createDate(2),
   },
 ];
 
@@ -1347,6 +1679,84 @@ export class MockDatabase {
     const index = learningGroups.findIndex(g => g.id === id);
     if (index === -1) return false;
     learningGroups.splice(index, 1);
+    return true;
+  }
+
+  // Product Lists
+  getProductLists(): ProductList[] {
+    return productLists;
+  }
+
+  getProductListById(id: string): ProductList | undefined {
+    return productLists.find(pl => pl.id === id);
+  }
+
+  createProductList(list: Omit<ProductList, "id" | "createdAt" | "updatedAt">): ProductList {
+    const newList: ProductList = {
+      ...list,
+      id: generateId("pl"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    productLists.push(newList);
+    return newList;
+  }
+
+  updateProductList(id: string, updates: Partial<ProductList>): ProductList | null {
+    const index = productLists.findIndex(pl => pl.id === id);
+    if (index === -1) return null;
+    
+    productLists[index] = {
+      ...productLists[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return productLists[index];
+  }
+
+  deleteProductList(id: string): boolean {
+    const index = productLists.findIndex(pl => pl.id === id);
+    if (index === -1) return false;
+    productLists.splice(index, 1);
+    return true;
+  }
+
+  // Product Prices
+  getProductPrices(): ProductPrice[] {
+    return productPrices;
+  }
+
+  getProductPriceById(id: string): ProductPrice | undefined {
+    return productPrices.find(pp => pp.id === id);
+  }
+
+  createProductPrice(price: Omit<ProductPrice, "id" | "createdAt" | "updatedAt">): ProductPrice {
+    const newPrice: ProductPrice = {
+      ...price,
+      id: generateId("pp"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    productPrices.push(newPrice);
+    return newPrice;
+  }
+
+  updateProductPrice(id: string, updates: Partial<ProductPrice>): ProductPrice | null {
+    const index = productPrices.findIndex(pp => pp.id === id);
+    if (index === -1) return null;
+    
+    productPrices[index] = {
+      ...productPrices[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return productPrices[index];
+  }
+
+  deleteProductPrice(id: string): boolean {
+    const index = productPrices.findIndex(pp => pp.id === id);
+    if (index === -1) return false;
+    productPrices.splice(index, 1);
     return true;
   }
 

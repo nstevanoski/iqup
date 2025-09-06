@@ -7,6 +7,8 @@ import {
   Teacher,
   LearningGroup,
   Product,
+  ProductList,
+  ProductPrice,
   InventoryItem,
   Order,
   Training,
@@ -863,12 +865,169 @@ export const learningGroupHandlers = [
   }),
 ];
 
+// Product List handlers
+export const productListHandlers = [
+  http.get("/api/product-lists", ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search") || "";
+    const status = url.searchParams.get("status") || "";
+    const sortBy = url.searchParams.get("sortBy") || "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+
+    let filteredLists = db.getProductLists();
+
+    // Apply search filter
+    if (search) {
+      filteredLists = filteredLists.filter(list =>
+        list.name.toLowerCase().includes(search.toLowerCase()) ||
+        list.description.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (status) {
+      filteredLists = filteredLists.filter(list => list.status === status);
+    }
+
+    // Apply sorting
+    filteredLists.sort((a, b) => {
+      const aValue: any = a[sortBy as keyof typeof a];
+      const bValue: any = b[sortBy as keyof typeof b];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return HttpResponse.json({
+      data: filteredLists,
+      total: filteredLists.length,
+    });
+  }),
+
+  http.get("/api/product-lists/:id", ({ params }) => {
+    const list = db.getProductListById(params.id as string);
+    if (!list) {
+      return HttpResponse.json({ error: "Product list not found" }, { status: 404 });
+    }
+    return HttpResponse.json(list);
+  }),
+
+  http.post("/api/product-lists", async ({ request }) => {
+    const listData = await request.json() as Omit<ProductList, "id" | "createdAt" | "updatedAt">;
+    const newList = db.createProductList(listData);
+    return HttpResponse.json(newList, { status: 201 });
+  }),
+
+  http.put("/api/product-lists/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<ProductList>;
+    const updatedList = db.updateProductList(params.id as string, updates);
+    if (!updatedList) {
+      return HttpResponse.json({ error: "Product list not found" }, { status: 404 });
+    }
+    return HttpResponse.json(updatedList);
+  }),
+
+  http.delete("/api/product-lists/:id", ({ params }) => {
+    const success = db.deleteProductList(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Product list not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ success: true });
+  }),
+];
+
+// Product Price handlers
+export const productPriceHandlers = [
+  http.get("/api/product-prices", ({ request }) => {
+    const url = new URL(request.url);
+    const productId = url.searchParams.get("productId") || "";
+    const mfId = url.searchParams.get("mfId") || "";
+    const lcId = url.searchParams.get("lcId") || "";
+    const status = url.searchParams.get("status") || "";
+    const sortBy = url.searchParams.get("sortBy") || "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+
+    let filteredPrices = db.getProductPrices();
+
+    // Apply filters
+    if (productId) {
+      filteredPrices = filteredPrices.filter(price => price.productId === productId);
+    }
+    if (mfId) {
+      filteredPrices = filteredPrices.filter(price => price.mfId === mfId);
+    }
+    if (lcId) {
+      filteredPrices = filteredPrices.filter(price => price.lcId === lcId);
+    }
+    if (status) {
+      filteredPrices = filteredPrices.filter(price => price.status === status);
+    }
+
+    // Apply sorting
+    filteredPrices.sort((a, b) => {
+      const aValue: any = a[sortBy as keyof typeof a];
+      const bValue: any = b[sortBy as keyof typeof b];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return HttpResponse.json({
+      data: filteredPrices,
+      total: filteredPrices.length,
+    });
+  }),
+
+  http.get("/api/product-prices/:id", ({ params }) => {
+    const price = db.getProductPriceById(params.id as string);
+    if (!price) {
+      return HttpResponse.json({ error: "Product price not found" }, { status: 404 });
+    }
+    return HttpResponse.json(price);
+  }),
+
+  http.post("/api/product-prices", async ({ request }) => {
+    const priceData = await request.json() as Omit<ProductPrice, "id" | "createdAt" | "updatedAt">;
+    const newPrice = db.createProductPrice(priceData);
+    return HttpResponse.json(newPrice, { status: 201 });
+  }),
+
+  http.put("/api/product-prices/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<ProductPrice>;
+    const updatedPrice = db.updateProductPrice(params.id as string, updates);
+    if (!updatedPrice) {
+      return HttpResponse.json({ error: "Product price not found" }, { status: 404 });
+    }
+    return HttpResponse.json(updatedPrice);
+  }),
+
+  http.delete("/api/product-prices/:id", ({ params }) => {
+    const success = db.deleteProductPrice(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Product price not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ success: true });
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
   ...studentHandlers,
   ...teacherHandlers,
   ...learningGroupHandlers,
+  ...productListHandlers,
+  ...productPriceHandlers,
   ...orderHandlers,
   ...dashboardHandlers,
   ...reportHandlers,
