@@ -7,6 +7,11 @@ import '@/styles/colors.css';
 
 import { siteConfig } from '@/constant/config';
 
+// Initialize MSW in development
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  import('@/mocks/worker');
+}
+
 // !STARTERCONF Change these default meta
 // !STARTERCONF Look at @/constant/config to change them
 export const metadata: Metadata = {
