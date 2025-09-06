@@ -130,12 +130,45 @@ export interface LearningGroup extends BaseEntity {
   teacherId: string;
   studentIds: string[];
   maxStudents: number;
-  status: "active" | "inactive" | "completed";
+  status: "active" | "inactive" | "completed" | "cancelled";
   startDate: Date;
   endDate: Date;
   schedule: Schedule[];
   location: string;
   notes?: string;
+  // New fields for enhanced learning group management
+  dates: {
+    startDate: string;
+    endDate: string;
+    registrationDeadline: string;
+    lastClassDate: string;
+  };
+  pricingSnapshot: {
+    programPrice: number;
+    subProgramPrice: number;
+    totalPrice: number;
+    discount?: number;
+    finalPrice: number;
+    currency: string;
+  };
+  owner: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  franchisee: {
+    id: string;
+    name: string;
+    location: string;
+  };
+  students: {
+    studentId: string;
+    startDate: string;
+    endDate: string;
+    productId: string;
+    paymentStatus: "pending" | "paid" | "partial" | "overdue";
+    enrollmentDate: string;
+  }[];
 }
 
 export interface Schedule {

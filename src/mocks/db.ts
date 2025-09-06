@@ -652,11 +652,53 @@ export const learningGroups: LearningGroup[] = [
     startDate: createDate(30),
     endDate: createDate(-30),
     schedule: [
-      { dayOfWeek: 1, startTime: "10:00", endTime: "12:00", room: "Room 101" },
-      { dayOfWeek: 3, startTime: "10:00", endTime: "12:00", room: "Room 101" },
+      { dayOfWeek: 1, startTime: "10:00", endTime: "12:00" },
+      { dayOfWeek: 3, startTime: "10:00", endTime: "12:00" },
     ],
     location: "Main Campus",
     notes: "Focus on advanced conversation skills",
+    dates: {
+      startDate: "2024-02-01",
+      endDate: "2024-05-31",
+      registrationDeadline: "2024-01-25",
+      lastClassDate: "2024-05-29",
+    },
+    pricingSnapshot: {
+      programPrice: 299.99,
+      subProgramPrice: 149.99,
+      totalPrice: 449.98,
+      discount: 50.00,
+      finalPrice: 399.98,
+      currency: "USD",
+    },
+    owner: {
+      id: "owner_1",
+      name: "Dr. Sarah Wilson",
+      role: "Program Director",
+    },
+    franchisee: {
+      id: "franchisee_1",
+      name: "Boston Learning Center",
+      location: "Boston, MA",
+    },
+    students: [
+      {
+        studentId: students[0].id,
+        startDate: "2024-02-01",
+        endDate: "2024-05-31",
+        productId: "product_1",
+        paymentStatus: "paid",
+        enrollmentDate: "2024-01-15",
+      },
+      {
+        studentId: students[1].id,
+        startDate: "2024-02-01",
+        endDate: "2024-05-31",
+        productId: "product_1",
+        paymentStatus: "partial",
+        enrollmentDate: "2024-01-20",
+      },
+    ],
     createdAt: createDate(35),
     updatedAt: createDate(5),
   },
@@ -672,12 +714,100 @@ export const learningGroups: LearningGroup[] = [
     startDate: createDate(20),
     endDate: createDate(-40),
     schedule: [
-      { dayOfWeek: 2, startTime: "14:00", endTime: "16:00", room: "Room 205" },
-      { dayOfWeek: 4, startTime: "14:00", endTime: "16:00", room: "Room 205" },
+      { dayOfWeek: 2, startTime: "14:00", endTime: "16:00" },
+      { dayOfWeek: 4, startTime: "14:00", endTime: "16:00" },
     ],
     location: "Math Building",
+    dates: {
+      startDate: "2024-02-15",
+      endDate: "2024-06-15",
+      registrationDeadline: "2024-02-10",
+      lastClassDate: "2024-06-13",
+    },
+    pricingSnapshot: {
+      programPrice: 199.99,
+      subProgramPrice: 99.99,
+      totalPrice: 299.98,
+      finalPrice: 299.98,
+      currency: "USD",
+    },
+    owner: {
+      id: "owner_2",
+      name: "Prof. Michael Brown",
+      role: "Mathematics Coordinator",
+    },
+    franchisee: {
+      id: "franchisee_2",
+      name: "Seattle Math Academy",
+      location: "Seattle, WA",
+    },
+    students: [
+      {
+        studentId: students[0].id,
+        startDate: "2024-02-15",
+        endDate: "2024-06-15",
+        productId: "product_2",
+        paymentStatus: "paid",
+        enrollmentDate: "2024-02-01",
+      },
+    ],
     createdAt: createDate(25),
     updatedAt: createDate(3),
+  },
+  {
+    id: generateId("lg"),
+    name: "Physics Lab Group",
+    description: "Hands-on physics experiments and theory",
+    programId: programs[2].id,
+    subProgramId: subPrograms[3].id,
+    teacherId: teachers[2].id,
+    studentIds: [students[4].id],
+    maxStudents: 12,
+    status: "completed",
+    startDate: createDate(90),
+    endDate: createDate(30),
+    schedule: [
+      { dayOfWeek: 1, startTime: "10:00", endTime: "12:00" },
+      { dayOfWeek: 5, startTime: "10:00", endTime: "12:00" },
+    ],
+    location: "Physics Lab",
+    notes: "Advanced physics concepts with practical experiments",
+    dates: {
+      startDate: "2023-09-01",
+      endDate: "2023-12-15",
+      registrationDeadline: "2023-08-25",
+      lastClassDate: "2023-12-13",
+    },
+    pricingSnapshot: {
+      programPrice: 399.99,
+      subProgramPrice: 199.99,
+      totalPrice: 599.98,
+      discount: 100.00,
+      finalPrice: 499.98,
+      currency: "USD",
+    },
+    owner: {
+      id: "owner_3",
+      name: "Dr. Emily Davis",
+      role: "Physics Department Head",
+    },
+    franchisee: {
+      id: "franchisee_3",
+      name: "Austin Science Center",
+      location: "Austin, TX",
+    },
+    students: [
+      {
+        studentId: students[4].id,
+        startDate: "2023-09-01",
+        endDate: "2023-12-15",
+        productId: "product_3",
+        paymentStatus: "paid",
+        enrollmentDate: "2023-08-20",
+      },
+    ],
+    createdAt: createDate(90),
+    updatedAt: createDate(30),
   },
 ];
 
@@ -1178,6 +1308,45 @@ export class MockDatabase {
     const index = teachers.findIndex(t => t.id === id);
     if (index === -1) return false;
     teachers.splice(index, 1);
+    return true;
+  }
+
+  // Learning Groups
+  getLearningGroups(): LearningGroup[] {
+    return learningGroups;
+  }
+
+  getLearningGroupById(id: string): LearningGroup | undefined {
+    return learningGroups.find(g => g.id === id);
+  }
+
+  createLearningGroup(group: Omit<LearningGroup, "id" | "createdAt" | "updatedAt">): LearningGroup {
+    const newGroup: LearningGroup = {
+      ...group,
+      id: generateId("lg"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    learningGroups.push(newGroup);
+    return newGroup;
+  }
+
+  updateLearningGroup(id: string, updates: Partial<LearningGroup>): LearningGroup | null {
+    const index = learningGroups.findIndex(g => g.id === id);
+    if (index === -1) return null;
+    
+    learningGroups[index] = {
+      ...learningGroups[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return learningGroups[index];
+  }
+
+  deleteLearningGroup(id: string): boolean {
+    const index = learningGroups.findIndex(g => g.id === id);
+    if (index === -1) return false;
+    learningGroups.splice(index, 1);
     return true;
   }
 

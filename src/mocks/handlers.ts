@@ -746,11 +746,129 @@ export const reportHandlers = [
 ];
 
 // Combine all handlers
+// Learning Group handlers
+export const learningGroupHandlers = [
+  http.get("/api/learning-groups", ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search") || "";
+    const status = url.searchParams.get("status") || "";
+    const sortBy = url.searchParams.get("sortBy") || "name";
+    const sortOrder = url.searchParams.get("sortOrder") || "asc";
+    
+    let groups = db.getLearningGroups();
+    
+    // Apply search filter
+    if (search) {
+      groups = groups.filter(group => 
+        group.name.toLowerCase().includes(search.toLowerCase()) ||
+        group.description.toLowerCase().includes(search.toLowerCase()) ||
+        group.location.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    
+    // Apply status filter
+    if (status) {
+      groups = groups.filter(group => group.status === status);
+    }
+    
+    // Apply sorting
+    groups.sort((a, b) => {
+      let aValue: any = a[sortBy as keyof LearningGroup];
+      let bValue: any = b[sortBy as keyof LearningGroup];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (sortOrder === "desc") {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+      return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+    });
+    
+    return HttpResponse.json(groups);
+  }),
+
+  http.get("/api/learning-groups/:id", ({ params }) => {
+    const group = db.getLearningGroupById(params.id as string);
+    if (!group) {
+      return HttpResponse.json({ error: "Learning group not found" }, { status: 404 });
+    }
+    return HttpResponse.json(group);
+  }),
+
+  http.post("/api/learning-groups", async ({ request }) => {
+    const groupData = await request.json() as Omit<LearningGroup, "id" | "createdAt" | "updatedAt">;
+    const newGroup = db.createLearningGroup(groupData);
+    return HttpResponse.json(newGroup, { status: 201 });
+  }),
+
+  http.put("/api/learning-groups/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<LearningGroup>;
+    const updatedGroup = db.updateLearningGroup(params.id as string, updates);
+    if (!updatedGroup) {
+      return HttpResponse.json({ error: "Learning group not found" }, { status: 404 });
+    }
+    return HttpResponse.json(updatedGroup);
+  }),
+
+  http.delete("/api/learning-groups/:id", ({ params }) => {
+    const success = db.deleteLearningGroup(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Learning group not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Learning group deleted successfully" });
+  }),
+
+  // Add student to learning group
+  http.post("/api/learning-groups/:id/students", async ({ params, request }) => {
+    const studentData = await request.json() as {
+      studentId: string;
+      startDate: string;
+      endDate: string;
+      productId: string;
+      paymentStatus: "pending" | "paid" | "partial" | "overdue";
+      enrollmentDate: string;
+    };
+    const group = db.getLearningGroupById(params.id as string);
+    if (!group) {
+      return HttpResponse.json({ error: "Learning group not found" }, { status: 404 });
+    }
+    
+    // Add student to group
+    const updatedGroup = db.updateLearningGroup(params.id as string, {
+      students: [...group.students, studentData],
+      studentIds: [...group.studentIds, studentData.studentId],
+    });
+    
+    return HttpResponse.json(updatedGroup);
+  }),
+
+  // Remove student from learning group
+  http.delete("/api/learning-groups/:id/students/:studentId", ({ params }) => {
+    const group = db.getLearningGroupById(params.id as string);
+    if (!group) {
+      return HttpResponse.json({ error: "Learning group not found" }, { status: 404 });
+    }
+    
+    const updatedGroup = db.updateLearningGroup(params.id as string, {
+      students: group.students.filter(s => s.studentId !== params.studentId),
+      studentIds: group.studentIds.filter(id => id !== params.studentId),
+    });
+    
+    return HttpResponse.json(updatedGroup);
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
   ...studentHandlers,
   ...teacherHandlers,
+  ...learningGroupHandlers,
   ...orderHandlers,
   ...dashboardHandlers,
   ...reportHandlers,
