@@ -94,12 +94,6 @@ export const navigationItems: NavigationItem[] = [
     icon: "BarChart3",
     roles: ["HQ", "MF", "LC"],
   },
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: "Settings",
-    roles: ["HQ", "MF", "LC", "TT"],
-  },
 ];
 
 // Role-based navigation rules with scoping
@@ -131,7 +125,6 @@ export const navigationRules: NavigationRule[] = [
       "/accounts",
       "/reports/royalties",
       "/reports/students",
-      "/settings",
     ],
   },
   {
@@ -149,7 +142,6 @@ export const navigationRules: NavigationRule[] = [
       "/accounts",
       "/reports/royalties",
       "/reports/students",
-      "/settings",
     ],
     scopedRoutes: {
       "/programs": {
@@ -192,7 +184,6 @@ export const navigationRules: NavigationRule[] = [
       "/orders",
       "/reports/students",
       "/trainings",
-      "/settings",
     ],
     scopedRoutes: {
       "/orders": {
@@ -210,7 +201,6 @@ export const navigationRules: NavigationRule[] = [
     allowedRoutes: [
       "/dashboard",
       "/trainings",
-      "/settings",
     ],
     scopedRoutes: {
       "/trainings": {

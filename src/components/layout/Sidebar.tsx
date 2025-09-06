@@ -19,7 +19,6 @@ import {
   Building2,
   TrendingUp,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -40,7 +39,6 @@ const iconMap = {
   Building2,
   TrendingUp,
   BarChart3,
-  Settings,
 };
 
 interface SidebarProps {
@@ -141,10 +139,6 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Dropdown menu */}
           {showUserMenu && (
             <div className="absolute bottom-0 left-full ml-2 mb-4 w-48 rounded-md border bg-white py-1 shadow-lg">
-              <button className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                <Settings className="mr-3 h-4 w-4" />
-                Settings
-              </button>
               <button
                 onClick={logout}
                 className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
