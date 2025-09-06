@@ -649,3 +649,86 @@ export interface Application extends BaseEntity {
   };
   parentAccountId?: string; // For LC applications, link to parent MF
 }
+
+// Royalty Management Types
+export interface RoyaltyCommissionCalculation {
+  id: string;
+  period: {
+    startDate: Date;
+    endDate: Date;
+    type: "monthly" | "quarterly" | "yearly" | "custom";
+  };
+  lcId: string;
+  lcName: string;
+  mfId: string;
+  mfName: string;
+  studentCount: number;
+  revenue: number;
+  lcToMfCommission: {
+    first100Students: {
+      count: number;
+      rate: number; // 14%
+      amount: number;
+    };
+    beyond100Students: {
+      count: number;
+      rate: number; // 12%
+      amount: number;
+    };
+    total: number;
+  };
+  mfToHqCommission: {
+    collectedFromLc: number;
+    rate: number; // 50%
+    amount: number;
+  };
+  status: "pending" | "calculated" | "paid" | "disputed";
+  calculatedAt: Date;
+  paidAt?: Date;
+  notes?: string;
+}
+
+export interface RoyaltyCommissionSummary {
+  id: string;
+  period: {
+    startDate: Date;
+    endDate: Date;
+    type: "monthly" | "quarterly" | "yearly" | "custom";
+  };
+  mfId: string;
+  mfName: string;
+  totalLcCount: number;
+  totalStudentCount: number;
+  totalRevenue: number;
+  totalLcToMfCommission: number;
+  totalMfToHqCommission: number;
+  lcBreakdown: {
+    lcId: string;
+    lcName: string;
+    studentCount: number;
+    revenue: number;
+    lcToMfCommission: number;
+  }[];
+  status: "pending" | "calculated" | "paid" | "disputed";
+  calculatedAt: Date;
+  paidAt?: Date;
+}
+
+export interface RoyaltyCommissionReport {
+  id: string;
+  period: {
+    startDate: Date;
+    endDate: Date;
+    type: "monthly" | "quarterly" | "yearly" | "custom";
+  };
+  generatedAt: Date;
+  generatedBy: string;
+  totalMfCount: number;
+  totalLcCount: number;
+  totalStudentCount: number;
+  totalRevenue: number;
+  totalLcToMfCommission: number;
+  totalMfToHqCommission: number;
+  mfSummaries: RoyaltyCommissionSummary[];
+  lcCalculations: RoyaltyCommissionCalculation[];
+}

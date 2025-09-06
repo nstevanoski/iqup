@@ -19,6 +19,9 @@ import {
   RecentActivity,
   Account,
   Application,
+  RoyaltyCommissionCalculation,
+  RoyaltyCommissionSummary,
+  RoyaltyCommissionReport,
 } from "@/types";
 import { Role } from "@/lib/rbac";
 
@@ -1998,6 +2001,177 @@ export const applications: Application[] = [
   },
 ];
 
+// Seed data for Royalty Calculations
+export const royaltyCalculations: RoyaltyCommissionCalculation[] = [
+  {
+    id: "lc_calc_1",
+    period: {
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2024-01-31"),
+      type: "monthly",
+    },
+    lcId: "acc_2",
+    lcName: "Boston Learning Center",
+    mfId: "acc_1",
+    mfName: "Boston MF Region",
+    studentCount: 120,
+    revenue: 180000,
+    lcToMfCommission: {
+      first100Students: {
+        count: 100,
+        rate: 0.14,
+        amount: 14000,
+      },
+      beyond100Students: {
+        count: 20,
+        rate: 0.12,
+        amount: 2400,
+      },
+      total: 16400,
+    },
+    mfToHqCommission: {
+      collectedFromLc: 16400,
+      rate: 0.5,
+      amount: 8200,
+    },
+    status: "calculated",
+    calculatedAt: new Date("2024-02-01"),
+  },
+  {
+    id: "lc_calc_2",
+    period: {
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2024-01-31"),
+      type: "monthly",
+    },
+    lcId: "acc_3",
+    lcName: "Cambridge Learning Center",
+    mfId: "acc_1",
+    mfName: "Boston MF Region",
+    studentCount: 100,
+    revenue: 150000,
+    lcToMfCommission: {
+      first100Students: {
+        count: 100,
+        rate: 0.14,
+        amount: 14000,
+      },
+      beyond100Students: {
+        count: 0,
+        rate: 0.12,
+        amount: 0,
+      },
+      total: 14000,
+    },
+    mfToHqCommission: {
+      collectedFromLc: 14000,
+      rate: 0.5,
+      amount: 7000,
+    },
+    status: "calculated",
+    calculatedAt: new Date("2024-02-01"),
+  },
+];
+
+// Seed data for Royalty Summaries
+export const royaltySummaries: RoyaltyCommissionSummary[] = [
+  {
+    id: "mf_summary_1",
+    period: {
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2024-01-31"),
+      type: "monthly",
+    },
+    mfId: "acc_1",
+    mfName: "Boston MF Region",
+    totalLcCount: 3,
+    totalStudentCount: 280,
+    totalRevenue: 420000,
+    totalLcToMfCommission: 50400,
+    totalMfToHqCommission: 25200,
+    lcBreakdown: [
+      {
+        lcId: "acc_2",
+        lcName: "Boston Learning Center",
+        studentCount: 120,
+        revenue: 180000,
+        lcToMfCommission: 21600,
+      },
+      {
+        lcId: "acc_3",
+        lcName: "Cambridge Learning Center",
+        studentCount: 100,
+        revenue: 150000,
+        lcToMfCommission: 18000,
+      },
+      {
+        lcId: "acc_4",
+        lcName: "Somerville Learning Center",
+        studentCount: 60,
+        revenue: 90000,
+        lcToMfCommission: 10800,
+      },
+    ],
+    status: "calculated",
+    calculatedAt: new Date("2024-02-01"),
+  },
+  {
+    id: "mf_summary_2",
+    period: {
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2024-01-31"),
+      type: "monthly",
+    },
+    mfId: "acc_5",
+    mfName: "Worcester MF Region",
+    totalLcCount: 2,
+    totalStudentCount: 170,
+    totalRevenue: 255000,
+    totalLcToMfCommission: 30600,
+    totalMfToHqCommission: 15300,
+    lcBreakdown: [
+      {
+        lcId: "acc_6",
+        lcName: "Worcester Learning Center",
+        studentCount: 100,
+        revenue: 150000,
+        lcToMfCommission: 18000,
+      },
+      {
+        lcId: "acc_7",
+        lcName: "Springfield Learning Center",
+        studentCount: 70,
+        revenue: 105000,
+        lcToMfCommission: 12600,
+      },
+    ],
+    status: "calculated",
+    calculatedAt: new Date("2024-02-01"),
+  },
+];
+
+// Seed data for Royalty Reports
+export const royaltyCommissionReports: RoyaltyCommissionReport[] = [
+  {
+    id: "royalty_2024_01",
+    period: {
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2024-01-31"),
+      type: "monthly",
+    },
+    generatedAt: new Date("2024-02-01"),
+    generatedBy: "user_1",
+    totalMfCount: 2,
+    totalLcCount: 5,
+    totalStudentCount: 450,
+    totalRevenue: 675000,
+    totalLcToMfCommission: 81000,
+    totalMfToHqCommission: 40500,
+    mfSummaries: royaltySummaries,
+    lcCalculations: royaltyCalculations,
+  },
+];
+
 export class MockDatabase {
   // Programs
   getPrograms(): Program[] {
@@ -2597,6 +2771,148 @@ export class MockDatabase {
       status: "rejected",
       reviewInfo,
     });
+  }
+
+  // Royalty Calculations
+  getRoyaltyCalculations(): RoyaltyCommissionCalculation[] {
+    return royaltyCalculations;
+  }
+
+  getRoyaltyCalculationById(id: string): RoyaltyCommissionCalculation | undefined {
+    return royaltyCalculations.find(calc => calc.id === id);
+  }
+
+  createRoyaltyCalculation(calculation: Omit<RoyaltyCommissionCalculation, "id" | "calculatedAt">): RoyaltyCommissionCalculation {
+    const newCalculation: RoyaltyCommissionCalculation = {
+      ...calculation,
+      id: `lc_calc_${Date.now()}`,
+      calculatedAt: new Date(),
+    };
+    royaltyCalculations.push(newCalculation);
+    return newCalculation;
+  }
+
+  updateRoyaltyCalculation(id: string, updates: Partial<RoyaltyCommissionCalculation>): RoyaltyCommissionCalculation | null {
+    const index = royaltyCalculations.findIndex(calc => calc.id === id);
+    if (index === -1) return null;
+    
+    royaltyCalculations[index] = {
+      ...royaltyCalculations[index],
+      ...updates,
+    };
+    return royaltyCalculations[index];
+  }
+
+  deleteRoyaltyCalculation(id: string): boolean {
+    const index = royaltyCalculations.findIndex(calc => calc.id === id);
+    if (index === -1) return false;
+    royaltyCalculations.splice(index, 1);
+    return true;
+  }
+
+  // Royalty Summaries
+  getRoyaltySummaries(): RoyaltyCommissionSummary[] {
+    return royaltySummaries;
+  }
+
+  getRoyaltySummaryById(id: string): RoyaltyCommissionSummary | undefined {
+    return royaltySummaries.find(summary => summary.id === id);
+  }
+
+  createRoyaltySummary(summary: Omit<RoyaltyCommissionSummary, "id" | "calculatedAt">): RoyaltyCommissionSummary {
+    const newSummary: RoyaltyCommissionSummary = {
+      ...summary,
+      id: `mf_summary_${Date.now()}`,
+      calculatedAt: new Date(),
+    };
+    royaltySummaries.push(newSummary);
+    return newSummary;
+  }
+
+  updateRoyaltySummary(id: string, updates: Partial<RoyaltyCommissionSummary>): RoyaltyCommissionSummary | null {
+    const index = royaltySummaries.findIndex(summary => summary.id === id);
+    if (index === -1) return null;
+    
+    royaltySummaries[index] = {
+      ...royaltySummaries[index],
+      ...updates,
+    };
+    return royaltySummaries[index];
+  }
+
+  deleteRoyaltySummary(id: string): boolean {
+    const index = royaltySummaries.findIndex(summary => summary.id === id);
+    if (index === -1) return false;
+    royaltySummaries.splice(index, 1);
+    return true;
+  }
+
+  // Royalty Reports
+  getRoyaltyCommissionReports(): RoyaltyCommissionReport[] {
+    return royaltyCommissionReports;
+  }
+
+  getRoyaltyCommissionReportById(id: string): RoyaltyCommissionReport | undefined {
+    return royaltyCommissionReports.find(report => report.id === id);
+  }
+
+  createRoyaltyCommissionReport(report: Omit<RoyaltyCommissionReport, "id" | "generatedAt">): RoyaltyCommissionReport {
+    const newReport: RoyaltyCommissionReport = {
+      ...report,
+      id: `royalty_${Date.now()}`,
+      generatedAt: new Date(),
+    };
+    royaltyCommissionReports.push(newReport);
+    return newReport;
+  }
+
+  updateRoyaltyCommissionReport(id: string, updates: Partial<RoyaltyCommissionReport>): RoyaltyCommissionReport | null {
+    const index = royaltyCommissionReports.findIndex(report => report.id === id);
+    if (index === -1) return null;
+    
+    royaltyCommissionReports[index] = {
+      ...royaltyCommissionReports[index],
+      ...updates,
+    };
+    return royaltyCommissionReports[index];
+  }
+
+  deleteRoyaltyCommissionReport(id: string): boolean {
+    const index = royaltyCommissionReports.findIndex(report => report.id === id);
+    if (index === -1) return false;
+    royaltyCommissionReports.splice(index, 1);
+    return true;
+  }
+
+  // Commission calculation helper
+  calculateLcToMfCommission(studentCount: number, revenue: number): RoyaltyCommissionCalculation["lcToMfCommission"] {
+    const first100Count = Math.min(studentCount, 100);
+    const beyond100Count = Math.max(0, studentCount - 100);
+    
+    const first100Amount = (revenue * first100Count / studentCount) * 0.14;
+    const beyond100Amount = (revenue * beyond100Count / studentCount) * 0.12;
+    
+    return {
+      first100Students: {
+        count: first100Count,
+        rate: 0.14,
+        amount: first100Amount,
+      },
+      beyond100Students: {
+        count: beyond100Count,
+        rate: 0.12,
+        amount: beyond100Amount,
+      },
+      total: first100Amount + beyond100Amount,
+    };
+  }
+
+  calculateMfToHqCommission(lcToMfAmount: number): RoyaltyCommissionCalculation["mfToHqCommission"] {
+    return {
+      collectedFromLc: lcToMfAmount,
+      rate: 0.5,
+      amount: lcToMfAmount * 0.5,
+    };
   }
 }
 

@@ -22,6 +22,9 @@ import {
   FilterOptions,
   Account,
   Application,
+  RoyaltyCommissionCalculation,
+  RoyaltyCommissionSummary,
+  RoyaltyCommissionReport,
 } from "@/types";
 
 // Helper function to create API response
@@ -1726,6 +1729,271 @@ const applicationHandlers = [
   }),
 ];
 
+// Royalty Report Handlers
+const royaltyHandlers = [
+  http.get("/api/royalty-reports", ({ request }) => {
+    const url = new URL(request.url);
+    const periodType = url.searchParams.get("periodType") || "";
+    const startDate = url.searchParams.get("startDate") || "";
+    const endDate = url.searchParams.get("endDate") || "";
+    const sortBy = url.searchParams.get("sortBy") || "generatedAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let filteredReports = db.getRoyaltyCommissionReports();
+
+    // Filter by period type
+    if (periodType) {
+      filteredReports = filteredReports.filter((report: RoyaltyCommissionReport) => report.period.type === periodType);
+    }
+
+    // Filter by date range
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      filteredReports = filteredReports.filter((report: RoyaltyCommissionReport) => 
+        report.period.startDate >= start && report.period.endDate <= end
+      );
+    }
+
+    // Sort
+    filteredReports.sort((a: RoyaltyCommissionReport, b: RoyaltyCommissionReport) => {
+      const aValue = (a[sortBy as keyof RoyaltyCommissionReport] as any) || "";
+      const bValue = (b[sortBy as keyof RoyaltyCommissionReport] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedReports = filteredReports.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedReports,
+      total: filteredReports.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredReports.length / limit),
+    });
+  }),
+
+  http.get("/api/royalty-reports/:id", ({ params }) => {
+    const report = db.getRoyaltyCommissionReportById(params.id as string);
+    if (!report) {
+      return HttpResponse.json({ error: "Royalty report not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: report });
+  }),
+
+  http.post("/api/royalty-reports", async ({ request }) => {
+    const reportData = await request.json() as Omit<RoyaltyCommissionReport, "id" | "generatedAt">;
+    const newReport = db.createRoyaltyCommissionReport(reportData);
+    return HttpResponse.json({ data: newReport }, { status: 201 });
+  }),
+
+  http.put("/api/royalty-reports/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<RoyaltyCommissionReport>;
+    const updatedReport = db.updateRoyaltyCommissionReport(params.id as string, updates);
+    if (!updatedReport) {
+      return HttpResponse.json({ error: "Royalty report not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: updatedReport });
+  }),
+
+  http.delete("/api/royalty-reports/:id", ({ params }) => {
+    const success = db.deleteRoyaltyCommissionReport(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Royalty report not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Royalty report deleted successfully" });
+  }),
+
+  // Royalty Calculations
+  http.get("/api/royalty-calculations", ({ request }) => {
+    const url = new URL(request.url);
+    const lcId = url.searchParams.get("lcId") || "";
+    const mfId = url.searchParams.get("mfId") || "";
+    const status = url.searchParams.get("status") || "";
+    const sortBy = url.searchParams.get("sortBy") || "calculatedAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let filteredCalculations = db.getRoyaltyCalculations();
+
+    // Filter by LC ID
+    if (lcId) {
+      filteredCalculations = filteredCalculations.filter((calc: RoyaltyCommissionCalculation) => calc.lcId === lcId);
+    }
+
+    // Filter by MF ID
+    if (mfId) {
+      filteredCalculations = filteredCalculations.filter((calc: RoyaltyCommissionCalculation) => calc.mfId === mfId);
+    }
+
+    // Filter by status
+    if (status) {
+      filteredCalculations = filteredCalculations.filter((calc: RoyaltyCommissionCalculation) => calc.status === status);
+    }
+
+    // Sort
+    filteredCalculations.sort((a: RoyaltyCommissionCalculation, b: RoyaltyCommissionCalculation) => {
+      const aValue = (a[sortBy as keyof RoyaltyCommissionCalculation] as any) || "";
+      const bValue = (b[sortBy as keyof RoyaltyCommissionCalculation] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedCalculations = filteredCalculations.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedCalculations,
+      total: filteredCalculations.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredCalculations.length / limit),
+    });
+  }),
+
+  http.get("/api/royalty-calculations/:id", ({ params }) => {
+    const calculation = db.getRoyaltyCalculationById(params.id as string);
+    if (!calculation) {
+      return HttpResponse.json({ error: "Royalty calculation not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: calculation });
+  }),
+
+  http.post("/api/royalty-calculations", async ({ request }) => {
+    const calculationData = await request.json() as Omit<RoyaltyCommissionCalculation, "id" | "calculatedAt">;
+    const newCalculation = db.createRoyaltyCalculation(calculationData);
+    return HttpResponse.json({ data: newCalculation }, { status: 201 });
+  }),
+
+  http.put("/api/royalty-calculations/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<RoyaltyCommissionCalculation>;
+    const updatedCalculation = db.updateRoyaltyCalculation(params.id as string, updates);
+    if (!updatedCalculation) {
+      return HttpResponse.json({ error: "Royalty calculation not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: updatedCalculation });
+  }),
+
+  http.delete("/api/royalty-calculations/:id", ({ params }) => {
+    const success = db.deleteRoyaltyCalculation(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Royalty calculation not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Royalty calculation deleted successfully" });
+  }),
+
+  // Royalty Summaries
+  http.get("/api/royalty-summaries", ({ request }) => {
+    const url = new URL(request.url);
+    const mfId = url.searchParams.get("mfId") || "";
+    const status = url.searchParams.get("status") || "";
+    const sortBy = url.searchParams.get("sortBy") || "calculatedAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let filteredSummaries = db.getRoyaltySummaries();
+
+    // Filter by MF ID
+    if (mfId) {
+      filteredSummaries = filteredSummaries.filter((summary: RoyaltyCommissionSummary) => summary.mfId === mfId);
+    }
+
+    // Filter by status
+    if (status) {
+      filteredSummaries = filteredSummaries.filter((summary: RoyaltyCommissionSummary) => summary.status === status);
+    }
+
+    // Sort
+    filteredSummaries.sort((a: RoyaltyCommissionSummary, b: RoyaltyCommissionSummary) => {
+      const aValue = (a[sortBy as keyof RoyaltyCommissionSummary] as any) || "";
+      const bValue = (b[sortBy as keyof RoyaltyCommissionSummary] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedSummaries = filteredSummaries.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedSummaries,
+      total: filteredSummaries.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredSummaries.length / limit),
+    });
+  }),
+
+  http.get("/api/royalty-summaries/:id", ({ params }) => {
+    const summary = db.getRoyaltySummaryById(params.id as string);
+    if (!summary) {
+      return HttpResponse.json({ error: "Royalty summary not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: summary });
+  }),
+
+  http.post("/api/royalty-summaries", async ({ request }) => {
+    const summaryData = await request.json() as Omit<RoyaltyCommissionSummary, "id" | "calculatedAt">;
+    const newSummary = db.createRoyaltySummary(summaryData);
+    return HttpResponse.json({ data: newSummary }, { status: 201 });
+  }),
+
+  http.put("/api/royalty-summaries/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<RoyaltyCommissionSummary>;
+    const updatedSummary = db.updateRoyaltySummary(params.id as string, updates);
+    if (!updatedSummary) {
+      return HttpResponse.json({ error: "Royalty summary not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: updatedSummary });
+  }),
+
+  http.delete("/api/royalty-summaries/:id", ({ params }) => {
+    const success = db.deleteRoyaltySummary(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Royalty summary not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Royalty summary deleted successfully" });
+  }),
+
+  // Commission calculation endpoint
+  http.post("/api/royalty-calculations/calculate", async ({ request }) => {
+    const { studentCount, revenue } = await request.json() as { studentCount: number; revenue: number };
+    
+    const lcToMfCommission = db.calculateLcToMfCommission(studentCount, revenue);
+    const mfToHqCommission = db.calculateMfToHqCommission(lcToMfCommission.total);
+    
+    return HttpResponse.json({
+      data: {
+        lcToMfCommission,
+        mfToHqCommission,
+      },
+    });
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
@@ -1743,4 +2011,5 @@ export const handlers = [
   ...teacherTrainerHandlers,
   ...accountHandlers,
   ...applicationHandlers,
+  ...royaltyHandlers,
 ];
