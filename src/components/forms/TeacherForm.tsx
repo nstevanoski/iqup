@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Teacher } from "@/types";
-import { X, Plus, Trash2, GraduationCap, Award, MapPin } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Award, MapPin } from "lucide-react";
 
 interface TeacherFormProps {
   teacher?: Teacher;
@@ -14,6 +14,8 @@ interface TeacherFormProps {
 interface FormData {
   firstName: string;
   lastName: string;
+  dateOfBirth: string;
+  gender: "male" | "female" | "other";
   title: string;
   email: string;
   phone: string;
@@ -61,6 +63,8 @@ interface FormData {
 const initialFormData: FormData = {
   firstName: "",
   lastName: "",
+  dateOfBirth: "",
+  gender: "other",
   title: "",
   email: "",
   phone: "",
@@ -88,6 +92,8 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
     teacher ? {
       firstName: teacher.firstName,
       lastName: teacher.lastName,
+      dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.toISOString().split('T')[0] : "",
+      gender: teacher.gender,
       title: teacher.title,
       email: teacher.email,
       phone: teacher.phone || "",
@@ -120,6 +126,8 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
 
     if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
     if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
+    if (!formData.dateOfBirth.trim()) newErrors.dateOfBirth = "Date of birth is required";
+    if (!formData.gender) newErrors.gender = "Gender is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
     if (!formData.phone.trim()) newErrors.phone = "Phone is required";
@@ -138,7 +146,11 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      const teacherData = {
+        ...formData,
+        dateOfBirth: new Date(formData.dateOfBirth),
+      };
+      onSubmit(teacherData);
     }
   };
 
@@ -263,21 +275,8 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {teacher ? "Edit Teacher" : "Add New Teacher"}
-          </h2>
-          <button
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <div className="p-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -310,6 +309,39 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
                 placeholder="Enter last name"
               />
               {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date of Birth *
+              </label>
+              <input
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.dateOfBirth ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Gender *
+              </label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value as any }))}
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.gender ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
             </div>
 
             <div>
@@ -447,7 +479,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
                     onClick={() => removeSpecialization(index)}
                     className="ml-2 text-blue-600 hover:text-blue-800"
                   >
-                    <X className="h-3 w-3" />
+                    <Trash2 className="h-3 w-3" />
                   </button>
                 </span>
               ))}
@@ -489,7 +521,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
                     onClick={() => removeQualification(index)}
                     className="ml-2 text-green-600 hover:text-green-800"
                   >
-                    <X className="h-3 w-3" />
+                    <Trash2 className="h-3 w-3" />
                   </button>
                 </span>
               ))}
@@ -888,8 +920,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
               {loading ? "Saving..." : teacher ? "Update Teacher" : "Add Teacher"}
             </button>
           </div>
-        </form>
-      </div>
+      </form>
     </div>
   );
 }

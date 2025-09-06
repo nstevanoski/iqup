@@ -174,6 +174,8 @@ export interface StudentCertificate {
 export interface Teacher extends BaseEntity, ContactInfo {
   firstName: string;
   lastName: string;
+  dateOfBirth: Date;
+  gender: "male" | "female" | "other";
   title: string; // Dr., Prof., etc.
   specialization: string[];
   experience: number; // years

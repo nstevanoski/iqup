@@ -3,9 +3,10 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { TeacherForm } from "@/components/forms/TeacherForm";
 import { Teacher } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/store/auth";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, GraduationCap, MapPin, Award } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
@@ -14,6 +15,8 @@ const sampleTeachers: Teacher[] = [
     id: "1",
     firstName: "Sarah",
     lastName: "Wilson",
+    dateOfBirth: new Date("1980-05-15"),
+    gender: "female",
     title: "Dr.",
     email: "sarah.wilson@example.com",
     phone: "+1-555-1001",
@@ -93,6 +96,8 @@ const sampleTeachers: Teacher[] = [
     id: "2",
     firstName: "Michael",
     lastName: "Brown",
+    dateOfBirth: new Date("1975-08-22"),
+    gender: "male",
     title: "Prof.",
     email: "michael.brown@example.com",
     phone: "+1-555-1002",
@@ -158,6 +163,8 @@ const sampleTeachers: Teacher[] = [
     id: "3",
     firstName: "Emily",
     lastName: "Davis",
+    dateOfBirth: new Date("1985-12-03"),
+    gender: "female",
     title: "Dr.",
     email: "emily.davis@example.com",
     phone: "+1-555-1003",
@@ -231,6 +238,8 @@ const sampleTeachers: Teacher[] = [
     id: "4",
     firstName: "David",
     lastName: "Wilson",
+    dateOfBirth: new Date("1988-03-18"),
+    gender: "male",
     title: "Mr.",
     email: "david.wilson@example.com",
     phone: "+1-555-1004",
@@ -422,27 +431,72 @@ const columns: Column<Teacher>[] = [
 ];
 
 export default function TeachersPage() {
+  const router = useRouter();
+  const user = useUser();
   const [data, setData] = useState<Teacher[]>(sampleTeachers);
-  const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/teachers");
+        if (response.ok) {
+          const result = await response.json();
+          const teachers: Teacher[] = result.data || [];
+          setData(teachers);
+        } else {
+          // Fallback to sample data
+          setData(sampleTeachers);
+        }
+      } catch (error) {
+        console.error("Error fetching teachers:", error);
+        // Fallback to sample data
+        setData(sampleTeachers);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
 
   const handleRowAction = (action: string, row: Teacher) => {
-    console.log(`${action} action for teacher:`, row);
-    
     switch (action) {
       case "view":
-        alert(`Viewing teacher: ${row.title} ${row.firstName} ${row.lastName}`);
+        router.push(`/contacts/teachers/${row.id}`);
         break;
       case "edit":
-        setEditingTeacher(row);
-        setShowForm(true);
+        router.push(`/contacts/teachers/${row.id}/edit`);
         break;
       case "delete":
         if (confirm(`Are you sure you want to delete ${row.title} ${row.firstName} ${row.lastName}?`)) {
-          setData(prev => prev.filter(item => item.id !== row.id));
+          handleDeleteTeacher(row.id);
         }
         break;
+    }
+  };
+
+  const handleDeleteTeacher = async (teacherId: string) => {
+    try {
+      const response = await fetch(`/api/teachers/${teacherId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Refresh the data
+        const fetchResponse = await fetch("/api/teachers");
+        if (fetchResponse.ok) {
+          const result = await fetchResponse.json();
+          setData(result.data || []);
+        }
+      } else {
+        const error = await response.json();
+        alert(`Error deleting teacher: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Error deleting teacher:", error);
+      alert("Failed to delete teacher. Please try again.");
     }
   };
 
@@ -480,35 +534,7 @@ export default function TeachersPage() {
   };
 
   const handleAddTeacher = () => {
-    setEditingTeacher(undefined);
-    setShowForm(true);
-  };
-
-  const handleFormSubmit = (teacherData: Omit<Teacher, "id" | "createdAt" | "updatedAt">) => {
-    if (editingTeacher) {
-      // Update existing teacher
-      setData(prev => prev.map(teacher => 
-        teacher.id === editingTeacher.id 
-          ? { ...teacher, ...teacherData, updatedAt: new Date() }
-          : teacher
-      ));
-    } else {
-      // Add new teacher
-      const newTeacher: Teacher = {
-        ...teacherData,
-        id: `teacher_${Date.now()}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setData(prev => [...prev, newTeacher]);
-    }
-    setShowForm(false);
-    setEditingTeacher(undefined);
-  };
-
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingTeacher(undefined);
+    router.push("/contacts/teachers/new");
   };
 
   return (
@@ -519,13 +545,15 @@ export default function TeachersPage() {
             <h1 className="text-2xl font-bold text-gray-900">Teachers</h1>
             <p className="text-gray-600">Manage teacher contacts and information</p>
           </div>
-          <button 
-            onClick={handleAddTeacher}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Teacher
-          </button>
+          {(user?.role === "LC" || user?.role === "MF") && (
+            <button 
+              onClick={handleAddTeacher}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Teacher
+            </button>
+          )}
         </div>
         
         <div>
@@ -547,16 +575,6 @@ export default function TeachersPage() {
           />
         </div>
       </div>
-
-      {/* Teacher Form Modal */}
-      {showForm && (
-        <TeacherForm
-          teacher={editingTeacher}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-          loading={loading}
-        />
-      )}
     </DashboardLayout>
   );
 }

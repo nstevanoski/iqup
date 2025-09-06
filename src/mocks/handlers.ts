@@ -445,23 +445,12 @@ export const teacherHandlers = [
       teachers = teachers.filter(t => 
         t.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
         t.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        t.email.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        t.specialization.some(s => s.toLowerCase().includes(filters.search!.toLowerCase()))
+        t.email.toLowerCase().includes(filters.search!.toLowerCase())
       );
     }
     
     if (filters.status) {
       teachers = teachers.filter(t => t.status === filters.status);
-    }
-    
-    // Apply sorting
-    if (filters.sortBy) {
-      teachers.sort((a, b) => {
-        const aVal = (a as any)[filters.sortBy!];
-        const bVal = (b as any)[filters.sortBy!];
-        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-        return filters.sortOrder === "desc" ? -result : result;
-      });
     }
     
     const response = createPaginatedResponse(teachers, filters.page, filters.limit);
@@ -483,12 +472,12 @@ export const teacherHandlers = [
   // Create teacher
   http.post("/api/teachers", async ({ request }) => {
     try {
-      const teacherData = await request.json() as Omit<Teacher, "id" | "createdAt" | "updatedAt">;
-      const teacher = db.createTeacher(teacherData);
-      return HttpResponse.json(createResponse(teacher, "Teacher created successfully"));
+      const teacherData = await request.json() as any;
+      const newTeacher = db.createTeacher(teacherData);
+      return HttpResponse.json(createResponse(newTeacher, "Teacher created successfully"));
     } catch (error) {
       return HttpResponse.json(
-        { success: false, message: "Invalid request data" },
+        { success: false, message: "Failed to create teacher" },
         { status: 400 }
       );
     }
@@ -497,18 +486,21 @@ export const teacherHandlers = [
   // Update teacher
   http.put("/api/teachers/:id", async ({ params, request }) => {
     try {
-      const updates = await request.json() as Partial<Teacher>;
-      const teacher = db.updateTeacher(params.id as string, updates);
-      if (!teacher) {
+      const { id } = params;
+      const updates = await request.json() as any;
+      const updatedTeacher = db.updateTeacher(id as string, updates);
+      
+      if (!updatedTeacher) {
         return HttpResponse.json(
           { success: false, message: "Teacher not found" },
           { status: 404 }
         );
       }
-      return HttpResponse.json(createResponse(teacher, "Teacher updated successfully"));
+      
+      return HttpResponse.json(createResponse(updatedTeacher, "Teacher updated successfully"));
     } catch (error) {
       return HttpResponse.json(
-        { success: false, message: "Invalid request data" },
+        { success: false, message: "Failed to update teacher" },
         { status: 400 }
       );
     }
@@ -516,13 +508,16 @@ export const teacherHandlers = [
 
   // Delete teacher
   http.delete("/api/teachers/:id", ({ params }) => {
-    const success = db.deleteTeacher(params.id as string);
-    if (!success) {
+    const { id } = params;
+    const deleted = db.deleteTeacher(id as string);
+    
+    if (!deleted) {
       return HttpResponse.json(
         { success: false, message: "Teacher not found" },
         { status: 404 }
       );
     }
+    
     return HttpResponse.json(createResponse(null, "Teacher deleted successfully"));
   }),
 ];
