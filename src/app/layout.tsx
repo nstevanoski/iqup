@@ -6,7 +6,6 @@ import '@/styles/globals.css';
 import '@/styles/colors.css';
 
 import { siteConfig } from '@/constant/config';
-import { MSWProvider } from '@/components/msw/MSWProvider';
 
 // !STARTERCONF Change these default meta
 // !STARTERCONF Look at @/constant/config to change them
@@ -57,9 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html>
-      <body>
-        <MSWProvider>{children}</MSWProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
