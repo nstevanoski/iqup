@@ -37,7 +37,7 @@ export interface Program extends BaseEntity {
   // New fields for enhanced program management
   hours: number; // Total program hours
   lessonLength: number; // Length of each lesson in minutes
-  kind: "academic" | "vocational" | "certification" | "workshop";
+  kind: "academic" | "vocational" | "certification" | "workshop" | "birthday_party" | "stem_camp";
   sharedWithMFs: string[]; // Array of MF scope IDs that can see this program
   visibility: "private" | "shared" | "public";
 }
@@ -54,7 +54,7 @@ export interface SubProgram extends BaseEntity {
   learningObjectives: string[];
   createdBy: string; // User ID
   // New fields for enhanced subprogram management
-  pricingModel: "one-time" | "installments" | "subscription";
+  pricingModel: "one-time" | "installments" | "subscription" | "program_price";
   coursePrice: number; // Base course price
   numberOfPayments?: number; // For installment model
   gap?: number; // Gap between payments in days

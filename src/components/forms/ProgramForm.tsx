@@ -23,7 +23,7 @@ interface FormData {
   learningObjectives: string[];
   hours: number;
   lessonLength: number;
-  kind: "academic" | "vocational" | "certification" | "workshop";
+  kind: "academic" | "vocational" | "certification" | "workshop" | "birthday_party" | "stem_camp";
   sharedWithMFs: string[];
   visibility: "private" | "shared" | "public";
 }
@@ -62,7 +62,9 @@ const programKinds = [
   { value: "academic", label: "Academic" },
   { value: "vocational", label: "Vocational" },
   { value: "certification", label: "Certification" },
-  { value: "workshop", label: "Workshop" }
+  { value: "workshop", label: "Workshop" },
+  { value: "birthday_party", label: "Birthday Party" },
+  { value: "stem_camp", label: "STEM Camp" }
 ];
 
 const availableScopes = [
