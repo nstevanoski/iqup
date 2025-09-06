@@ -1,10 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { LearningGroupForm } from "@/components/forms/LearningGroupForm";
-import { LearningGroupDetail } from "@/components/views/LearningGroupDetail";
 import { LearningGroup } from "@/types";
 import { useState } from "react";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, MapPin, Calendar, User } from "lucide-react";
@@ -317,7 +316,7 @@ const columns: Column<LearningGroup>[] = [
           <span>{value.length}/{row.maxStudents}</span>
         </div>
         <div className="text-xs text-gray-500">
-          {value.filter(s => s.paymentStatus === "paid").length} paid
+          {value.filter((s: any) => s.paymentStatus === "paid").length} paid
         </div>
       </div>
     ),
@@ -354,24 +353,19 @@ const columns: Column<LearningGroup>[] = [
 ];
 
 export default function LearningGroupsPage() {
+  const router = useRouter();
   const [data, setData] = useState<LearningGroup[]>(sampleLearningGroups);
   const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<LearningGroup | undefined>(undefined);
-  const [selectedGroup, setSelectedGroup] = useState<LearningGroup | undefined>(undefined);
 
   const handleRowAction = (action: string, row: LearningGroup) => {
     console.log(`${action} action for learning group:`, row);
     
     switch (action) {
       case "view":
-        setSelectedGroup(row);
-        setShowDetail(true);
+        router.push(`/learning-groups/${row.id}`);
         break;
       case "edit":
-        setEditingGroup(row);
-        setShowForm(true);
+        router.push(`/learning-groups/${row.id}/edit`);
         break;
       case "delete":
         if (confirm(`Are you sure you want to delete ${row.name}?`)) {
@@ -414,73 +408,7 @@ export default function LearningGroupsPage() {
   };
 
   const handleAddGroup = () => {
-    setEditingGroup(undefined);
-    setShowForm(true);
-  };
-
-  const handleFormSubmit = (groupData: Omit<LearningGroup, "id" | "createdAt" | "updatedAt">) => {
-    if (editingGroup) {
-      // Update existing group
-      setData(prev => prev.map(group =>
-        group.id === editingGroup.id
-          ? { ...group, ...groupData, updatedAt: new Date() }
-          : group
-      ));
-    } else {
-      // Add new group
-      const newGroup: LearningGroup = {
-        ...groupData,
-        id: `group_${Date.now()}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setData(prev => [...prev, newGroup]);
-    }
-    setShowForm(false);
-    setEditingGroup(undefined);
-  };
-
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingGroup(undefined);
-  };
-
-  const handleDetailClose = () => {
-    setShowDetail(false);
-    setSelectedGroup(undefined);
-  };
-
-  const handleUpdateStudent = (studentId: string, updates: any) => {
-    if (!selectedGroup) return;
-    
-    setData(prev => prev.map(group => {
-      if (group.id === selectedGroup.id) {
-        return {
-          ...group,
-          students: group.students.map(student => 
-            student.studentId === studentId ? { ...student, ...updates } : student
-          ),
-          updatedAt: new Date(),
-        };
-      }
-      return group;
-    }));
-  };
-
-  const handleRemoveStudent = (studentId: string) => {
-    if (!selectedGroup) return;
-    
-    setData(prev => prev.map(group => {
-      if (group.id === selectedGroup.id) {
-        return {
-          ...group,
-          students: group.students.filter(student => student.studentId !== studentId),
-          studentIds: group.studentIds.filter(id => id !== studentId),
-          updatedAt: new Date(),
-        };
-      }
-      return group;
-    }));
+    router.push("/learning-groups/new");
   };
 
   return (
@@ -519,26 +447,6 @@ export default function LearningGroupsPage() {
           />
         </div>
       </div>
-
-      {/* Learning Group Form Modal */}
-      {showForm && (
-        <LearningGroupForm
-          learningGroup={editingGroup}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-          loading={loading}
-        />
-      )}
-
-      {/* Learning Group Detail Modal */}
-      {showDetail && selectedGroup && (
-        <LearningGroupDetail
-          learningGroup={selectedGroup}
-          onClose={handleDetailClose}
-          onUpdateStudent={handleUpdateStudent}
-          onRemoveStudent={handleRemoveStudent}
-        />
-      )}
     </DashboardLayout>
   );
 }
