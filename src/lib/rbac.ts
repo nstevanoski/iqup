@@ -96,6 +96,124 @@ export const navigationItems: NavigationItem[] = [
   },
 ];
 
+// Role-based navigation rules with scoping
+export interface NavigationRule {
+  role: Role;
+  allowedRoutes: string[];
+  scopedRoutes?: {
+    [route: string]: {
+      scope: Role[];
+      description: string;
+    };
+  };
+}
+
+export const navigationRules: NavigationRule[] = [
+  {
+    role: "HQ",
+    allowedRoutes: [
+      "/dashboard",
+      "/programs",
+      "/subprograms",
+      "/contacts/students",
+      "/contacts/teachers",
+      "/learning-groups",
+      "/orders",
+      "/trainings",
+      "/teacher-trainers",
+      "/accounts",
+      "/reports/royalties",
+      "/reports/students",
+      "/settings",
+    ],
+  },
+  {
+    role: "MF",
+    allowedRoutes: [
+      "/dashboard",
+      "/programs",
+      "/subprograms",
+      "/contacts/students",
+      "/contacts/teachers",
+      "/learning-groups",
+      "/orders",
+      "/trainings",
+      "/teacher-trainers",
+      "/accounts",
+      "/reports/royalties",
+      "/reports/students",
+      "/settings",
+    ],
+    scopedRoutes: {
+      "/programs": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+      "/contacts/students": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+      "/contacts/teachers": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+      "/learning-groups": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+      "/orders": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+      "/trainings": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+      "/reports/students": {
+        scope: ["MF"],
+        description: "Scoped to MF regions",
+      },
+    },
+  },
+  {
+    role: "LC",
+    allowedRoutes: [
+      "/dashboard",
+      "/contacts/students",
+      "/contacts/teachers",
+      "/learning-groups",
+      "/orders",
+      "/reports/students",
+      "/trainings",
+      "/settings",
+    ],
+    scopedRoutes: {
+      "/orders": {
+        scope: ["MF"],
+        description: "Orders routed to MF for processing",
+      },
+      "/trainings": {
+        scope: ["LC"],
+        description: "View-only access to trainings",
+      },
+    },
+  },
+  {
+    role: "TT",
+    allowedRoutes: [
+      "/dashboard",
+      "/trainings",
+      "/settings",
+    ],
+    scopedRoutes: {
+      "/trainings": {
+        scope: ["TT"],
+        description: "Training management only",
+      },
+    },
+  },
+];
+
 // Helper function to check if user has access to a route
 export function hasAccess(userRole: Role, requiredRoles: Role[]): boolean {
   return requiredRoles.includes(userRole);
@@ -104,6 +222,32 @@ export function hasAccess(userRole: Role, requiredRoles: Role[]): boolean {
 // Helper function to get navigation items for a specific role
 export function getNavigationForRole(role: Role): NavigationItem[] {
   return navigationItems.filter(item => hasAccess(role, item.roles));
+}
+
+// Helper function to get navigation items based on new role-based rules
+export function getNavigationForRoleWithRules(role: Role): NavigationItem[] {
+  const rule = navigationRules.find(r => r.role === role);
+  if (!rule) return [];
+  
+  return navigationItems.filter(item => 
+    rule.allowedRoutes.includes(item.href)
+  );
+}
+
+// Helper function to check if a route is scoped for a role
+export function isRouteScoped(role: Role, route: string): boolean {
+  const rule = navigationRules.find(r => r.role === role);
+  if (!rule || !rule.scopedRoutes) return false;
+  
+  return route in rule.scopedRoutes;
+}
+
+// Helper function to get scope information for a route
+export function getRouteScope(role: Role, route: string) {
+  const rule = navigationRules.find(r => r.role === role);
+  if (!rule || !rule.scopedRoutes) return null;
+  
+  return rule.scopedRoutes[route] || null;
 }
 
 // Role hierarchy for permissions

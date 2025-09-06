@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser, useAuthActions } from "@/store/auth";
+import { useUser, useSelectedScope, useAuthActions } from "@/store/auth";
 import { Bell, Search, User, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 
@@ -10,6 +10,7 @@ interface TopbarProps {
 
 export function Topbar({ className }: TopbarProps) {
   const user = useUser();
+  const selectedScope = useSelectedScope();
   const { logout } = useAuthActions();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -55,6 +56,9 @@ export function Topbar({ className }: TopbarProps) {
             <div className="hidden md:block text-left">
               <p className="font-medium text-gray-900">{user.name}</p>
               <p className="text-xs text-gray-500">{user.role}</p>
+              {selectedScope && (
+                <p className="text-xs text-blue-600 font-medium">{selectedScope.name}</p>
+              )}
             </div>
             <User className="h-4 w-4 text-gray-400" />
           </button>

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/store/auth";
-import { getNavigationForRole } from "@/lib/rbac";
+import { useUser, useSelectedScope } from "@/store/auth";
+import { getNavigationForRoleWithRules } from "@/lib/rbac";
 import {
   LayoutDashboard,
   BookOpen,
@@ -46,6 +46,7 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const user = useUser();
+  const selectedScope = useSelectedScope();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -53,7 +54,7 @@ export function Sidebar({ className }: SidebarProps) {
     return null;
   }
 
-  const navigationItems = getNavigationForRole(user.role);
+  const navigationItems = getNavigationForRoleWithRules(user.role);
 
   return (
     <div
@@ -121,6 +122,11 @@ export function Sidebar({ className }: SidebarProps) {
                 {user.name}
               </p>
               <p className="text-xs text-gray-500 truncate">{user.role}</p>
+              {selectedScope && (
+                <p className="text-xs text-blue-600 truncate font-medium">
+                  {selectedScope.name}
+                </p>
+              )}
             </div>
           </div>
         </div>
