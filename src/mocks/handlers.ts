@@ -31,6 +31,10 @@ import {
   RoleBasedDashboard,
   DashboardMetrics,
   DashboardActivity,
+  AuthUser,
+  LoginCredentials,
+  LoginResponse,
+  AuthSession,
 } from "@/types";
 
 // Helper function to create API response
@@ -2154,6 +2158,250 @@ const studentReportHandlers = [
   }),
 ];
 
+// Authentication Handlers
+const authHandlers = [
+  // Login endpoint
+  http.post("/api/auth/login", async ({ request }) => {
+    try {
+      const credentials = await request.json() as LoginCredentials;
+      const response = db.authenticateUser(credentials);
+      
+      if (response.success && response.user && response.token) {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            user: response.user,
+            token: response.token,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          },
+          message: response.message,
+        });
+      } else {
+        return HttpResponse.json({
+          success: false,
+          error: response.error,
+        }, { status: 401 });
+      }
+    } catch (error) {
+      return HttpResponse.json({
+        success: false,
+        error: "Invalid request format",
+      }, { status: 400 });
+    }
+  }),
+
+  // Get current user
+  http.get("/api/auth/me", ({ request }) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({
+        success: false,
+        error: "No authentication token provided",
+      }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    // In a real app, you'd validate the JWT token here
+    // For now, we'll extract user ID from the mock token
+    const userId = token.split("_")[2]; // mock_token_userId_timestamp
+    const user = db.getUserById(userId);
+    
+    if (!user) {
+      return HttpResponse.json({
+        success: false,
+        error: "Invalid token",
+      }, { status: 401 });
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: user,
+    });
+  }),
+
+  // Logout endpoint
+  http.post("/api/auth/logout", () => {
+    return HttpResponse.json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  }),
+
+  // Get all users (HQ only)
+  http.get("/api/auth/users", ({ request }) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({
+        success: false,
+        error: "No authentication token provided",
+      }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const userId = token.split("_")[2];
+    const user = db.getUserById(userId);
+    
+    if (!user || user.role !== "HQ") {
+      return HttpResponse.json({
+        success: false,
+        error: "Insufficient permissions",
+      }, { status: 403 });
+    }
+
+    const users = db.getAllUsers();
+    return HttpResponse.json({
+      success: true,
+      data: users,
+    });
+  }),
+
+  // Get users by role
+  http.get("/api/auth/users/role/:role", ({ params, request }) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({
+        success: false,
+        error: "No authentication token provided",
+      }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const userId = token.split("_")[2];
+    const user = db.getUserById(userId);
+    
+    if (!user || (user.role !== "HQ" && user.role !== "MF")) {
+      return HttpResponse.json({
+        success: false,
+        error: "Insufficient permissions",
+      }, { status: 403 });
+    }
+
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const users = db.getUsersByRole(role);
+    return HttpResponse.json({
+      success: true,
+      data: users,
+    });
+  }),
+
+  // Create new user (HQ only)
+  http.post("/api/auth/users", async ({ request }) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({
+        success: false,
+        error: "No authentication token provided",
+      }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const userId = token.split("_")[2];
+    const user = db.getUserById(userId);
+    
+    if (!user || user.role !== "HQ") {
+      return HttpResponse.json({
+        success: false,
+        error: "Insufficient permissions",
+      }, { status: 403 });
+    }
+
+    try {
+      const userData = await request.json() as Omit<AuthUser, "id" | "createdAt" | "updatedAt">;
+      const newUser = db.createUser(userData);
+      return HttpResponse.json({
+        success: true,
+        data: newUser,
+        message: "User created successfully",
+      }, { status: 201 });
+    } catch (error) {
+      return HttpResponse.json({
+        success: false,
+        error: "Invalid user data",
+      }, { status: 400 });
+    }
+  }),
+
+  // Update user
+  http.put("/api/auth/users/:id", async ({ params, request }) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({
+        success: false,
+        error: "No authentication token provided",
+      }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const userId = token.split("_")[2];
+    const user = db.getUserById(userId);
+    
+    if (!user || (user.role !== "HQ" && user.id !== params.id)) {
+      return HttpResponse.json({
+        success: false,
+        error: "Insufficient permissions",
+      }, { status: 403 });
+    }
+
+    try {
+      const updates = await request.json() as Partial<Omit<AuthUser, "id" | "createdAt">>;
+      const updatedUser = db.updateUser(params.id as string, updates);
+      
+      if (!updatedUser) {
+        return HttpResponse.json({
+          success: false,
+          error: "User not found",
+        }, { status: 404 });
+      }
+
+      return HttpResponse.json({
+        success: true,
+        data: updatedUser,
+        message: "User updated successfully",
+      });
+    } catch (error) {
+      return HttpResponse.json({
+        success: false,
+        error: "Invalid user data",
+      }, { status: 400 });
+    }
+  }),
+
+  // Delete user (HQ only)
+  http.delete("/api/auth/users/:id", ({ params, request }) => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return HttpResponse.json({
+        success: false,
+        error: "No authentication token provided",
+      }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const userId = token.split("_")[2];
+    const user = db.getUserById(userId);
+    
+    if (!user || user.role !== "HQ") {
+      return HttpResponse.json({
+        success: false,
+        error: "Insufficient permissions",
+      }, { status: 403 });
+    }
+
+    const success = db.deleteUser(params.id as string);
+    if (!success) {
+      return HttpResponse.json({
+        success: false,
+        error: "User not found",
+      }, { status: 404 });
+    }
+
+    return HttpResponse.json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  }),
+];
+
 // Dashboard Handlers
 const dashboardHandlers = [
   http.get("/api/dashboard/:role", ({ params }) => {
@@ -2202,6 +2450,7 @@ const dashboardHandlers = [
 ];
 
 export const handlers = [
+  ...authHandlers,
   ...programHandlers,
   ...subProgramHandlers,
   ...studentHandlers,

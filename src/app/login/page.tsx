@@ -1,153 +1,218 @@
 "use client";
 
-import { useAuthActions, getScopesForRole, AuthScope } from "@/store/auth";
+import { useAuthActions, useIsLoading, useAuthError } from "@/store/auth";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { Role } from "@/lib/rbac";
+import { useState } from "react";
+import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Building, GraduationCap, Users } from "lucide-react";
 
 export default function LoginPage() {
-  const { mockLogin } = useAuthActions();
+  const { authenticate, mockLogin } = useAuthActions();
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<Role>("HQ");
-  const [selectedScope, setSelectedScope] = useState<AuthScope | null>(null);
-  const [availableScopes, setAvailableScopes] = useState<AuthScope[]>([]);
+  const isLoading = useIsLoading();
+  const error = useAuthError();
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState<"email" | "demo">("email");
 
-  // Update available scopes when role changes
-  useEffect(() => {
-    const scopes = getScopesForRole(selectedRole);
-    setAvailableScopes(scopes);
-    setSelectedScope(scopes[0] || null);
-  }, [selectedRole]);
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      return;
+    }
 
-  const handleLogin = () => {
-    if (selectedScope) {
-      mockLogin(selectedRole, selectedScope.id);
+    const response = await authenticate({ email, password });
+    
+    if (response.success) {
       router.push("/dashboard");
     }
   };
 
-  const roles: { value: Role; label: string; description: string; color: string }[] = [
-    { value: "HQ", label: "HQ Admin", description: "Full system access across all regions", color: "bg-red-50 border-red-200 text-red-700" },
-    { value: "MF", label: "MF Manager", description: "Management functions for assigned regions", color: "bg-blue-50 border-blue-200 text-blue-700" },
-    { value: "LC", label: "LC Coordinator", description: "Local learning center operations", color: "bg-green-50 border-green-200 text-green-700" },
-    { value: "TT", label: "Teacher Trainer", description: "Training and development functions", color: "bg-purple-50 border-purple-200 text-purple-700" },
+  const handleDemoLogin = (role: "HQ" | "MF" | "LC" | "TT") => {
+    mockLogin(role);
+    router.push("/dashboard");
+  };
+
+  const demoUsers = [
+    {
+      role: "HQ" as const,
+      email: "admin@iqup.com",
+      password: "admin123",
+      name: "HQ Administrator",
+      description: "Full system access across all regions",
+      icon: Building,
+      color: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
+    },
+    {
+      role: "MF" as const,
+      email: "mf.region1@iqup.com",
+      password: "mf123",
+      name: "Region 1 Manager",
+      description: "Management functions for assigned regions",
+      icon: Building,
+      color: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100",
+    },
+    {
+      role: "LC" as const,
+      email: "lc.nyc@iqup.com",
+      password: "lc123",
+      name: "NYC Learning Center Coordinator",
+      description: "Local learning center operations",
+      icon: Users,
+      color: "bg-green-50 border-green-200 text-green-700 hover:bg-green-100",
+    },
+    {
+      role: "TT" as const,
+      email: "tt.trainer1@iqup.com",
+      password: "tt123",
+      name: "Senior Teacher Trainer",
+      description: "Training and development functions",
+      icon: GraduationCap,
+      color: "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
+    },
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Sign in to iQuP
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Select your role and organizational scope to access the system
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome</h1>
+          <p className="text-sm text-gray-600 font-mono">
+            Login to your account or try a demo
           </p>
         </div>
 
-        <div className="mt-8 space-y-8">
-          {/* Role Selection */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Select Role</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {roles.map((role) => (
-                <label
-                  key={role.value}
-                  className={`relative flex cursor-pointer rounded-lg p-4 border-2 transition-all duration-200 ${
-                    selectedRole === role.value
-                      ? `${role.color} border-current`
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={role.value}
-                    checked={selectedRole === role.value}
-                    onChange={(e) => setSelectedRole(e.target.value as Role)}
-                    className="sr-only"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">{role.label}</div>
-                    <div className="text-sm opacity-75 mt-1">{role.description}</div>
-                  </div>
-                  {selectedRole === role.value && (
-                    <div className="absolute top-4 right-4">
-                      <div className="h-4 w-4 rounded-full bg-current"></div>
-                    </div>
-                  )}
-                </label>
-              ))}
-            </div>
-          </div>
+        {/* Login Mode Toggle */}
+        <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setLoginMode("email")}
+            className={`flex-1 py-2 px-4 text-sm font-mono rounded-md transition-colors ${
+              loginMode === "email"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Login
+          </button>
+          <button
+            onClick={() => setLoginMode("demo")}
+            className={`flex-1 py-2 px-4 text-sm font-mono rounded-md transition-colors ${
+              loginMode === "demo"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Demo
+          </button>
+        </div>
 
-          {/* Scope Selection */}
-          {availableScopes.length > 0 && (
+        {loginMode === "email" ? (
+          /* Email/Password Login Form */
+          <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Scope</h3>
-              <div className="space-y-3">
-                {availableScopes.map((scope) => (
-                  <label
-                    key={scope.id}
-                    className={`relative flex cursor-pointer rounded-lg p-4 border-2 transition-colors ${
-                      selectedScope?.id === scope.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="scope"
-                      value={scope.id}
-                      checked={selectedScope?.id === scope.id}
-                      onChange={() => setSelectedScope(scope)}
-                      className="sr-only"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{scope.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">{scope.description}</div>
-                    </div>
-                    {selectedScope?.id === scope.id && (
-                      <div className="absolute top-4 right-4">
-                        <div className="h-4 w-4 rounded-full bg-blue-500"></div>
-                      </div>
-                    )}
-                  </label>
-                ))}
+              <label htmlFor="email" className="block text-sm font-mono text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="m@example.com"
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="password" className="block text-sm font-mono text-gray-700">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  className="text-sm font-mono text-blue-600 hover:text-blue-800"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
-          )}
 
-          {/* Login Button */}
-          <div className="pt-4">
+            {error && (
+              <div className="rounded-md bg-red-50 p-3">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div className="ml-2">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button
-              onClick={handleLogin}
-              disabled={!selectedScope}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              type="submit"
+              disabled={isLoading || !email || !password}
+              className="w-full bg-gray-900 text-white py-2 px-4 rounded-md text-sm font-mono hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              {selectedScope ? "Sign in" : "Select a scope to continue"}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Signing in...
+                </div>
+              ) : (
+                "Login"
+              )}
             </button>
+          </form>
+        ) : (
+          /* Demo Accounts */
+          <div className="space-y-3">
+            {demoUsers.map((user) => {
+              const IconComponent = user.icon;
+              return (
+                <button
+                  key={user.role}
+                  onClick={() => handleDemoLogin(user.role)}
+                  className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-md text-sm font-mono hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors flex items-center justify-center"
+                >
+                  <IconComponent className="h-4 w-4 mr-2" />
+                  {user.name}
+                </button>
+              );
+            })}
           </div>
-
-          {/* Role Information */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Role Permissions</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              {selectedRole === "HQ" && (
-                <p>• Full system access across all regions and functions</p>
-              )}
-              {selectedRole === "MF" && (
-                <p>• Management functions for assigned regions</p>
-              )}
-              {selectedRole === "LC" && (
-                <p>• Learning center operations, student management, and local reporting</p>
-              )}
-              {selectedRole === "TT" && (
-                <p>• Training sessions, teacher development, and training materials</p>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

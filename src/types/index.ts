@@ -933,3 +933,38 @@ export interface RoleBasedDashboard {
     color: string;
   }[];
 }
+
+// Authentication Types
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: "HQ" | "MF" | "LC" | "TT";
+  password: string; // In real app, this would be hashed
+  isActive: boolean;
+  lastLogin?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  scopeId?: string; // Associated scope/center ID
+  permissions?: string[];
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  user?: AuthUser;
+  token?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  token: string;
+  expiresAt: Date;
+  scopeId?: string;
+}

@@ -28,6 +28,10 @@ import {
   RoleBasedDashboard,
   DashboardMetrics,
   DashboardActivity,
+  AuthUser,
+  LoginCredentials,
+  LoginResponse,
+  AuthSession,
 } from "@/types";
 import { Role } from "@/lib/rbac";
 
@@ -2344,6 +2348,148 @@ export const genericReportConfigs: GenericReportConfig[] = [
   },
 ];
 
+// Authentication Data
+export const authUsers: AuthUser[] = [
+  // HQ Users
+  {
+    id: "user_hq_1",
+    email: "admin@iqup.com",
+    name: "HQ Administrator",
+    role: "HQ",
+    password: "admin123", // In real app, this would be hashed
+    isActive: true,
+    lastLogin: new Date("2024-01-20T08:00:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-20"),
+    scopeId: "hq_global",
+    permissions: ["*"], // All permissions
+  },
+  {
+    id: "user_hq_2",
+    email: "hq.manager@iqup.com",
+    name: "HQ Manager",
+    role: "HQ",
+    password: "hq123",
+    isActive: true,
+    lastLogin: new Date("2024-01-19T16:30:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-19"),
+    scopeId: "hq_north_america",
+    permissions: ["programs:read", "programs:write", "reports:read", "accounts:read"],
+  },
+
+  // MF Users
+  {
+    id: "user_mf_1",
+    email: "mf.region1@iqup.com",
+    name: "Region 1 Manager",
+    role: "MF",
+    password: "mf123",
+    isActive: true,
+    lastLogin: new Date("2024-01-20T09:15:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-20"),
+    scopeId: "mf_region_1",
+    permissions: ["subprograms:read", "subprograms:write", "orders:read", "orders:write", "trainings:read", "trainings:write"],
+  },
+  {
+    id: "user_mf_2",
+    email: "mf.region2@iqup.com",
+    name: "Region 2 Manager",
+    role: "MF",
+    password: "mf123",
+    isActive: true,
+    lastLogin: new Date("2024-01-19T14:20:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-19"),
+    scopeId: "mf_region_2",
+    permissions: ["subprograms:read", "subprograms:write", "orders:read", "orders:write", "trainings:read", "trainings:write"],
+  },
+
+  // LC Users
+  {
+    id: "user_lc_1",
+    email: "lc.nyc@iqup.com",
+    name: "NYC Learning Center Coordinator",
+    role: "LC",
+    password: "lc123",
+    isActive: true,
+    lastLogin: new Date("2024-01-20T10:45:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-20"),
+    scopeId: "lc_center_nyc",
+    permissions: ["students:read", "students:write", "learning-groups:read", "learning-groups:write", "orders:read"],
+  },
+  {
+    id: "user_lc_2",
+    email: "lc.la@iqup.com",
+    name: "LA Learning Center Coordinator",
+    role: "LC",
+    password: "lc123",
+    isActive: true,
+    lastLogin: new Date("2024-01-19T15:30:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-19"),
+    scopeId: "lc_center_la",
+    permissions: ["students:read", "students:write", "learning-groups:read", "learning-groups:write", "orders:read"],
+  },
+  {
+    id: "user_lc_3",
+    email: "lc.chicago@iqup.com",
+    name: "Chicago Learning Center Coordinator",
+    role: "LC",
+    password: "lc123",
+    isActive: true,
+    lastLogin: new Date("2024-01-18T11:20:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-18"),
+    scopeId: "lc_center_chicago",
+    permissions: ["students:read", "students:write", "learning-groups:read", "learning-groups:write", "orders:read"],
+  },
+
+  // TT Users
+  {
+    id: "user_tt_1",
+    email: "tt.trainer1@iqup.com",
+    name: "Senior Teacher Trainer",
+    role: "TT",
+    password: "tt123",
+    isActive: true,
+    lastLogin: new Date("2024-01-20T13:15:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-20"),
+    scopeId: "tt_training_center",
+    permissions: ["trainings:read", "trainings:write", "teachers:read", "certificates:write"],
+  },
+  {
+    id: "user_tt_2",
+    email: "tt.online@iqup.com",
+    name: "Online Training Specialist",
+    role: "TT",
+    password: "tt123",
+    isActive: true,
+    lastLogin: new Date("2024-01-19T16:45:00"),
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-19"),
+    scopeId: "tt_online_platform",
+    permissions: ["trainings:read", "trainings:write", "teachers:read", "certificates:write"],
+  },
+
+  // Inactive user for testing
+  {
+    id: "user_inactive",
+    email: "inactive@iqup.com",
+    name: "Inactive User",
+    role: "LC",
+    password: "inactive123",
+    isActive: false,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+    scopeId: "lc_center_nyc",
+    permissions: [],
+  },
+];
+
 // Dashboard Data
 export const dashboardData: Record<string, RoleBasedDashboard> = {
   HQ: {
@@ -3675,6 +3821,110 @@ export class MockDatabase {
       ...activity,
       id: `act_${Date.now()}`,
     };
+  }
+
+  // Authentication Methods
+  authenticateUser(credentials: LoginCredentials): LoginResponse {
+    const user = authUsers.find(u => u.email === credentials.email);
+    
+    if (!user) {
+      return {
+        success: false,
+        error: "Invalid email or password",
+      };
+    }
+
+    if (!user.isActive) {
+      return {
+        success: false,
+        error: "Account is deactivated. Please contact support.",
+      };
+    }
+
+    if (user.password !== credentials.password) {
+      return {
+        success: false,
+        error: "Invalid email or password",
+      };
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    user.updatedAt = new Date();
+
+    // Generate a mock token (in real app, this would be a JWT)
+    const token = `mock_token_${user.id}_${Date.now()}`;
+
+    return {
+      success: true,
+      user: {
+        ...user,
+        password: "", // Don't return password in response
+      },
+      token,
+      message: "Login successful",
+    };
+  }
+
+  getUserByEmail(email: string): AuthUser | null {
+    const user = authUsers.find(u => u.email === email);
+    return user ? { ...user, password: "" } : null;
+  }
+
+  getUserById(id: string): AuthUser | null {
+    const user = authUsers.find(u => u.id === id);
+    return user ? { ...user, password: "" } : null;
+  }
+
+  updateUserLastLogin(userId: string): boolean {
+    const user = authUsers.find(u => u.id === userId);
+    if (user) {
+      user.lastLogin = new Date();
+      user.updatedAt = new Date();
+      return true;
+    }
+    return false;
+  }
+
+  getAllUsers(): AuthUser[] {
+    return authUsers.map(user => ({ ...user, password: "" }));
+  }
+
+  getUsersByRole(role: "HQ" | "MF" | "LC" | "TT"): AuthUser[] {
+    return authUsers
+      .filter(user => user.role === role)
+      .map(user => ({ ...user, password: "" }));
+  }
+
+  createUser(userData: Omit<AuthUser, "id" | "createdAt" | "updatedAt">): AuthUser {
+    const newUser: AuthUser = {
+      ...userData,
+      id: generateId("user"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    authUsers.push(newUser);
+    return { ...newUser, password: "" };
+  }
+
+  updateUser(id: string, updates: Partial<Omit<AuthUser, "id" | "createdAt">>): AuthUser | null {
+    const userIndex = authUsers.findIndex(u => u.id === id);
+    if (userIndex === -1) return null;
+
+    authUsers[userIndex] = {
+      ...authUsers[userIndex],
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    return { ...authUsers[userIndex], password: "" };
+  }
+
+  deleteUser(id: string): boolean {
+    const userIndex = authUsers.findIndex(u => u.id === id);
+    if (userIndex === -1) return false;
+    authUsers.splice(userIndex, 1);
+    return true;
   }
 }
 

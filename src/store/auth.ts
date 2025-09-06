@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User, Role } from "@/lib/rbac";
+import { AuthUser, LoginCredentials, LoginResponse } from "@/types";
 
 export interface AuthScope {
   id: string;
@@ -13,14 +14,21 @@ export interface AuthScope {
 
 interface AuthState {
   user: User | null;
+  authUser: AuthUser | null;
+  token: string | null;
   selectedAccount: string | null;
   selectedScope: AuthScope | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
   login: (user: User, scope?: AuthScope) => void;
+  authenticate: (credentials: LoginCredentials) => Promise<LoginResponse>;
   logout: () => void;
   setSelectedAccount: (accountId: string) => void;
   setSelectedScope: (scope: AuthScope) => void;
   mockLogin: (role: Role, scopeId?: string) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
 }
 
 // Mock users for different roles
@@ -120,24 +128,101 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      authUser: null,
+      token: null,
       selectedAccount: null,
       selectedScope: null,
       isAuthenticated: false,
+      isLoading: false,
+      error: null,
 
       login: (user: User, scope?: AuthScope) => {
         set({
           user,
           selectedScope: scope || null,
           isAuthenticated: true,
+          error: null,
         });
+      },
+
+      authenticate: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(credentials),
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.data) {
+            const { user: authUser, token } = data.data;
+            
+            // Convert AuthUser to User for compatibility
+            const user: User = {
+              id: authUser.id,
+              name: authUser.name,
+              role: authUser.role,
+              email: authUser.email,
+            };
+
+            // Find the appropriate scope
+            const scope = authUser.scopeId 
+              ? mockScopes.find(s => s.id === authUser.scopeId)
+              : mockScopes.find(s => s.type === authUser.role);
+
+            set({
+              user,
+              authUser,
+              token,
+              selectedScope: scope || null,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+
+            return {
+              success: true,
+              user: authUser,
+              token,
+              message: data.message,
+            };
+          } else {
+            set({
+              isLoading: false,
+              error: data.error || "Login failed",
+            });
+            return {
+              success: false,
+              error: data.error || "Login failed",
+            };
+          }
+        } catch (error) {
+          const errorMessage = "Network error. Please try again.";
+          set({
+            isLoading: false,
+            error: errorMessage,
+          });
+          return {
+            success: false,
+            error: errorMessage,
+          };
+        }
       },
 
       logout: () => {
         set({
           user: null,
+          authUser: null,
+          token: null,
           selectedAccount: null,
           selectedScope: null,
           isAuthenticated: false,
+          error: null,
         });
       },
 
@@ -157,13 +242,24 @@ export const useAuthStore = create<AuthState>()(
           user,
           selectedScope: scope || null,
           isAuthenticated: true,
+          error: null,
         });
+      },
+
+      setLoading: (loading: boolean) => {
+        set({ isLoading: loading });
+      },
+
+      setError: (error: string | null) => {
+        set({ error });
       },
     }),
     {
       name: "auth-storage",
       partialize: (state) => ({
         user: state.user,
+        authUser: state.authUser,
+        token: state.token,
         selectedAccount: state.selectedAccount,
         selectedScope: state.selectedScope,
         isAuthenticated: state.isAuthenticated,
@@ -174,31 +270,44 @@ export const useAuthStore = create<AuthState>()(
 
 // Selectors for easier access
 export const useUser = () => useAuthStore((state) => state.user);
+export const useAuthUser = () => useAuthStore((state) => state.authUser);
+export const useToken = () => useAuthStore((state) => state.token);
 export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
+export const useIsLoading = () => useAuthStore((state) => state.isLoading);
+export const useAuthError = () => useAuthStore((state) => state.error);
 export const useSelectedAccount = () => useAuthStore((state) => state.selectedAccount);
 export const useSelectedScope = () => useAuthStore((state) => state.selectedScope);
 
 // Individual action selectors to avoid object recreation
 export const useLogin = () => useAuthStore((state) => state.login);
+export const useAuthenticate = () => useAuthStore((state) => state.authenticate);
 export const useLogout = () => useAuthStore((state) => state.logout);
 export const useSetSelectedAccount = () => useAuthStore((state) => state.setSelectedAccount);
 export const useSetSelectedScope = () => useAuthStore((state) => state.setSelectedScope);
 export const useMockLogin = () => useAuthStore((state) => state.mockLogin);
+export const useSetLoading = () => useAuthStore((state) => state.setLoading);
+export const useSetError = () => useAuthStore((state) => state.setError);
 
 // Combined actions selector - use individual hooks to avoid object recreation
 export const useAuthActions = () => {
   const login = useLogin();
+  const authenticate = useAuthenticate();
   const logout = useLogout();
   const setSelectedAccount = useSetSelectedAccount();
   const setSelectedScope = useSetSelectedScope();
   const mockLogin = useMockLogin();
+  const setLoading = useSetLoading();
+  const setError = useSetError();
   
   return {
     login,
+    authenticate,
     logout,
     setSelectedAccount,
     setSelectedScope,
     mockLogin,
+    setLoading,
+    setError,
   };
 };
 
