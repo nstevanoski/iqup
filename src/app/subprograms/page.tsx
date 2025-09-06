@@ -6,6 +6,7 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { SubProgram } from "@/types";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, CreditCard, Calendar } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
@@ -278,6 +279,7 @@ const getColumns = (userRole: string, canEdit: boolean): Column<SubProgram>[] =>
 };
 
 export default function SubProgramsPage() {
+  const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
   const [data, setData] = useState<SubProgram[]>(sampleSubPrograms);
@@ -313,11 +315,11 @@ export default function SubProgramsPage() {
     
     switch (action) {
       case "view":
-        alert(`Viewing subprogram: ${row.name}`);
+        router.push(`/subprograms/${row.id}`);
         break;
       case "edit":
         if (canEdit) {
-          alert(`Editing subprogram: ${row.name}`);
+          router.push(`/subprograms/${row.id}/edit`);
         } else {
           alert("You don't have permission to edit subprograms");
         }
@@ -400,7 +402,10 @@ export default function SubProgramsPage() {
             </p>
           </div>
           {canEdit && (
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => router.push("/subprograms/new")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add SubProgram
             </button>

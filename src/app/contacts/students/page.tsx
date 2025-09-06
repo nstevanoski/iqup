@@ -3,10 +3,14 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { useState } from "react";
+import { useUser } from "@/store/auth";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Eye, Edit, Trash2, DollarSign, Award } from "lucide-react";
+import { Student } from "@/types";
 
-// Student data type
-interface Student {
+// Student list item type for display
+interface StudentListItem {
   id: string;
   firstName: string;
   lastName: string;
@@ -20,7 +24,7 @@ interface Student {
 }
 
 // Sample data - in a real app, this would come from an API
-const sampleStudents: Student[] = [
+const sampleStudents: StudentListItem[] = [
   {
     id: "1",
     firstName: "John",
@@ -83,8 +87,24 @@ const sampleStudents: Student[] = [
   },
 ];
 
+// Helper function to convert Student to StudentListItem
+const convertStudentToListItem = (student: Student): StudentListItem => {
+  return {
+    id: student.id,
+    firstName: student.firstName,
+    lastName: student.lastName,
+    email: student.email,
+    phone: student.phone || "N/A",
+    program: (student.programIds && student.programIds.length > 0) ? student.programIds[0] : "N/A", // Simplified - just show first program
+    status: student.status as "active" | "inactive" | "graduated" | "suspended",
+    enrollmentDate: student.enrollmentDate?.toLocaleDateString() || "N/A",
+    progress: Math.floor(Math.random() * 100), // Placeholder - would come from API
+    lastActivity: student.updatedAt?.toLocaleDateString() || "N/A",
+  };
+};
+
 // Column definitions
-const columns: Column<Student>[] = [
+const columns: Column<StudentListItem>[] = [
   {
     key: "name",
     label: "Name",
@@ -162,17 +182,51 @@ const columns: Column<Student>[] = [
 ];
 
 export default function StudentsPage() {
-  const [data, setData] = useState<Student[]>(sampleStudents);
+  const router = useRouter();
+  const user = useUser();
+  const [data, setData] = useState<StudentListItem[]>(sampleStudents);
+  const [loading, setLoading] = useState(true);
 
-  const handleRowAction = (action: string, row: Student) => {
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/students");
+        if (response.ok) {
+          const result = await response.json();
+          const students: Student[] = result.data || [];
+          setData(students.map(convertStudentToListItem));
+        } else {
+          // Fallback to sample data
+          setData(sampleStudents);
+        }
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        // Fallback to sample data
+        setData(sampleStudents);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  const handleRowAction = (action: string, row: StudentListItem) => {
     console.log(`${action} action for student:`, row);
     
     switch (action) {
       case "view":
-        alert(`Viewing student: ${row.firstName} ${row.lastName}`);
+        router.push(`/contacts/students/${row.id}`);
         break;
       case "edit":
-        alert(`Editing student: ${row.firstName} ${row.lastName}`);
+        router.push(`/contacts/students/${row.id}/edit`);
+        break;
+      case "payments":
+        router.push(`/contacts/students/${row.id}/payments`);
+        break;
+      case "certificates":
+        router.push(`/contacts/students/${row.id}/certificates`);
         break;
       case "delete":
         if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
@@ -182,7 +236,7 @@ export default function StudentsPage() {
     }
   };
 
-  const handleBulkAction = (action: string, rows: Student[]) => {
+  const handleBulkAction = (action: string, rows: StudentListItem[]) => {
     console.log(`${action} action for ${rows.length} students:`, rows);
     
     switch (action) {
@@ -195,7 +249,7 @@ export default function StudentsPage() {
     }
   };
 
-  const handleExport = (rows: Student[]) => {
+  const handleExport = (rows: StudentListItem[]) => {
     const exportColumns = [
       { key: "firstName", label: "First Name" },
       { key: "lastName", label: "Last Name" },
@@ -221,9 +275,15 @@ export default function StudentsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Students</h1>
             <p className="text-gray-600">Manage student contacts and information</p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Add Student
-          </button>
+          {(user?.role === "LC" || user?.role === "MF") && (
+            <button 
+              onClick={() => router.push("/contacts/students/new")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Student
+            </button>
+          )}
         </div>
         
         <div>

@@ -445,23 +445,12 @@ export const teacherHandlers = [
       teachers = teachers.filter(t => 
         t.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
         t.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        t.email.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        t.specialization.some(s => s.toLowerCase().includes(filters.search!.toLowerCase()))
+        t.email.toLowerCase().includes(filters.search!.toLowerCase())
       );
     }
     
     if (filters.status) {
       teachers = teachers.filter(t => t.status === filters.status);
-    }
-    
-    // Apply sorting
-    if (filters.sortBy) {
-      teachers.sort((a, b) => {
-        const aVal = (a as any)[filters.sortBy!];
-        const bVal = (b as any)[filters.sortBy!];
-        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-        return filters.sortOrder === "desc" ? -result : result;
-      });
     }
     
     const response = createPaginatedResponse(teachers, filters.page, filters.limit);
@@ -483,12 +472,12 @@ export const teacherHandlers = [
   // Create teacher
   http.post("/api/teachers", async ({ request }) => {
     try {
-      const teacherData = await request.json() as Omit<Teacher, "id" | "createdAt" | "updatedAt">;
-      const teacher = db.createTeacher(teacherData);
-      return HttpResponse.json(createResponse(teacher, "Teacher created successfully"));
+      const teacherData = await request.json() as any;
+      const newTeacher = db.createTeacher(teacherData);
+      return HttpResponse.json(createResponse(newTeacher, "Teacher created successfully"));
     } catch (error) {
       return HttpResponse.json(
-        { success: false, message: "Invalid request data" },
+        { success: false, message: "Failed to create teacher" },
         { status: 400 }
       );
     }
@@ -497,18 +486,21 @@ export const teacherHandlers = [
   // Update teacher
   http.put("/api/teachers/:id", async ({ params, request }) => {
     try {
-      const updates = await request.json() as Partial<Teacher>;
-      const teacher = db.updateTeacher(params.id as string, updates);
-      if (!teacher) {
+      const { id } = params;
+      const updates = await request.json() as any;
+      const updatedTeacher = db.updateTeacher(id as string, updates);
+      
+      if (!updatedTeacher) {
         return HttpResponse.json(
           { success: false, message: "Teacher not found" },
           { status: 404 }
         );
       }
-      return HttpResponse.json(createResponse(teacher, "Teacher updated successfully"));
+      
+      return HttpResponse.json(createResponse(updatedTeacher, "Teacher updated successfully"));
     } catch (error) {
       return HttpResponse.json(
-        { success: false, message: "Invalid request data" },
+        { success: false, message: "Failed to update teacher" },
         { status: 400 }
       );
     }
@@ -516,14 +508,237 @@ export const teacherHandlers = [
 
   // Delete teacher
   http.delete("/api/teachers/:id", ({ params }) => {
-    const success = db.deleteTeacher(params.id as string);
-    if (!success) {
+    const { id } = params;
+    const deleted = db.deleteTeacher(id as string);
+    
+    if (!deleted) {
       return HttpResponse.json(
         { success: false, message: "Teacher not found" },
         { status: 404 }
       );
     }
+    
     return HttpResponse.json(createResponse(null, "Teacher deleted successfully"));
+  }),
+];
+
+// Student Payments handlers
+export const paymentHandlers = [
+  // Get student payments
+  http.get("/api/students/:studentId/payments", ({ params }) => {
+    const { studentId } = params;
+    const payments = db.getStudentPayments(studentId as string);
+    return HttpResponse.json(createResponse(payments));
+  }),
+
+  // Get all payments
+  http.get("/api/payments", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let payments = db.getStudentPayments();
+    
+    // Apply filters
+    if (filters.status) {
+      payments = payments.filter(p => p.status === filters.status);
+    }
+    
+    const month = url.searchParams.get("month");
+    if (month) {
+      payments = payments.filter(p => p.month === month);
+    }
+    
+    if (filters.search) {
+      payments = payments.filter(p => 
+        p.learningGroupName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        p.reference?.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
+    return HttpResponse.json(createPaginatedResponse(
+      payments,
+      page,
+      limit
+    ));
+  }),
+
+  // Get payment by ID
+  http.get("/api/payments/:id", ({ params }) => {
+    const { id } = params;
+    const payment = db.getPaymentById(id as string);
+    
+    if (!payment) {
+      return HttpResponse.json(
+        { success: false, message: "Payment not found" },
+        { status: 404 }
+      );
+    }
+    
+    return HttpResponse.json(createResponse(payment));
+  }),
+
+  // Create payment
+  http.post("/api/payments", async ({ request }) => {
+    try {
+      const paymentData = await request.json() as any;
+      const newPayment = db.createPayment(paymentData);
+      return HttpResponse.json(createResponse(newPayment, "Payment created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Failed to create payment" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update payment
+  http.put("/api/payments/:id", async ({ params, request }) => {
+    try {
+      const { id } = params;
+      const updates = await request.json() as any;
+      const updatedPayment = db.updatePayment(id as string, updates);
+      
+      if (!updatedPayment) {
+        return HttpResponse.json(
+          { success: false, message: "Payment not found" },
+          { status: 404 }
+        );
+      }
+      
+      return HttpResponse.json(createResponse(updatedPayment, "Payment updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Failed to update payment" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Delete payment
+  http.delete("/api/payments/:id", ({ params }) => {
+    const { id } = params;
+    const deleted = db.deletePayment(id as string);
+    
+    if (!deleted) {
+      return HttpResponse.json(
+        { success: false, message: "Payment not found" },
+        { status: 404 }
+      );
+    }
+    
+    return HttpResponse.json(createResponse(null, "Payment deleted successfully"));
+  }),
+];
+
+// Student Certificates handlers
+export const certificateHandlers = [
+  // Get student certificates
+  http.get("/api/students/:studentId/certificates", ({ params }) => {
+    const { studentId } = params;
+    const certificates = db.getStudentCertificates(studentId as string);
+    return HttpResponse.json(createResponse(certificates));
+  }),
+
+  // Get all certificates
+  http.get("/api/certificates", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let certificates = db.getStudentCertificates();
+    
+    // Apply filters
+    if (filters.status) {
+      certificates = certificates.filter(c => c.status === filters.status);
+    }
+    
+    const programId = url.searchParams.get("programId");
+    if (programId) {
+      certificates = certificates.filter(c => c.programId === programId);
+    }
+    
+    if (filters.search) {
+      certificates = certificates.filter(c => 
+        c.programName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        c.certificateCode.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    const page = Number(filters.page) || 1;
+    const limit = Number(filters.limit) || 10;
+    return HttpResponse.json(createPaginatedResponse(
+      certificates,
+      page,
+      limit
+    ));
+  }),
+
+  // Get certificate by ID
+  http.get("/api/certificates/:id", ({ params }) => {
+    const { id } = params;
+    const certificate = db.getCertificateById(id as string);
+    
+    if (!certificate) {
+      return HttpResponse.json(
+        { success: false, message: "Certificate not found" },
+        { status: 404 }
+      );
+    }
+    
+    return HttpResponse.json(createResponse(certificate));
+  }),
+
+  // Create certificate
+  http.post("/api/certificates", async ({ request }) => {
+    try {
+      const certData = await request.json() as any;
+      const newCertificate = db.createCertificate(certData);
+      return HttpResponse.json(createResponse(newCertificate, "Certificate created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Failed to create certificate" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update certificate
+  http.put("/api/certificates/:id", async ({ params, request }) => {
+    try {
+      const { id } = params;
+      const updates = await request.json() as any;
+      const updatedCertificate = db.updateCertificate(id as string, updates);
+      
+      if (!updatedCertificate) {
+        return HttpResponse.json(
+          { success: false, message: "Certificate not found" },
+          { status: 404 }
+        );
+      }
+      
+      return HttpResponse.json(createResponse(updatedCertificate, "Certificate updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Failed to update certificate" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Delete certificate
+  http.delete("/api/certificates/:id", ({ params }) => {
+    const { id } = params;
+    const deleted = db.deleteCertificate(id as string);
+    
+    if (!deleted) {
+      return HttpResponse.json(
+        { success: false, message: "Certificate not found" },
+        { status: 404 }
+      );
+    }
+    
+    return HttpResponse.json(createResponse(null, "Certificate deleted successfully"));
   }),
 ];
 
@@ -2454,6 +2669,8 @@ export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
   ...studentHandlers,
+  ...paymentHandlers,
+  ...certificateHandlers,
   ...teacherHandlers,
   ...learningGroupHandlers,
   ...productListHandlers,

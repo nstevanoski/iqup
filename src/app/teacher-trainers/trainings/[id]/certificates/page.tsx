@@ -17,6 +17,8 @@ const sampleTeachers: Teacher[] = [
     title: "Mr.",
     email: "john.smith@example.com",
     phone: "+1-555-0123",
+    dateOfBirth: new Date("1985-03-15"),
+    gender: "male",
     status: "active",
     centers: [{
       centerId: "center_1",
@@ -57,6 +59,8 @@ const sampleTeachers: Teacher[] = [
     title: "Ms.",
     email: "sarah.johnson@example.com",
     phone: "+1-555-0124",
+    dateOfBirth: new Date("1988-07-22"),
+    gender: "female",
     status: "active",
     centers: [{
       centerId: "center_1",

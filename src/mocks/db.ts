@@ -300,9 +300,16 @@ export const subPrograms: SubProgram[] = [
 ];
 
 // Seed data for Students
+// Generate unique student IDs for consistency
+const studentId1 = generateId("stu");
+const studentId2 = generateId("stu");
+const studentId3 = generateId("stu");
+const studentId4 = generateId("stu");
+const studentId5 = generateId("stu");
+
 export const students: Student[] = [
   {
-    id: generateId("stu"),
+    id: studentId1,
     firstName: "John",
     lastName: "Doe",
     email: "john.doe@example.com",
@@ -326,11 +333,62 @@ export const students: Student[] = [
       country: "USA",
     },
     notes: "Excellent student, very motivated",
+    // New required fields
+    parentInfo: {
+      firstName: "Jane",
+      lastName: "Doe",
+      phone: "+1-555-0102",
+      email: "jane.doe@example.com",
+    },
+    lastCurrentLG: {
+      id: "lg_english_basic_1",
+      name: "English Basics - Morning Group",
+      programName: "English Language Program",
+      startDate: createDate(45),
+      endDate: createDate(-30), // ends in 30 days
+    },
+    product: {
+      id: "prod_english_kit_1",
+      name: "English Learning Kit - Beginner",
+      description: "Complete learning materials for beginner English course",
+      materials: ["Textbook Level 1", "Workbook", "Audio CD", "Online Access Code"],
+      purchaseDate: createDate(60),
+    },
+    contactOwner: {
+      id: "user_lc_manager_ny",
+      name: "Sarah Johnson",
+      role: "LC",
+    },
+    accountFranchise: {
+      id: "lc_new_york_01",
+      name: "New York Learning Center",
+      type: "LC",
+    },
+    mfName: "North America Master Franchise",
+    programHistory: [
+      {
+        id: "hist_1",
+        programId: programs[0].id,
+        programName: "English Language Program",
+        subProgramId: subPrograms[0].id,
+        subProgramName: "Beginner English",
+        learningGroupId: "lg_english_basic_1",
+        learningGroupName: "English Basics - Morning Group",
+        startDate: createDate(120),
+        endDate: createDate(90),
+        status: "completed",
+        completionDate: createDate(90),
+        grade: 85,
+        certificateId: "cert_john_eng_basic_1",
+      },
+    ],
+    payments: [], // Will be populated separately
+    certificates: [], // Will be populated separately
     createdAt: createDate(60),
     updatedAt: createDate(5),
   },
   {
-    id: generateId("stu"),
+    id: studentId2,
     firstName: "Jane",
     lastName: "Smith",
     email: "jane.smith@example.com",
@@ -353,11 +411,63 @@ export const students: Student[] = [
       zipCode: "90210",
       country: "USA",
     },
+    notes: "Very dedicated student, excellent attendance",
+    // New required fields
+    parentInfo: {
+      firstName: "Robert",
+      lastName: "Smith",
+      phone: "+1-555-0202",
+      email: "bob.smith@example.com",
+    },
+    lastCurrentLG: {
+      id: "lg_english_inter_1",
+      name: "English Intermediate - Evening Group",
+      programName: "English Language Program",
+      startDate: createDate(30),
+      endDate: createDate(-60), // ends in 60 days
+    },
+    product: {
+      id: "prod_english_kit_2",
+      name: "English Learning Kit - Intermediate",
+      description: "Advanced learning materials for intermediate English course",
+      materials: ["Textbook Level 2", "Advanced Workbook", "Audio CD Set", "Online Platform Access"],
+      purchaseDate: createDate(45),
+    },
+    contactOwner: {
+      id: "user_lc_manager_la",
+      name: "Michael Chen",
+      role: "LC",
+    },
+    accountFranchise: {
+      id: "lc_los_angeles_01",
+      name: "Los Angeles Learning Center",
+      type: "LC",
+    },
+    mfName: "West Coast Master Franchise",
+    programHistory: [
+      {
+        id: "hist_2",
+        programId: programs[0].id,
+        programName: "English Language Program",
+        subProgramId: subPrograms[0].id,
+        subProgramName: "Beginner English",
+        learningGroupId: "lg_english_basic_2",
+        learningGroupName: "English Basics - Weekend Group",
+        startDate: createDate(150),
+        endDate: createDate(120),
+        status: "completed",
+        completionDate: createDate(120),
+        grade: 92,
+        certificateId: "cert_jane_eng_basic_1",
+      },
+    ],
+    payments: [], // Will be populated separately
+    certificates: [], // Will be populated separately
     createdAt: createDate(45),
     updatedAt: createDate(3),
   },
   {
-    id: generateId("stu"),
+    id: studentId3,
     firstName: "Bob",
     lastName: "Johnson",
     email: "bob.johnson@example.com",
@@ -380,10 +490,527 @@ export const students: Student[] = [
       zipCode: "60601",
       country: "USA",
     },
+    notes: "Excellent problem-solving skills, shows great potential in STEM",
+    // New required fields
+    parentInfo: {
+      firstName: "Mary",
+      lastName: "Johnson",
+      phone: "+1-555-0302",
+      email: "mary.johnson@example.com",
+    },
+    lastCurrentLG: {
+      id: "lg_math_advanced_1",
+      name: "Advanced Mathematics - Intensive Course",
+      programName: "Mathematics Program",
+      startDate: createDate(15),
+      endDate: createDate(-75), // ends in 75 days
+    },
+    product: {
+      id: "prod_math_kit_1",
+      name: "Mathematics Learning Kit - Advanced",
+      description: "Comprehensive mathematics materials for advanced students",
+      materials: ["Advanced Calculus Textbook", "Problem Set Collection", "Graphing Calculator", "Online Simulation Access"],
+      purchaseDate: createDate(30),
+    },
+    contactOwner: {
+      id: "user_lc_manager_chi",
+      name: "David Rodriguez",
+      role: "LC",
+    },
+    accountFranchise: {
+      id: "lc_chicago_01",
+      name: "Chicago Learning Center",
+      type: "LC",
+    },
+    mfName: "Midwest Master Franchise",
+    programHistory: [],
+    payments: [], // Will be populated separately
+    certificates: [], // Will be populated separately
     createdAt: createDate(30),
     updatedAt: createDate(1),
   },
+  {
+    id: studentId4,
+    firstName: "Emily",
+    lastName: "Davis",
+    email: "emily.davis@example.com",
+    phone: "+1-555-0401",
+    dateOfBirth: new Date("2000-09-12"),
+    gender: "female",
+    enrollmentDate: createDate(90),
+    status: "graduated",
+    programIds: [programs[0].id, programs[1].id],
+    subProgramIds: [subPrograms[0].id, subPrograms[1].id],
+    learningGroupIds: [],
+    emergencyContact: {
+      email: "susan.davis@example.com",
+      phone: "+1-555-0402",
+    },
+    address: {
+      street: "321 Elm Street",
+      city: "Miami",
+      state: "FL",
+      zipCode: "33101",
+      country: "USA",
+    },
+    notes: "Outstanding student, completed multiple programs with excellence",
+    // New required fields
+    parentInfo: {
+      firstName: "Susan",
+      lastName: "Davis",
+      phone: "+1-555-0402",
+      email: "susan.davis@example.com",
+    },
+    lastCurrentLG: {
+      id: "lg_business_advanced_1",
+      name: "Business Communication - Advanced",
+      programName: "Business English Program",
+      startDate: createDate(180),
+      endDate: createDate(150),
+    },
+    product: {
+      id: "prod_business_kit_1",
+      name: "Business English Comprehensive Kit",
+      description: "Professional business communication materials",
+      materials: ["Business English Textbook", "Case Study Collection", "Presentation Templates", "Professional Writing Guide"],
+      purchaseDate: createDate(180),
+    },
+    contactOwner: {
+      id: "user_lc_manager_mia",
+      name: "Carlos Martinez",
+      role: "LC",
+    },
+    accountFranchise: {
+      id: "lc_miami_01",
+      name: "Miami Learning Center",
+      type: "LC",
+    },
+    mfName: "Southeast Master Franchise",
+    programHistory: [
+      {
+        id: "hist_3",
+        programId: programs[0].id,
+        programName: "English Language Program",
+        subProgramId: subPrograms[0].id,
+        subProgramName: "Beginner English",
+        learningGroupId: "lg_english_basic_3",
+        learningGroupName: "English Basics - Accelerated",
+        startDate: createDate(240),
+        endDate: createDate(210),
+        status: "completed",
+        completionDate: createDate(210),
+        grade: 98,
+        certificateId: "cert_emily_eng_basic_1",
+      },
+      {
+        id: "hist_4",
+        programId: programs[1].id,
+        programName: "Business English Program",
+        subProgramId: subPrograms[1].id,
+        subProgramName: "Intermediate Business English",
+        learningGroupId: "lg_business_inter_1",
+        learningGroupName: "Business English - Professional Track",
+        startDate: createDate(180),
+        endDate: createDate(150),
+        status: "completed",
+        completionDate: createDate(150),
+        grade: 95,
+        certificateId: "cert_emily_business_inter_1",
+      },
+    ],
+    payments: [], // Will be populated separately
+    certificates: [], // Will be populated separately
+    createdAt: createDate(90),
+    updatedAt: createDate(150),
+  },
+  {
+    id: studentId5,
+    firstName: "Alex",
+    lastName: "Thompson",
+    email: "alex.thompson@example.com",
+    phone: "+1-555-0501",
+    dateOfBirth: new Date("1997-05-03"),
+    gender: "other",
+    enrollmentDate: createDate(15),
+    status: "inactive",
+    programIds: [programs[0].id],
+    subProgramIds: [subPrograms[0].id],
+    learningGroupIds: [],
+    emergencyContact: {
+      email: "pat.thompson@example.com",
+      phone: "+1-555-0502",
+    },
+    address: {
+      street: "654 Maple Drive",
+      city: "Seattle",
+      state: "WA",
+      zipCode: "98101",
+      country: "USA",
+    },
+    notes: "Temporarily paused due to personal reasons, planning to resume next semester",
+    // New required fields
+    parentInfo: {
+      firstName: "Pat",
+      lastName: "Thompson",
+      phone: "+1-555-0502",
+      email: "pat.thompson@example.com",
+    },
+    lastCurrentLG: {
+      id: "lg_english_basic_4",
+      name: "English Basics - Self-Paced",
+      programName: "English Language Program",
+      startDate: createDate(15),
+    },
+    product: {
+      id: "prod_english_kit_digital",
+      name: "English Learning Kit - Digital Edition",
+      description: "Digital-first learning materials for flexible study",
+      materials: ["Digital Textbook", "Interactive Workbook", "Video Lessons", "Mobile App Access"],
+      purchaseDate: createDate(15),
+    },
+    contactOwner: {
+      id: "user_lc_manager_sea",
+      name: "Jennifer Lee",
+      role: "LC",
+    },
+    accountFranchise: {
+      id: "lc_seattle_01",
+      name: "Seattle Learning Center",
+      type: "LC",
+    },
+    mfName: "Pacific Northwest Master Franchise",
+    programHistory: [],
+    payments: [], // Will be populated separately
+    certificates: [], // Will be populated separately
+    createdAt: createDate(15),
+    updatedAt: createDate(2),
+  },
 ];
+
+// Comprehensive Payment Mock Data
+export const studentPayments: import("@/types").StudentPayment[] = [
+  // John Doe's payments (studentId1)
+  {
+    id: generateId("pay"),
+    studentId: studentId1,
+    learningGroupId: "lg_english_basic_1",
+    learningGroupName: "English Basics - Morning Group",
+    month: "2024-01",
+    amount: 99.99,
+    dueDate: createDate(30),
+    paymentDate: createDate(28),
+    status: "paid",
+    paymentMethod: "bank_transfer",
+    reference: "TXN-20240125-001",
+    notes: "Payment received on time",
+    createdBy: "user_lc_manager_ny",
+    createdAt: createDate(35),
+    updatedAt: createDate(28),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId1,
+    learningGroupId: "lg_english_basic_1",
+    learningGroupName: "English Basics - Morning Group",
+    month: "2024-02",
+    amount: 99.99,
+    dueDate: createDate(2),
+    paymentDate: createDate(1),
+    status: "paid",
+    paymentMethod: "credit_card",
+    reference: "CC-20240228-001",
+    notes: "Credit card payment processed successfully",
+    createdBy: "user_lc_manager_ny",
+    createdAt: createDate(5),
+    updatedAt: createDate(1),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId1,
+    learningGroupId: "lg_english_basic_1",
+    learningGroupName: "English Basics - Morning Group",
+    month: "2024-03",
+    amount: 99.99,
+    dueDate: createDate(-25),
+    status: "pending",
+    notes: "Payment reminder sent",
+    createdBy: "user_lc_manager_ny",
+    createdAt: createDate(-30),
+    updatedAt: createDate(-5),
+  },
+  
+  // Jane Smith's payments (studentId2)
+  {
+    id: generateId("pay"),
+    studentId: studentId2,
+    learningGroupId: "lg_english_inter_1",
+    learningGroupName: "English Intermediate - Evening Group",
+    month: "2024-01",
+    amount: 149.99,
+    dueDate: createDate(45),
+    paymentDate: createDate(40),
+    status: "paid",
+    paymentMethod: "cash",
+    reference: "CASH-20240115-001",
+    notes: "Cash payment received at center",
+    createdBy: "user_lc_manager_la",
+    createdAt: createDate(50),
+    updatedAt: createDate(40),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId2,
+    learningGroupId: "lg_english_inter_1",
+    learningGroupName: "English Intermediate - Evening Group",
+    month: "2024-02",
+    amount: 149.99,
+    dueDate: createDate(15),
+    paymentDate: createDate(12),
+    status: "paid",
+    paymentMethod: "bank_transfer",
+    reference: "TXN-20240218-002",
+    notes: "Regular monthly payment",
+    createdBy: "user_lc_manager_la",
+    createdAt: createDate(20),
+    updatedAt: createDate(12),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId2,
+    learningGroupId: "lg_english_inter_1",
+    learningGroupName: "English Intermediate - Evening Group",
+    month: "2024-03",
+    amount: 149.99,
+    dueDate: createDate(-15),
+    status: "overdue",
+    notes: "Payment overdue, follow-up required",
+    createdBy: "user_lc_manager_la",
+    createdAt: createDate(-20),
+    updatedAt: createDate(-2),
+  },
+  
+  // Bob Johnson's payments (studentId3)
+  {
+    id: generateId("pay"),
+    studentId: studentId3,
+    learningGroupId: "lg_math_advanced_1",
+    learningGroupName: "Advanced Mathematics - Intensive Course",
+    month: "2024-02",
+    amount: 199.99,
+    dueDate: createDate(5),
+    paymentDate: createDate(3),
+    status: "paid",
+    paymentMethod: "credit_card",
+    reference: "CC-20240225-003",
+    notes: "First payment for math program",
+    createdBy: "user_lc_manager_chi",
+    createdAt: createDate(10),
+    updatedAt: createDate(3),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId3,
+    learningGroupId: "lg_math_advanced_1",
+    learningGroupName: "Advanced Mathematics - Intensive Course",
+    month: "2024-03",
+    amount: 199.99,
+    dueDate: createDate(-25),
+    status: "pending",
+    notes: "Awaiting payment",
+    createdBy: "user_lc_manager_chi",
+    createdAt: createDate(-30),
+    updatedAt: createDate(-10),
+  },
+  
+  // Emily Davis's payments (studentId4) - graduated student with complete payment history
+  {
+    id: generateId("pay"),
+    studentId: studentId4,
+    learningGroupId: "lg_business_advanced_1",
+    learningGroupName: "Business Communication - Advanced",
+    month: "2023-09",
+    amount: 249.99,
+    dueDate: createDate(180),
+    paymentDate: createDate(175),
+    status: "paid",
+    paymentMethod: "bank_transfer",
+    reference: "TXN-20230915-004",
+    notes: "Full course payment - Business Program",
+    createdBy: "user_lc_manager_mia",
+    createdAt: createDate(185),
+    updatedAt: createDate(175),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId4,
+    learningGroupId: "lg_business_advanced_1",
+    learningGroupName: "Business Communication - Advanced",
+    month: "2023-10",
+    amount: 249.99,
+    dueDate: createDate(150),
+    paymentDate: createDate(148),
+    status: "paid",
+    paymentMethod: "bank_transfer",
+    reference: "TXN-20231015-005",
+    notes: "Second installment",
+    createdBy: "user_lc_manager_mia",
+    createdAt: createDate(155),
+    updatedAt: createDate(148),
+  },
+  
+  // Alex Thompson's payments (studentId5) - inactive student with payment issues
+  {
+    id: generateId("pay"),
+    studentId: studentId5,
+    learningGroupId: "lg_english_basic_4",
+    learningGroupName: "English Basics - Self-Paced",
+    month: "2024-02",
+    amount: 79.99,
+    dueDate: createDate(10),
+    status: "waived",
+    notes: "Payment waived due to personal circumstances",
+    discount: {
+      amount: 79.99,
+      reason: "Financial hardship - temporary waiver",
+      appliedBy: "user_lc_manager_sea",
+      appliedAt: createDate(8),
+    },
+    createdBy: "user_lc_manager_sea",
+    createdAt: createDate(15),
+    updatedAt: createDate(8),
+  },
+  {
+    id: generateId("pay"),
+    studentId: studentId5,
+    learningGroupId: "lg_english_basic_4",
+    learningGroupName: "English Basics - Self-Paced",
+    month: "2024-03",
+    amount: 79.99,
+    dueDate: createDate(-20),
+    paymentDate: createDate(-18),
+    status: "partial",
+    paymentMethod: "cash",
+    reference: "PARTIAL-20240310-001",
+    notes: "Partial payment received - $40 remaining",
+    discount: {
+      amount: 40.00,
+      reason: "Partial payment arrangement",
+      appliedBy: "user_lc_manager_sea",
+      appliedAt: createDate(-18),
+    },
+    createdBy: "user_lc_manager_sea",
+    createdAt: createDate(-25),
+    updatedAt: createDate(-18),
+  },
+];
+
+// Comprehensive Certificate Mock Data
+export const studentCertificates: import("@/types").StudentCertificate[] = [
+  // John Doe's certificates (studentId1)
+  {
+    id: "cert_john_eng_basic_1",
+    studentId: studentId1,
+    programId: programs[0].id,
+    programName: "English Language Program",
+    subProgramId: subPrograms[0].id,
+    subProgramName: "Beginner English",
+    certificateCode: "CERT-2024-ENG-BASIC-001234",
+    issuedDate: createDate(90),
+    validUntil: createDate(-730), // valid for 2 years
+    status: "active",
+    downloadUrl: "/certificates/cert_john_eng_basic_1.pdf",
+    issuedBy: "Sarah Johnson",
+    createdAt: createDate(90),
+  },
+  
+  // Jane Smith's certificates (studentId2)
+  {
+    id: "cert_jane_eng_basic_1",
+    studentId: studentId2,
+    programId: programs[0].id,
+    programName: "English Language Program",
+    subProgramId: subPrograms[0].id,
+    subProgramName: "Beginner English",
+    certificateCode: "CERT-2024-ENG-BASIC-001235",
+    issuedDate: createDate(120),
+    validUntil: createDate(-610), // valid for 2 years
+    status: "active",
+    downloadUrl: "/certificates/cert_jane_eng_basic_1.pdf",
+    issuedBy: "Michael Chen",
+    createdAt: createDate(120),
+  },
+  {
+    id: "cert_jane_eng_inter_1",
+    studentId: studentId2,
+    programId: programs[0].id,
+    programName: "English Language Program",
+    subProgramId: subPrograms[1].id,
+    subProgramName: "Intermediate English",
+    certificateCode: "CERT-2024-ENG-INTER-001236",
+    issuedDate: createDate(30),
+    validUntil: createDate(-730), // valid for 2 years
+    status: "active",
+    downloadUrl: "/certificates/cert_jane_eng_inter_1.pdf",
+    issuedBy: "Michael Chen",
+    createdAt: createDate(30),
+  },
+  
+  // Emily Davis's certificates (studentId4) - graduated student with multiple certificates
+  {
+    id: "cert_emily_eng_basic_1",
+    studentId: studentId4,
+    programId: programs[0].id,
+    programName: "English Language Program",
+    subProgramId: subPrograms[0].id,
+    subProgramName: "Beginner English",
+    certificateCode: "CERT-2023-ENG-BASIC-001237",
+    issuedDate: createDate(210),
+    validUntil: createDate(-520), // valid for 2 years
+    status: "active",
+    downloadUrl: "/certificates/cert_emily_eng_basic_1.pdf",
+    issuedBy: "Carlos Martinez",
+    createdAt: createDate(210),
+  },
+  {
+    id: "cert_emily_business_inter_1",
+    studentId: studentId4,
+    programId: programs[1].id,
+    programName: "Business English Program",
+    subProgramId: subPrograms[1].id,
+    subProgramName: "Intermediate Business English",
+    certificateCode: "CERT-2023-BUS-INTER-001238",
+    issuedDate: createDate(150),
+    validUntil: createDate(-580), // valid for 2 years
+    status: "active",
+    downloadUrl: "/certificates/cert_emily_business_inter_1.pdf",
+    issuedBy: "Carlos Martinez",
+    createdAt: createDate(150),
+  },
+  {
+    id: "cert_emily_business_adv_1",
+    studentId: studentId4,
+    programId: programs[1].id,
+    programName: "Business English Program",
+    subProgramId: subPrograms[2].id,
+    subProgramName: "Advanced Business English",
+    certificateCode: "CERT-2023-BUS-ADV-001239",
+    issuedDate: createDate(120),
+    validUntil: createDate(-610), // valid for 2 years
+    status: "active",
+    downloadUrl: "/certificates/cert_emily_business_adv_1.pdf",
+    issuedBy: "Carlos Martinez",
+    createdAt: createDate(120),
+  },
+  
+  // Bob Johnson - no certificates yet (still in progress)
+  // Alex Thompson - no certificates yet (inactive)
+];
+
+// Update students with their payment and certificate data
+students.forEach(student => {
+  student.payments = studentPayments.filter(payment => payment.studentId === student.id);
+  student.certificates = studentCertificates.filter(cert => cert.studentId === student.id);
+});
 
 // Seed data for Teachers
 export const teachers: Teacher[] = [
@@ -391,6 +1018,8 @@ export const teachers: Teacher[] = [
     id: generateId("tea"),
     firstName: "Sarah",
     lastName: "Wilson",
+    dateOfBirth: new Date("1980-05-15"),
+    gender: "female",
     title: "Dr.",
     email: "sarah.wilson@example.com",
     phone: "+1-555-1001",
@@ -470,6 +1099,8 @@ export const teachers: Teacher[] = [
     id: generateId("tea"),
     firstName: "Michael",
     lastName: "Brown",
+    dateOfBirth: new Date("1975-08-22"),
+    gender: "male",
     title: "Prof.",
     email: "michael.brown@example.com",
     phone: "+1-555-1002",
@@ -535,6 +1166,8 @@ export const teachers: Teacher[] = [
     id: generateId("tea"),
     firstName: "Emily",
     lastName: "Davis",
+    dateOfBirth: new Date("1985-12-03"),
+    gender: "female",
     title: "Dr.",
     email: "emily.davis@example.com",
     phone: "+1-555-1003",
@@ -608,6 +1241,8 @@ export const teachers: Teacher[] = [
     id: generateId("tea"),
     firstName: "David",
     lastName: "Wilson",
+    dateOfBirth: new Date("1988-03-18"),
+    gender: "male",
     title: "Mr.",
     email: "david.wilson@example.com",
     phone: "+1-555-1004",
@@ -3924,6 +4559,140 @@ export class MockDatabase {
     const userIndex = authUsers.findIndex(u => u.id === id);
     if (userIndex === -1) return false;
     authUsers.splice(userIndex, 1);
+    return true;
+  }
+
+  // Student Payments
+  getStudentPayments(studentId?: string): import("@/types").StudentPayment[] {
+    if (studentId) {
+      return studentPayments.filter(payment => payment.studentId === studentId);
+    }
+    return studentPayments;
+  }
+
+  getPaymentById(id: string): import("@/types").StudentPayment | undefined {
+    return studentPayments.find(payment => payment.id === id);
+  }
+
+  createPayment(paymentData: Omit<import("@/types").StudentPayment, "id" | "createdAt" | "updatedAt">): import("@/types").StudentPayment {
+    const newPayment: import("@/types").StudentPayment = {
+      ...paymentData,
+      id: generateId("pay"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    studentPayments.push(newPayment);
+    
+    // Update student's payments array
+    const student = students.find(s => s.id === newPayment.studentId);
+    if (student) {
+      student.payments.push(newPayment);
+    }
+    
+    return newPayment;
+  }
+
+  updatePayment(id: string, updates: Partial<import("@/types").StudentPayment>): import("@/types").StudentPayment | null {
+    const index = studentPayments.findIndex(payment => payment.id === id);
+    if (index === -1) return null;
+    
+    studentPayments[index] = {
+      ...studentPayments[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
+    // Update student's payments array
+    const student = students.find(s => s.id === studentPayments[index].studentId);
+    if (student) {
+      const studentPaymentIndex = student.payments.findIndex(p => p.id === id);
+      if (studentPaymentIndex !== -1) {
+        student.payments[studentPaymentIndex] = studentPayments[index];
+      }
+    }
+    
+    return studentPayments[index];
+  }
+
+  deletePayment(id: string): boolean {
+    const index = studentPayments.findIndex(payment => payment.id === id);
+    if (index === -1) return false;
+    
+    const payment = studentPayments[index];
+    studentPayments.splice(index, 1);
+    
+    // Update student's payments array
+    const student = students.find(s => s.id === payment.studentId);
+    if (student) {
+      student.payments = student.payments.filter(p => p.id !== id);
+    }
+    
+    return true;
+  }
+
+  // Student Certificates
+  getStudentCertificates(studentId?: string): import("@/types").StudentCertificate[] {
+    if (studentId) {
+      return studentCertificates.filter(cert => cert.studentId === studentId);
+    }
+    return studentCertificates;
+  }
+
+  getCertificateById(id: string): import("@/types").StudentCertificate | undefined {
+    return studentCertificates.find(cert => cert.id === id);
+  }
+
+  createCertificate(certData: Omit<import("@/types").StudentCertificate, "id" | "createdAt">): import("@/types").StudentCertificate {
+    const newCertificate: import("@/types").StudentCertificate = {
+      ...certData,
+      id: generateId("cert"),
+      createdAt: new Date(),
+    };
+    studentCertificates.push(newCertificate);
+    
+    // Update student's certificates array
+    const student = students.find(s => s.id === newCertificate.studentId);
+    if (student) {
+      student.certificates.push(newCertificate);
+    }
+    
+    return newCertificate;
+  }
+
+  updateCertificate(id: string, updates: Partial<import("@/types").StudentCertificate>): import("@/types").StudentCertificate | null {
+    const index = studentCertificates.findIndex(cert => cert.id === id);
+    if (index === -1) return null;
+    
+    studentCertificates[index] = {
+      ...studentCertificates[index],
+      ...updates,
+    };
+    
+    // Update student's certificates array
+    const student = students.find(s => s.id === studentCertificates[index].studentId);
+    if (student) {
+      const studentCertIndex = student.certificates.findIndex(c => c.id === id);
+      if (studentCertIndex !== -1) {
+        student.certificates[studentCertIndex] = studentCertificates[index];
+      }
+    }
+    
+    return studentCertificates[index];
+  }
+
+  deleteCertificate(id: string): boolean {
+    const index = studentCertificates.findIndex(cert => cert.id === id);
+    if (index === -1) return false;
+    
+    const certificate = studentCertificates[index];
+    studentCertificates.splice(index, 1);
+    
+    // Update student's certificates array
+    const student = students.find(s => s.id === certificate.studentId);
+    if (student) {
+      student.certificates = student.certificates.filter(c => c.id !== id);
+    }
+    
     return true;
   }
 }
