@@ -11,6 +11,7 @@ import {
   Order,
   Training,
   TrainingType,
+  TrainingRegistration,
   TeacherTrainerAccount,
   RoyaltyReportRow,
   StudentReportRow,
@@ -1280,6 +1281,16 @@ export const trainingTypes: TrainingType[] = [
     materials: ["Presentation slides", "Handouts", "Videos"],
     isRecurring: true,
     frequency: "monthly",
+    recordType: "mandatory",
+    seminarType: "in_person",
+    createdBy: "user_1",
+    isActive: true,
+    requirements: ["Teaching experience", "Bachelor's degree"],
+    certification: {
+      required: true,
+      validityPeriod: 24,
+      renewalRequired: true,
+    },
     createdAt: createDate(90),
     updatedAt: createDate(20),
   },
@@ -1293,8 +1304,42 @@ export const trainingTypes: TrainingType[] = [
     objectives: ["Digital tools", "Online platforms", "Interactive content"],
     materials: ["Laptop", "Software licenses", "Tutorials"],
     isRecurring: false,
+    recordType: "optional",
+    seminarType: "virtual",
+    createdBy: "user_1",
+    isActive: true,
+    requirements: ["Basic computer skills"],
+    certification: {
+      required: false,
+      validityPeriod: 12,
+      renewalRequired: false,
+    },
     createdAt: createDate(60),
     updatedAt: createDate(15),
+  },
+  {
+    id: generateId("tt"),
+    name: "Advanced Assessment Techniques",
+    description: "Comprehensive training on modern assessment methods",
+    category: "Assessment",
+    duration: 4,
+    prerequisites: ["Teaching Methodology certification"],
+    objectives: ["Formative assessment", "Summative assessment", "Rubric design"],
+    materials: ["Assessment templates", "Sample rubrics", "Case studies"],
+    isRecurring: true,
+    frequency: "quarterly",
+    recordType: "certification",
+    seminarType: "hybrid",
+    createdBy: "user_1",
+    isActive: true,
+    requirements: ["Teaching Methodology certification"],
+    certification: {
+      required: true,
+      validityPeriod: 36,
+      renewalRequired: true,
+    },
+    createdAt: createDate(45),
+    updatedAt: createDate(10),
   },
 ];
 
@@ -1329,8 +1374,174 @@ export const trainings: Training[] = [
         submittedAt: createDate(29),
       },
     ],
+    recordType: "mandatory",
+    seminarType: "in_person",
+    name: "Teaching Methodology Workshop - March 2024",
+    owner: {
+      id: "user_1",
+      name: "HQ Admin",
+      role: "HQ",
+    },
+    hostingFranchisee: {
+      id: "mf_region_1",
+      name: "Boston MF Region",
+      location: "Boston, MA",
+    },
+    start: createDate(30),
+    end: createDate(30),
+    max: 20,
+    venue: {
+      name: "Boston Learning Center",
+      address: "123 Education St, Boston, MA 02101",
+      capacity: 25,
+      facilities: ["Projector", "Whiteboard", "WiFi", "Parking"],
+    },
+    price: {
+      amount: 150,
+      currency: "USD",
+      includes: ["Materials", "Lunch", "Certificate"],
+    },
+    teacherTrainer: {
+      id: "tt_1",
+      name: "Dr. Sarah Wilson",
+      role: "primary",
+    },
+    assistant: {
+      id: "tt_2",
+      name: "Prof. Michael Brown",
+    },
+    ttStatus: "completed",
+    ttComments: "All participants successfully completed the training with excellent performance.",
+    details: {
+      agenda: "Comprehensive 8-hour workshop covering modern teaching methodologies, classroom management, and student engagement techniques.",
+      materials: ["Presentation slides", "Workbooks", "Assessment forms", "Certificate templates"],
+      prerequisites: ["Teaching experience", "Bachelor's degree"],
+      objectives: ["Improve teaching skills", "Classroom management", "Student engagement"],
+      assessment: "Written test and practical demonstration of teaching techniques.",
+    },
+    approvalStatus: "approved",
+    submittedBy: "user_1",
+    approvedBy: "user_1",
+    submittedAt: createDate(35),
+    approvedAt: createDate(34),
+    registrations: [
+      {
+        id: generateId("reg"),
+        trainingId: "train_1",
+        teacherId: teachers[1].id,
+        registeredBy: "mf_region_1",
+        registrationDate: createDate(32),
+        status: "completed",
+        attendance: {
+          present: true,
+          checkInTime: createDate(30),
+          checkOutTime: createDate(30),
+        },
+        assessment: {
+          score: 85,
+          maxScore: 100,
+          passed: true,
+          feedback: "Excellent performance in both written and practical assessments.",
+          gradedBy: "tt_1",
+          gradedAt: createDate(29),
+        },
+        certificate: {
+          issued: true,
+          certificateId: "CERT-TM-2024-001",
+          issuedAt: createDate(29),
+          validUntil: createDate(26),
+        },
+        createdAt: createDate(32),
+        updatedAt: createDate(29),
+      },
+    ],
     createdAt: createDate(35),
     updatedAt: createDate(29),
+  },
+  {
+    id: generateId("train"),
+    title: "Technology Integration Training",
+    description: "Virtual training on using technology in education",
+    typeId: trainingTypes[1].id,
+    instructorId: teachers[2].id,
+    participantIds: [teachers[0].id],
+    maxParticipants: 15,
+    status: "scheduled",
+    startDate: createDate(10),
+    endDate: createDate(10),
+    duration: 6,
+    location: "Virtual - Zoom",
+    materials: ["Software licenses", "Tutorials"],
+    objectives: ["Digital tools", "Online platforms"],
+    agenda: [
+      { time: "10:00", title: "Introduction", description: "Welcome and setup", duration: 30 },
+      { time: "10:30", title: "Digital Tools", description: "Overview of educational software", duration: 120 },
+      { time: "12:30", title: "Break", description: "Lunch break", duration: 60 },
+      { time: "13:30", title: "Online Platforms", description: "Learning management systems", duration: 120 },
+    ],
+    recordType: "optional",
+    seminarType: "virtual",
+    name: "Technology Integration - April 2024",
+    owner: {
+      id: "mf_region_1",
+      name: "Boston MF Region",
+      role: "MF",
+    },
+    hostingFranchisee: {
+      id: "mf_region_1",
+      name: "Boston MF Region",
+      location: "Boston, MA",
+    },
+    start: createDate(10),
+    end: createDate(10),
+    max: 15,
+    venue: {
+      name: "Virtual Training Room",
+      address: "Online - Zoom Meeting",
+      capacity: 50,
+      facilities: ["Screen sharing", "Breakout rooms", "Recording"],
+    },
+    price: {
+      amount: 75,
+      currency: "USD",
+      includes: ["Software access", "Digital materials"],
+    },
+    teacherTrainer: {
+      id: "tt_3",
+      name: "Dr. Emily Davis",
+      role: "primary",
+    },
+    ttStatus: "pending",
+    details: {
+      agenda: "6-hour virtual training covering digital tools and online platforms for education.",
+      materials: ["Software licenses", "Tutorials", "Digital handouts"],
+      prerequisites: ["Basic computer skills"],
+      objectives: ["Digital tools", "Online platforms", "Interactive content"],
+      assessment: "Practical demonstration of using educational technology tools.",
+    },
+    approvalStatus: "submitted",
+    submittedBy: "mf_region_1",
+    submittedAt: createDate(15),
+    registrations: [
+      {
+        id: generateId("reg"),
+        trainingId: "train_2",
+        teacherId: teachers[0].id,
+        registeredBy: "mf_region_1",
+        registrationDate: createDate(12),
+        status: "registered",
+        attendance: {
+          present: false,
+        },
+        assessment: {
+          passed: false,
+        },
+        createdAt: createDate(12),
+        updatedAt: createDate(12),
+      },
+    ],
+    createdAt: createDate(15),
+    updatedAt: createDate(12),
   },
 ];
 
@@ -1757,6 +1968,144 @@ export class MockDatabase {
     const index = productPrices.findIndex(pp => pp.id === id);
     if (index === -1) return false;
     productPrices.splice(index, 1);
+    return true;
+  }
+
+  // Training Registrations
+  getTrainingRegistrations(): TrainingRegistration[] {
+    const registrations: TrainingRegistration[] = [];
+    trainings.forEach(training => {
+      registrations.push(...training.registrations);
+    });
+    return registrations;
+  }
+
+  getTrainingRegistrationById(id: string): TrainingRegistration | undefined {
+    for (const training of trainings) {
+      const registration = training.registrations.find(reg => reg.id === id);
+      if (registration) return registration;
+    }
+    return undefined;
+  }
+
+  createTrainingRegistration(registration: Omit<TrainingRegistration, "id" | "createdAt" | "updatedAt">): TrainingRegistration {
+    const newRegistration: TrainingRegistration = {
+      ...registration,
+      id: generateId("reg"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    // Add to the training's registrations
+    const training = trainings.find(t => t.id === registration.trainingId);
+    if (training) {
+      training.registrations.push(newRegistration);
+    }
+    
+    return newRegistration;
+  }
+
+  updateTrainingRegistration(id: string, updates: Partial<TrainingRegistration>): TrainingRegistration | null {
+    for (const training of trainings) {
+      const index = training.registrations.findIndex(reg => reg.id === id);
+      if (index !== -1) {
+        training.registrations[index] = {
+          ...training.registrations[index],
+          ...updates,
+          updatedAt: new Date(),
+        };
+        return training.registrations[index];
+      }
+    }
+    return null;
+  }
+
+  deleteTrainingRegistration(id: string): boolean {
+    for (const training of trainings) {
+      const index = training.registrations.findIndex(reg => reg.id === id);
+      if (index !== -1) {
+        training.registrations.splice(index, 1);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Training Types
+  getTrainingTypes(): TrainingType[] {
+    return trainingTypes;
+  }
+
+  getTrainingTypeById(id: string): TrainingType | undefined {
+    return trainingTypes.find(tt => tt.id === id);
+  }
+
+  createTrainingType(trainingType: Omit<TrainingType, "id" | "createdAt" | "updatedAt">): TrainingType {
+    const newTrainingType: TrainingType = {
+      ...trainingType,
+      id: generateId("tt"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    trainingTypes.push(newTrainingType);
+    return newTrainingType;
+  }
+
+  updateTrainingType(id: string, updates: Partial<TrainingType>): TrainingType | null {
+    const index = trainingTypes.findIndex(tt => tt.id === id);
+    if (index === -1) return null;
+    
+    trainingTypes[index] = {
+      ...trainingTypes[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return trainingTypes[index];
+  }
+
+  deleteTrainingType(id: string): boolean {
+    const index = trainingTypes.findIndex(tt => tt.id === id);
+    if (index === -1) return false;
+    trainingTypes.splice(index, 1);
+    return true;
+  }
+
+  // Trainings
+  getTrainings(): Training[] {
+    return trainings;
+  }
+
+  getTrainingById(id: string): Training | undefined {
+    return trainings.find(t => t.id === id);
+  }
+
+  createTraining(training: Omit<Training, "id" | "createdAt" | "updatedAt">): Training {
+    const newTraining: Training = {
+      ...training,
+      id: generateId("train"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    trainings.push(newTraining);
+    return newTraining;
+  }
+
+  updateTraining(id: string, updates: Partial<Training>): Training | null {
+    const index = trainings.findIndex(t => t.id === id);
+    if (index === -1) return null;
+    
+    trainings[index] = {
+      ...trainings[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return trainings[index];
+  }
+
+  deleteTraining(id: string): boolean {
+    const index = trainings.findIndex(t => t.id === id);
+    if (index === -1) return false;
+    trainings.splice(index, 1);
     return true;
   }
 

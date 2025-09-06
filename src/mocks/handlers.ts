@@ -13,6 +13,7 @@ import {
   Order,
   Training,
   TrainingType,
+  TrainingRegistration,
   TeacherTrainerAccount,
   RoyaltyReportRow,
   StudentReportRow,
@@ -1020,6 +1021,366 @@ export const productPriceHandlers = [
   }),
 ];
 
+// Training Type Handlers
+const trainingTypeHandlers = [
+  http.get("/api/training-types", ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const search = url.searchParams.get("search") || "";
+    const sortBy = url.searchParams.get("sortBy") || "name";
+    const sortOrder = url.searchParams.get("sortOrder") || "asc";
+    const recordType = url.searchParams.get("recordType");
+    const isActive = url.searchParams.get("isActive");
+
+    let trainingTypes = db.getTrainingTypes();
+
+    // Apply filters
+    if (search) {
+      trainingTypes = trainingTypes.filter((tt: TrainingType) => 
+        tt.name.toLowerCase().includes(search.toLowerCase()) ||
+        tt.description.toLowerCase().includes(search.toLowerCase()) ||
+        tt.category.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (recordType) {
+      trainingTypes = trainingTypes.filter((tt: TrainingType) => tt.recordType === recordType);
+    }
+
+    if (isActive !== null) {
+      const activeFilter = isActive === "true";
+      trainingTypes = trainingTypes.filter((tt: TrainingType) => tt.isActive === activeFilter);
+    }
+
+    // Apply sorting
+    trainingTypes.sort((a: TrainingType, b: TrainingType) => {
+      const aValue = (a as any)[sortBy];
+      const bValue = (b as any)[sortBy];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortOrder === "asc" 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+      }
+      
+      return 0;
+    });
+
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = trainingTypes.slice(startIndex, endIndex);
+
+    const response: PaginatedResponse<TrainingType> = {
+      data: paginatedData,
+      pagination: {
+        page,
+        limit,
+        total: trainingTypes.length,
+        totalPages: Math.ceil(trainingTypes.length / limit),
+      },
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  http.get("/api/training-types/:id", ({ params }) => {
+    const trainingType = db.getTrainingTypeById(params.id as string);
+    if (!trainingType) {
+      return HttpResponse.json({ error: "Training type not found" }, { status: 404 });
+    }
+    return HttpResponse.json(trainingType);
+  }),
+
+  http.post("/api/training-types", async ({ request }) => {
+    const trainingTypeData = await request.json() as Omit<TrainingType, "id" | "createdAt" | "updatedAt">;
+    const newTrainingType = db.createTrainingType(trainingTypeData);
+    return HttpResponse.json(newTrainingType, { status: 201 });
+  }),
+
+  http.put("/api/training-types/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<TrainingType>;
+    const updatedTrainingType = db.updateTrainingType(params.id as string, updates);
+    if (!updatedTrainingType) {
+      return HttpResponse.json({ error: "Training type not found" }, { status: 404 });
+    }
+    return HttpResponse.json(updatedTrainingType);
+  }),
+
+  http.delete("/api/training-types/:id", ({ params }) => {
+    const success = db.deleteTrainingType(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Training type not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ success: true });
+  }),
+];
+
+// Training Handlers
+const trainingHandlers = [
+  http.get("/api/trainings", ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const search = url.searchParams.get("search") || "";
+    const sortBy = url.searchParams.get("sortBy") || "start";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const status = url.searchParams.get("status");
+    const approvalStatus = url.searchParams.get("approvalStatus");
+    const recordType = url.searchParams.get("recordType");
+    const ownerId = url.searchParams.get("ownerId");
+
+    let trainings = db.getTrainings();
+
+    // Apply filters
+    if (search) {
+      trainings = trainings.filter((t: Training) => 
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        t.title.toLowerCase().includes(search.toLowerCase()) ||
+        t.description.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (status) {
+      trainings = trainings.filter((t: Training) => t.status === status);
+    }
+
+    if (approvalStatus) {
+      trainings = trainings.filter((t: Training) => t.approvalStatus === approvalStatus);
+    }
+
+    if (recordType) {
+      trainings = trainings.filter((t: Training) => t.recordType === recordType);
+    }
+
+    if (ownerId) {
+      trainings = trainings.filter((t: Training) => t.owner.id === ownerId);
+    }
+
+    // Apply sorting
+    trainings.sort((a: Training, b: Training) => {
+      const aValue = (a as any)[sortBy];
+      const bValue = (b as any)[sortBy];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sortOrder === "asc" 
+          ? aValue.getTime() - bValue.getTime()
+          : bValue.getTime() - aValue.getTime();
+      }
+      
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortOrder === "asc" 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      return 0;
+    });
+
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = trainings.slice(startIndex, endIndex);
+
+    const response: PaginatedResponse<Training> = {
+      data: paginatedData,
+      pagination: {
+        page,
+        limit,
+        total: trainings.length,
+        totalPages: Math.ceil(trainings.length / limit),
+      },
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  http.get("/api/trainings/:id", ({ params }) => {
+    const training = db.getTrainingById(params.id as string);
+    if (!training) {
+      return HttpResponse.json({ error: "Training not found" }, { status: 404 });
+    }
+    return HttpResponse.json(training);
+  }),
+
+  http.post("/api/trainings", async ({ request }) => {
+    const trainingData = await request.json() as Omit<Training, "id" | "createdAt" | "updatedAt">;
+    const newTraining = db.createTraining(trainingData);
+    return HttpResponse.json(newTraining, { status: 201 });
+  }),
+
+  http.put("/api/trainings/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<Training>;
+    const updatedTraining = db.updateTraining(params.id as string, updates);
+    if (!updatedTraining) {
+      return HttpResponse.json({ error: "Training not found" }, { status: 404 });
+    }
+    return HttpResponse.json(updatedTraining);
+  }),
+
+  http.delete("/api/trainings/:id", ({ params }) => {
+    const success = db.deleteTraining(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Training not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ success: true });
+  }),
+
+  // Training approval endpoints
+  http.post("/api/trainings/:id/submit", ({ params }) => {
+    const training = db.getTrainingById(params.id as string);
+    if (!training) {
+      return HttpResponse.json({ error: "Training not found" }, { status: 404 });
+    }
+    
+    const updatedTraining = db.updateTraining(params.id as string, {
+      approvalStatus: "submitted",
+      submittedAt: new Date(),
+    });
+    
+    return HttpResponse.json(updatedTraining);
+  }),
+
+  http.post("/api/trainings/:id/approve", async ({ params, request }) => {
+    const training = db.getTrainingById(params.id as string);
+    if (!training) {
+      return HttpResponse.json({ error: "Training not found" }, { status: 404 });
+    }
+    
+    const { approvedBy } = await request.json() as { approvedBy: string };
+    const updatedTraining = db.updateTraining(params.id as string, {
+      approvalStatus: "approved",
+      approvedBy,
+      approvedAt: new Date(),
+    });
+    
+    return HttpResponse.json(updatedTraining);
+  }),
+
+  http.post("/api/trainings/:id/reject", async ({ params, request }) => {
+    const training = db.getTrainingById(params.id as string);
+    if (!training) {
+      return HttpResponse.json({ error: "Training not found" }, { status: 404 });
+    }
+    
+    const { approvedBy } = await request.json() as { approvedBy: string };
+    const updatedTraining = db.updateTraining(params.id as string, {
+      approvalStatus: "rejected",
+      approvedBy,
+      approvedAt: new Date(),
+    });
+    
+    return HttpResponse.json(updatedTraining);
+  }),
+];
+
+// Training Registration Handlers
+const trainingRegistrationHandlers = [
+  http.get("/api/training-registrations", ({ request }) => {
+    const url = new URL(request.url);
+    const trainingId = url.searchParams.get("trainingId");
+    const teacherId = url.searchParams.get("teacherId");
+    const status = url.searchParams.get("status");
+
+    let registrations = db.getTrainingRegistrations();
+
+    if (trainingId) {
+      registrations = registrations.filter(reg => reg.trainingId === trainingId);
+    }
+
+    if (teacherId) {
+      registrations = registrations.filter(reg => reg.teacherId === teacherId);
+    }
+
+    if (status) {
+      registrations = registrations.filter(reg => reg.status === status);
+    }
+
+    return HttpResponse.json(registrations);
+  }),
+
+  http.get("/api/training-registrations/:id", ({ params }) => {
+    const registration = db.getTrainingRegistrationById(params.id as string);
+    if (!registration) {
+      return HttpResponse.json({ error: "Training registration not found" }, { status: 404 });
+    }
+    return HttpResponse.json(registration);
+  }),
+
+  http.post("/api/training-registrations", async ({ request }) => {
+    const registrationData = await request.json() as Omit<TrainingRegistration, "id" | "createdAt" | "updatedAt">;
+    const newRegistration = db.createTrainingRegistration(registrationData);
+    return HttpResponse.json(newRegistration, { status: 201 });
+  }),
+
+  http.put("/api/training-registrations/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<TrainingRegistration>;
+    const updatedRegistration = db.updateTrainingRegistration(params.id as string, updates);
+    if (!updatedRegistration) {
+      return HttpResponse.json({ error: "Training registration not found" }, { status: 404 });
+    }
+    return HttpResponse.json(updatedRegistration);
+  }),
+
+  http.delete("/api/training-registrations/:id", ({ params }) => {
+    const success = db.deleteTrainingRegistration(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Training registration not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ success: true });
+  }),
+
+  // TT marking endpoints
+  http.post("/api/training-registrations/:id/mark-pass", async ({ params, request }) => {
+    const { gradedBy, feedback } = await request.json() as { gradedBy: string; feedback?: string };
+    
+    const updatedRegistration = db.updateTrainingRegistration(params.id as string, {
+      status: "completed",
+      assessment: {
+        passed: true,
+        feedback,
+        gradedBy,
+        gradedAt: new Date(),
+      },
+    });
+    
+    if (!updatedRegistration) {
+      return HttpResponse.json({ error: "Training registration not found" }, { status: 404 });
+    }
+    
+    return HttpResponse.json(updatedRegistration);
+  }),
+
+  http.post("/api/training-registrations/:id/mark-fail", async ({ params, request }) => {
+    const { gradedBy, feedback } = await request.json() as { gradedBy: string; feedback?: string };
+    
+    const updatedRegistration = db.updateTrainingRegistration(params.id as string, {
+      status: "failed",
+      assessment: {
+        passed: false,
+        feedback,
+        gradedBy,
+        gradedAt: new Date(),
+      },
+    });
+    
+    if (!updatedRegistration) {
+      return HttpResponse.json({ error: "Training registration not found" }, { status: 404 });
+    }
+    
+    return HttpResponse.json(updatedRegistration);
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
@@ -1031,4 +1392,7 @@ export const handlers = [
   ...orderHandlers,
   ...dashboardHandlers,
   ...reportHandlers,
+  ...trainingTypeHandlers,
+  ...trainingHandlers,
+  ...trainingRegistrationHandlers,
 ];

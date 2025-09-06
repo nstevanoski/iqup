@@ -299,6 +299,58 @@ export interface Training extends BaseEntity {
   objectives: string[];
   agenda: TrainingAgendaItem[];
   feedback?: TrainingFeedback[];
+  // New fields for enhanced training management
+  recordType: "mandatory" | "optional" | "certification" | "workshop";
+  seminarType: "in_person" | "virtual" | "hybrid";
+  name: string; // Training name (separate from title)
+  owner: {
+    id: string;
+    name: string;
+    role: "HQ" | "MF";
+  };
+  hostingFranchisee: {
+    id: string;
+    name: string;
+    location: string;
+  };
+  start: Date; // Start date/time
+  end: Date; // End date/time
+  max: number; // Maximum participants
+  venue: {
+    name: string;
+    address: string;
+    capacity: number;
+    facilities: string[];
+  };
+  price: {
+    amount: number;
+    currency: string;
+    includes: string[];
+  };
+  teacherTrainer: {
+    id: string;
+    name: string;
+    role: "primary" | "assistant";
+  };
+  assistant?: {
+    id: string;
+    name: string;
+  };
+  ttStatus: "pending" | "in_progress" | "completed" | "failed";
+  ttComments?: string;
+  details: {
+    agenda: string;
+    materials: string[];
+    prerequisites: string[];
+    objectives: string[];
+    assessment: string;
+  };
+  approvalStatus: "draft" | "submitted" | "approved" | "rejected";
+  submittedBy?: string; // User ID who submitted
+  approvedBy?: string; // User ID who approved
+  submittedAt?: Date;
+  approvedAt?: Date;
+  registrations: TrainingRegistration[];
 }
 
 export interface TrainingType extends BaseEntity {
@@ -311,6 +363,44 @@ export interface TrainingType extends BaseEntity {
   materials: string[];
   isRecurring: boolean;
   frequency?: "daily" | "weekly" | "monthly" | "quarterly";
+  // New fields for enhanced training type management
+  recordType: "mandatory" | "optional" | "certification" | "workshop";
+  seminarType: "in_person" | "virtual" | "hybrid";
+  createdBy: string; // User ID
+  isActive: boolean;
+  requirements: string[];
+  certification: {
+    required: boolean;
+    validityPeriod: number; // in months
+    renewalRequired: boolean;
+  };
+}
+
+export interface TrainingRegistration extends BaseEntity {
+  trainingId: string;
+  teacherId: string;
+  registeredBy: string; // User ID (MF/LC who registered the teacher)
+  registrationDate: Date;
+  status: "registered" | "attended" | "completed" | "failed" | "cancelled";
+  attendance: {
+    present: boolean;
+    checkInTime?: Date;
+    checkOutTime?: Date;
+  };
+  assessment: {
+    score?: number;
+    maxScore?: number;
+    passed: boolean;
+    feedback?: string;
+    gradedBy?: string; // TT ID
+    gradedAt?: Date;
+  };
+  certificate?: {
+    issued: boolean;
+    certificateId?: string;
+    issuedAt?: Date;
+    validUntil?: Date;
+  };
 }
 
 export interface TrainingAgendaItem {
