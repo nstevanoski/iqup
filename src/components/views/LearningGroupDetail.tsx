@@ -324,6 +324,35 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                   <span className="text-sm text-gray-600">Final Price:</span>
                   <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.finalPrice}</span>
                 </div>
+                <div className="flex items-center">
+                  <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                  <span className="text-sm text-gray-600">Course Price:</span>
+                  <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.coursePrice}</span>
+                </div>
+                <div className="flex items-center">
+                  <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                  <span className="text-sm text-gray-600">Payment Method:</span>
+                  <span className="ml-2 text-sm font-medium capitalize">{learningGroup.pricingSnapshot.paymentMethod?.replace('-', ' ')}</span>
+                </div>
+                {learningGroup.pricingSnapshot.numberOfPayments && learningGroup.pricingSnapshot.numberOfPayments > 1 && (
+                  <>
+                    <div className="flex items-center">
+                      <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                      <span className="text-sm text-gray-600">Number of Payments:</span>
+                      <span className="ml-2 text-sm font-medium">{learningGroup.pricingSnapshot.numberOfPayments}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                      <span className="text-sm text-gray-600">Price per Payment:</span>
+                      <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.pricePerMonth?.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                      <span className="text-sm text-gray-600">Gap Between Payments:</span>
+                      <span className="ml-2 text-sm font-medium">{learningGroup.pricingSnapshot.gapBetweenPayments} days</span>
+                    </div>
+                  </>
+                )}
                 {learningGroup.pricingSnapshot.discount && (
                   <div className="flex items-center">
                     <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
