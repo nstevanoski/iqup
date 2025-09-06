@@ -1,0 +1,452 @@
+import { http, HttpResponse } from "msw";
+import { db } from "./db";
+import {
+  Program,
+  SubProgram,
+  Student,
+  Teacher,
+  LearningGroup,
+  Product,
+  InventoryItem,
+  Order,
+  Training,
+  TrainingType,
+  TeacherTrainerAccount,
+  RoyaltyReportRow,
+  StudentReportRow,
+  ApiResponse,
+  PaginatedResponse,
+  FilterOptions,
+} from "@/types";
+
+// Helper function to create API response
+const createResponse = <T>(data: T, message?: string): ApiResponse<T> => ({
+  data,
+  message,
+  success: true,
+});
+
+// Helper function to create paginated response
+const createPaginatedResponse = <T>(
+  data: T[],
+  page: number = 1,
+  limit: number = 10,
+  total?: number
+): PaginatedResponse<T> => {
+  const totalItems = total ?? data.length;
+  const totalPages = Math.ceil(totalItems / limit);
+  
+  return {
+    data: data.slice((page - 1) * limit, page * limit),
+    pagination: {
+      page,
+      limit,
+      total: totalItems,
+      totalPages,
+    },
+  };
+};
+
+// Helper function to parse query parameters
+const parseQueryParams = (url: URL): FilterOptions => {
+  const search = url.searchParams.get("search") || undefined;
+  const status = url.searchParams.get("status") || undefined;
+  const category = url.searchParams.get("category") || undefined;
+  const page = parseInt(url.searchParams.get("page") || "1");
+  const limit = parseInt(url.searchParams.get("limit") || "10");
+  const sortBy = url.searchParams.get("sortBy") || undefined;
+  const sortOrder = (url.searchParams.get("sortOrder") as "asc" | "desc") || "asc";
+  
+  return {
+    search,
+    status,
+    category,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+  };
+};
+
+// Programs handlers
+export const programHandlers = [
+  // Get all programs
+  http.get("/api/programs", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let programs = db.getPrograms();
+    
+    // Apply filters
+    if (filters.search) {
+      programs = programs.filter(p => 
+        p.name.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        p.description.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    if (filters.status) {
+      programs = programs.filter(p => p.status === filters.status);
+    }
+    
+    if (filters.category) {
+      programs = programs.filter(p => p.category === filters.category);
+    }
+    
+    // Apply sorting
+    if (filters.sortBy) {
+      programs.sort((a, b) => {
+        const aVal = (a as any)[filters.sortBy!];
+        const bVal = (b as any)[filters.sortBy!];
+        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        return filters.sortOrder === "desc" ? -result : result;
+      });
+    }
+    
+    const response = createPaginatedResponse(programs, filters.page, filters.limit);
+    return HttpResponse.json(response);
+  }),
+
+  // Get program by ID
+  http.get("/api/programs/:id", ({ params }) => {
+    const program = db.getProgramById(params.id as string);
+    if (!program) {
+      return HttpResponse.json(
+        { success: false, message: "Program not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(program));
+  }),
+
+  // Create program
+  http.post("/api/programs", async ({ request }) => {
+    try {
+      const programData = await request.json() as Omit<Program, "id" | "createdAt" | "updatedAt">;
+      const program = db.createProgram(programData);
+      return HttpResponse.json(createResponse(program, "Program created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update program
+  http.put("/api/programs/:id", async ({ params, request }) => {
+    try {
+      const updates = await request.json() as Partial<Program>;
+      const program = db.updateProgram(params.id as string, updates);
+      if (!program) {
+        return HttpResponse.json(
+          { success: false, message: "Program not found" },
+          { status: 404 }
+        );
+      }
+      return HttpResponse.json(createResponse(program, "Program updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Delete program
+  http.delete("/api/programs/:id", ({ params }) => {
+    const success = db.deleteProgram(params.id as string);
+    if (!success) {
+      return HttpResponse.json(
+        { success: false, message: "Program not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(null, "Program deleted successfully"));
+  }),
+];
+
+// Students handlers
+export const studentHandlers = [
+  // Get all students
+  http.get("/api/students", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let students = db.getStudents();
+    
+    // Apply filters
+    if (filters.search) {
+      students = students.filter(s => 
+        s.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        s.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        s.email.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    if (filters.status) {
+      students = students.filter(s => s.status === filters.status);
+    }
+    
+    const response = createPaginatedResponse(students, filters.page, filters.limit);
+    return HttpResponse.json(response);
+  }),
+
+  // Get student by ID
+  http.get("/api/students/:id", ({ params }) => {
+    const student = db.getStudentById(params.id as string);
+    if (!student) {
+      return HttpResponse.json(
+        { success: false, message: "Student not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(student));
+  }),
+
+  // Create student
+  http.post("/api/students", async ({ request }) => {
+    try {
+      const studentData = await request.json() as Omit<Student, "id" | "createdAt" | "updatedAt">;
+      const student = db.createStudent(studentData);
+      return HttpResponse.json(createResponse(student, "Student created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update student
+  http.put("/api/students/:id", async ({ params, request }) => {
+    try {
+      const updates = await request.json() as Partial<Student>;
+      const student = db.updateStudent(params.id as string, updates);
+      if (!student) {
+        return HttpResponse.json(
+          { success: false, message: "Student not found" },
+          { status: 404 }
+        );
+      }
+      return HttpResponse.json(createResponse(student, "Student updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Delete student
+  http.delete("/api/students/:id", ({ params }) => {
+    const success = db.deleteStudent(params.id as string);
+    if (!success) {
+      return HttpResponse.json(
+        { success: false, message: "Student not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(null, "Student deleted successfully"));
+  }),
+];
+
+// Teachers handlers
+export const teacherHandlers = [
+  // Get all teachers
+  http.get("/api/teachers", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let teachers = db.getTeachers();
+    
+    // Apply filters
+    if (filters.search) {
+      teachers = teachers.filter(t => 
+        t.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        t.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        t.email.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    if (filters.status) {
+      teachers = teachers.filter(t => t.status === filters.status);
+    }
+    
+    const response = createPaginatedResponse(teachers, filters.page, filters.limit);
+    return HttpResponse.json(response);
+  }),
+
+  // Get teacher by ID
+  http.get("/api/teachers/:id", ({ params }) => {
+    const teacher = db.getTeacherById(params.id as string);
+    if (!teacher) {
+      return HttpResponse.json(
+        { success: false, message: "Teacher not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(teacher));
+  }),
+];
+
+// Orders handlers
+export const orderHandlers = [
+  // Get all orders
+  http.get("/api/orders", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    
+    let orders = db.getOrders();
+    
+    // Apply filters
+    if (filters.search) {
+      orders = orders.filter(o => 
+        o.orderNumber.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    if (filters.status) {
+      orders = orders.filter(o => o.status === filters.status);
+    }
+    
+    const response = createPaginatedResponse(orders, filters.page, filters.limit);
+    return HttpResponse.json(response);
+  }),
+
+  // Get order by ID
+  http.get("/api/orders/:id", ({ params }) => {
+    const order = db.getOrderById(params.id as string);
+    if (!order) {
+      return HttpResponse.json(
+        { success: false, message: "Order not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(order));
+  }),
+
+  // Create order
+  http.post("/api/orders", async ({ request }) => {
+    try {
+      const orderData = await request.json() as Omit<Order, "id" | "createdAt" | "updatedAt">;
+      const order = db.createOrder(orderData);
+      return HttpResponse.json(createResponse(order, "Order created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update order
+  http.put("/api/orders/:id", async ({ params, request }) => {
+    try {
+      const updates = await request.json() as Partial<Order>;
+      const order = db.updateOrder(params.id as string, updates);
+      if (!order) {
+        return HttpResponse.json(
+          { success: false, message: "Order not found" },
+          { status: 404 }
+        );
+      }
+      return HttpResponse.json(createResponse(order, "Order updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+];
+
+// Dashboard handlers
+export const dashboardHandlers = [
+  // Get dashboard stats
+  http.get("/api/dashboard", () => {
+    const stats = db.getDashboardStats();
+    const activities = db.getRecentActivities();
+    
+    return HttpResponse.json(createResponse({
+      stats,
+      recentActivity: activities,
+    }));
+  }),
+];
+
+// Reports handlers
+export const reportHandlers = [
+  // Get royalties report
+  http.get("/api/reports/royalties", ({ request }) => {
+    const url = new URL(request.url);
+    const period = url.searchParams.get("period");
+    
+    // Filter by period if provided
+    let reports = db.getRoyaltyReports();
+    if (period) {
+      reports = reports.filter((r: RoyaltyReportRow) => r.period === period);
+    }
+    
+    const totalRoyalties = reports.reduce((sum: number, r: RoyaltyReportRow) => sum + r.royaltyAmount, 0);
+    const monthlyBreakdown = reports.map((r: RoyaltyReportRow) => ({
+      month: r.period,
+      amount: r.royaltyAmount,
+    }));
+    
+    return HttpResponse.json(createResponse({
+      totalRoyalties,
+      monthlyBreakdown,
+      reports,
+    }));
+  }),
+
+  // Get students report
+  http.get("/api/reports/students", ({ request }) => {
+    const url = new URL(request.url);
+    const programId = url.searchParams.get("programId");
+    
+    // Filter by program if provided
+    let reports = db.getStudentReports();
+    if (programId) {
+      reports = reports.filter((r: StudentReportRow) => r.programId === programId);
+    }
+    
+    const totalStudents = reports.length;
+    const activeStudents = reports.filter((r: StudentReportRow) => r.status === "active").length;
+    const newRegistrations = reports.filter((r: StudentReportRow) => {
+      const enrollmentDate = new Date(r.enrollmentDate);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return enrollmentDate >= thirtyDaysAgo;
+    }).length;
+    
+    // Program breakdown
+    const programBreakdown = reports.reduce((acc: Record<string, number>, report: StudentReportRow) => {
+      const programName = report.programName;
+      acc[programName] = (acc[programName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return HttpResponse.json(createResponse({
+      totalStudents,
+      activeStudents,
+      newRegistrations,
+      programBreakdown: Object.entries(programBreakdown).map(([program, students]) => ({
+        program,
+        students,
+      })),
+      reports,
+    }));
+  }),
+];
+
+// Combine all handlers
+export const handlers = [
+  ...programHandlers,
+  ...studentHandlers,
+  ...teacherHandlers,
+  ...orderHandlers,
+  ...dashboardHandlers,
+  ...reportHandlers,
+];
