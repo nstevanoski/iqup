@@ -236,6 +236,11 @@ export default function LearningGroupDetailPage() {
       discount: 50.00,
       finalPrice: 399.98,
       currency: "USD",
+      coursePrice: 399.98,
+      numberOfPayments: 3,
+      gapBetweenPayments: 30,
+      pricePerMonth: 133.33,
+      paymentMethod: "installments",
     },
     owner: {
       id: "owner_1",

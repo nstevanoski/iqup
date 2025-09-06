@@ -244,6 +244,12 @@ export interface LearningGroup extends BaseEntity {
     discount?: number;
     finalPrice: number;
     currency: string;
+    // Enhanced payment information
+    coursePrice: number;
+    numberOfPayments?: number;
+    gapBetweenPayments?: number; // in days
+    pricePerMonth?: number;
+    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
   };
   owner: {
     id: string;

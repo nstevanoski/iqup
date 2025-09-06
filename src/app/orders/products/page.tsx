@@ -7,7 +7,8 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser } from "@/store/auth";
 import { Product, ProductList } from "@/types";
 import { useState, useEffect } from "react";
-import { Plus, Eye, Edit, Trash2, Package, DollarSign, AlertTriangle, CheckCircle, XCircle, Share2 } from "lucide-react";
+import { StockReceivingForm } from "@/components/forms/StockReceivingForm";
+import { Plus, Eye, Edit, Trash2, Package, DollarSign, AlertTriangle, CheckCircle, XCircle, Share2, Truck } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
 const sampleProducts: Product[] = [
@@ -401,6 +402,10 @@ export default function ProductsPage() {
     router.push("/orders/product-lists/new");
   };
 
+  const handleStockReceiving = () => {
+    router.push("/orders/products/receive-stock");
+  };
+
   // Calculate stock alerts
   const lowStockProducts = data.filter(p => p.qty <= p.minStock && p.qty > 0);
   const outOfStockProducts = data.filter(p => p.qty <= 0);
@@ -414,6 +419,13 @@ export default function ProductsPage() {
             <p className="text-gray-600">Manage products, inventory, and product lists. Create and share product lists with MFs.</p>
           </div>
           <div className="flex space-x-3">
+            <button 
+              onClick={handleStockReceiving}
+              className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors flex items-center gap-2"
+            >
+              <Truck className="h-4 w-4" />
+              Receive Stock
+            </button>
             <button 
               onClick={handleCreateProductList}
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
@@ -547,6 +559,7 @@ export default function ProductsPage() {
             </div>
           </div>
         )}
+
       </div>
     </DashboardLayout>
   );

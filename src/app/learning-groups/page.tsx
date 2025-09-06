@@ -41,6 +41,12 @@ const sampleLearningGroups: LearningGroup[] = [
       discount: 50.00,
       finalPrice: 399.98,
       currency: "USD",
+      // Enhanced payment information
+      coursePrice: 399.98,
+      numberOfPayments: 3,
+      gapBetweenPayments: 30,
+      pricePerMonth: 133.33,
+      paymentMethod: "installments",
     },
     owner: {
       id: "owner_1",
@@ -101,6 +107,12 @@ const sampleLearningGroups: LearningGroup[] = [
       totalPrice: 299.98,
       finalPrice: 299.98,
       currency: "USD",
+      // Enhanced payment information
+      coursePrice: 299.98,
+      numberOfPayments: 1,
+      gapBetweenPayments: 0,
+      pricePerMonth: 299.98,
+      paymentMethod: "one-time",
     },
     owner: {
       id: "owner_2",
@@ -156,6 +168,12 @@ const sampleLearningGroups: LearningGroup[] = [
       discount: 100.00,
       finalPrice: 499.98,
       currency: "USD",
+      // Enhanced payment information
+      coursePrice: 499.98,
+      numberOfPayments: 6,
+      gapBetweenPayments: 15,
+      pricePerMonth: 83.33,
+      paymentMethod: "installments",
     },
     owner: {
       id: "owner_3",

@@ -7,7 +7,8 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { Order, Product } from "@/types";
 import { useState, useEffect } from "react";
-import { Plus, Eye, Edit, Trash2, Package, DollarSign, Calendar, User, Building, Truck, AlertCircle } from "lucide-react";
+import { OrderConsolidationForm } from "@/components/forms/OrderConsolidationForm";
+import { Plus, Eye, Edit, Trash2, Package, DollarSign, Calendar, User, Building, Truck, AlertCircle, Layers } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
 const sampleOrders: Order[] = [
@@ -489,9 +490,11 @@ export default function OrdersPage() {
         }
         break;
       case "consolidate":
-        if (user?.role === "MF" && confirm(`Consolidate ${rows.length} orders?`)) {
-          // In a real app, this would make an API call to consolidate orders
-          console.log("Consolidating orders:", rows);
+        if (user?.role === "MF" && rows.length >= 2) {
+          const orderIds = rows.map(order => order.id).join(',');
+          router.push(`/orders/consolidate?orderIds=${orderIds}`);
+        } else if (user?.role === "MF" && rows.length < 2) {
+          alert("Please select at least 2 orders to consolidate.");
         }
         break;
     }
@@ -518,6 +521,7 @@ export default function OrdersPage() {
   const handleCreateOrder = () => {
     router.push("/orders/new");
   };
+
 
   const getRoleBasedMessage = () => {
     switch (user?.role) {
@@ -551,6 +555,15 @@ export default function OrdersPage() {
               Create Order
             </button>
           )}
+          {user?.role === "MF" && (
+            <button 
+              onClick={() => router.push("/orders/price-management")}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <DollarSign className="h-4 w-4" />
+              Price Management
+            </button>
+          )}
         </div>
 
         {/* Role-based information */}
@@ -558,14 +571,14 @@ export default function OrdersPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
             <div className="flex">
               <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-blue-400" />
+                <Layers className="h-5 w-5 text-blue-400" />
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-blue-800">
                   Order Consolidation
                 </h3>
                 <div className="mt-2 text-sm text-blue-700">
-                  <p>You can consolidate multiple LC orders to reduce shipping costs and improve efficiency.</p>
+                  <p>Select multiple LC orders and use the "Consolidate" bulk action to combine them into a single order to HQ.</p>
                 </div>
               </div>
             </div>
@@ -590,6 +603,7 @@ export default function OrdersPage() {
             emptyMessage="No orders found"
           />
         </div>
+
       </div>
     </DashboardLayout>
   );

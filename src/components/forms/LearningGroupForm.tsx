@@ -34,6 +34,12 @@ interface FormData {
     discount?: number;
     finalPrice: number;
     currency: string;
+    // Enhanced payment information
+    coursePrice: number;
+    numberOfPayments?: number;
+    gapBetweenPayments?: number; // in days
+    pricePerMonth?: number;
+    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
   };
   owner: {
     id: string;
@@ -75,6 +81,12 @@ const initialFormData: FormData = {
     discount: 0,
     finalPrice: 0,
     currency: "USD",
+    // Enhanced payment information
+    coursePrice: 0,
+    numberOfPayments: 1,
+    gapBetweenPayments: 30,
+    pricePerMonth: 0,
+    paymentMethod: "one-time",
   },
   owner: {
     id: "",
@@ -112,11 +124,49 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Auto-assign owner and franchisee based on current user (mock implementation)
+  useEffect(() => {
+    if (!learningGroup) {
+      // Mock current user data - in real app, this would come from auth context
+      const currentUser = {
+        id: "current_user_1",
+        name: "Dr. Sarah Wilson",
+        role: "LC Manager",
+        franchisee: {
+          id: "franchisee_1",
+          name: "Boston Learning Center",
+          location: "Boston, MA"
+        }
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        owner: {
+          id: currentUser.id,
+          name: currentUser.name,
+          role: currentUser.role,
+        },
+        franchisee: {
+          id: currentUser.franchisee.id,
+          name: currentUser.franchisee.name,
+          location: currentUser.franchisee.location,
+        },
+      }));
+    }
+  }, [learningGroup]);
+
   // Calculate total price when program or subprogram price changes
   useEffect(() => {
     const total = formData.pricingSnapshot.programPrice + formData.pricingSnapshot.subProgramPrice;
     const discount = formData.pricingSnapshot.discount || 0;
     const finalPrice = total - discount;
+    
+    // Calculate course price (can be different from total)
+    const coursePrice = formData.pricingSnapshot.coursePrice || total;
+    
+    // Calculate price per month for installment payments
+    const numberOfPayments = formData.pricingSnapshot.numberOfPayments || 1;
+    const pricePerMonth = numberOfPayments > 1 ? finalPrice / numberOfPayments : finalPrice;
     
     setFormData(prev => ({
       ...prev,
@@ -124,9 +174,17 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
         ...prev.pricingSnapshot,
         totalPrice: total,
         finalPrice: finalPrice,
+        coursePrice: coursePrice,
+        pricePerMonth: pricePerMonth,
       },
     }));
-  }, [formData.pricingSnapshot.programPrice, formData.pricingSnapshot.subProgramPrice, formData.pricingSnapshot.discount]);
+  }, [
+    formData.pricingSnapshot.programPrice, 
+    formData.pricingSnapshot.subProgramPrice, 
+    formData.pricingSnapshot.discount,
+    formData.pricingSnapshot.coursePrice,
+    formData.pricingSnapshot.numberOfPayments
+  ]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -497,62 +555,162 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
           </div>
 
           {/* Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <DollarSign className="h-4 w-4 inline mr-1" />
-                Program Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.pricingSnapshot.programPrice}
-                onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Pricing Information</h3>
+            
+            {/* Basic Pricing */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <DollarSign className="h-4 w-4 inline mr-1" />
+                  Program Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.pricingSnapshot.programPrice}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sub Program Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.pricingSnapshot.subProgramPrice}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.pricingSnapshot.coursePrice}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Discount
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.pricingSnapshot.discount || 0}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sub Program Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.pricingSnapshot.subProgramPrice}
-                onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            {/* Payment Method */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Method
+                </label>
+                <select
+                  value={formData.pricingSnapshot.paymentMethod}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "paymentMethod", e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="one-time">One-time Payment</option>
+                  <option value="installments">Installments</option>
+                  <option value="monthly">Monthly Subscription</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Final Price
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.pricingSnapshot.finalPrice}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Discount
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.pricingSnapshot.discount || 0}
-                onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {/* Installment Details */}
+            {formData.pricingSnapshot.paymentMethod === "installments" && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-blue-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Payments
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.pricingSnapshot.numberOfPayments || 1}
+                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || 1)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Final Price
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.pricingSnapshot.finalPrice}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gap Between Payments (days)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.pricingSnapshot.gapBetweenPayments || 30}
+                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "gapBetweenPayments", parseInt(e.target.value) || 30)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price per Payment
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.pricingSnapshot.pricePerMonth || 0}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Monthly Subscription Details */}
+            {formData.pricingSnapshot.paymentMethod === "monthly" && (
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Monthly Price
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.pricingSnapshot.pricePerMonth || 0}
+                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Owner and Franchisee */}
