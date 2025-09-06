@@ -119,16 +119,25 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
     const fetchStudent = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // In a real app, this would be an API call
-        setStudent(mockStudent);
+        // Fetch student data from API
+        const response = await fetch(`/api/students/${resolvedParams.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setStudent(data.data);
+        } else {
+          // Fallback to mock data
+          setStudent(mockStudent);
+        }
       } catch (err) {
         setError("Failed to load student");
         console.error("Error fetching student:", err);
+        // Fallback to mock data
+        setStudent(mockStudent);
       } finally {
         setLoading(false);
       }

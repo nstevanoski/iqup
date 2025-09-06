@@ -162,21 +162,39 @@ export default function StudentPaymentsPage({ params }: StudentPaymentsPageProps
   const [editingPayment, setEditingPayment] = useState<StudentPayment | null>(null);
 
   useEffect(() => {
-    // Simulate API call
-    const fetchStudent = async () => {
+    const fetchStudentAndPayments = async () => {
       try {
         setLoading(true);
         
-        // In a real app, this would be an API call
-        setStudent(mockStudent);
+        // Fetch student data
+        const studentResponse = await fetch(`/api/students/${resolvedParams.id}`);
+        
+        if (studentResponse.ok) {
+          const studentData = await studentResponse.json();
+          setStudent(studentData.data);
+          
+          // Set payments from student data if available
+          if (studentData.data?.payments) {
+            setPayments(studentData.data.payments.map((payment: any) => validatePayment(payment)));
+          } else {
+            setPayments([]);
+          }
+        } else {
+          // Fallback to mock data
+          setStudent(mockStudent);
+          setPayments(mockPayments.map(payment => validatePayment(payment)));
+        }
       } catch (err) {
         console.error("Error fetching student:", err);
+        // Fallback to mock data
+        setStudent(mockStudent);
+        setPayments(mockPayments.map(payment => validatePayment(payment)));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStudent();
+    fetchStudentAndPayments();
   }, [resolvedParams.id]);
 
   const getStatusIcon = (status: string | undefined | null) => {

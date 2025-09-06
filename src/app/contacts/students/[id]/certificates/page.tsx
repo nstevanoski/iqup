@@ -103,21 +103,36 @@ export default function StudentCertificatesPage({ params }: StudentCertificatesP
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    const fetchStudent = async () => {
+    const fetchStudentAndCertificates = async () => {
       try {
         setLoading(true);
         
-        // In a real app, this would be an API call
-        setStudent(mockStudent);
+        // Fetch student data
+        const studentResponse = await fetch(`/api/students/${resolvedParams.id}`);
+        if (studentResponse.ok) {
+          const studentData = await studentResponse.json();
+          setStudent(studentData.data);
+          
+          // Set certificates from student data if available
+          if (studentData.data?.certificates) {
+            setCertificates(studentData.data.certificates);
+          }
+        } else {
+          // Fallback to mock data
+          setStudent(mockStudent);
+          setCertificates(mockCertificates);
+        }
       } catch (err) {
         console.error("Error fetching student:", err);
+        // Fallback to mock data
+        setStudent(mockStudent);
+        setCertificates(mockCertificates);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStudent();
+    fetchStudentAndCertificates();
   }, [resolvedParams.id]);
 
   // Helper function to safely format status
