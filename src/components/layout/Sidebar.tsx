@@ -69,7 +69,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!isCollapsed && (
-          <h1 className="text-lg font-semibold text-gray-900">iQuP</h1>
+          <h1 className="text-lg font-semibold text-gray-900">iqUP FMS</h1>
         )}
       </div>
 
