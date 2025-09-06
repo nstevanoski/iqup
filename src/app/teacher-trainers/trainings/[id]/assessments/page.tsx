@@ -276,7 +276,7 @@ const getColumns = (): Column<TrainingRegistration>[] => [
     ),
   },
   {
-    key: "assessment",
+    key: "assessment.status",
     label: "Assessment",
     sortable: false,
     render: (value) => (
@@ -306,7 +306,7 @@ const getColumns = (): Column<TrainingRegistration>[] => [
     ),
   },
   {
-    key: "assessment",
+    key: "assessment.feedback",
     label: "Feedback",
     sortable: false,
     render: (value) => (
@@ -322,7 +322,7 @@ const getColumns = (): Column<TrainingRegistration>[] => [
     ),
   },
   {
-    key: "assessment",
+    key: "assessment.graded",
     label: "Graded",
     sortable: false,
     render: (value) => (

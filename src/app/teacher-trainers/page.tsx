@@ -127,48 +127,52 @@ const getColumns = (userRole: string): Column<TeacherTrainerAccount>[] => [
     ),
   },
   {
-    key: "profile",
+    key: "profile.specialization",
     label: "Specialization",
     sortable: false,
-    render: (value) => (
+    render: (value, row) => (
       <div className="text-sm">
-        <div className="font-medium text-gray-900">{value.specialization.slice(0, 2).join(", ")}</div>
-        {value.specialization.length > 2 && (
-          <div className="text-xs text-gray-500">+{value.specialization.length - 2} more</div>
+        <div className="font-medium text-gray-900">
+          {row.profile?.specialization?.slice(0, 2).join(", ") || "None"}
+        </div>
+        {row.profile?.specialization && row.profile.specialization.length > 2 && (
+          <div className="text-xs text-gray-500">+{row.profile.specialization.length - 2} more</div>
         )}
       </div>
     ),
   },
   {
-    key: "profile",
+    key: "profile.experience",
     label: "Experience",
     sortable: true,
-    render: (value) => (
+    render: (value, row) => (
       <div className="text-sm">
         <div className="flex items-center">
           <Clock className="h-4 w-4 mr-1 text-gray-400" />
-          <span>{value.experience} years</span>
+          <span>{row.profile?.experience || 0} years</span>
         </div>
-        <div className="text-xs text-gray-500">{value.qualifications.length} qualifications</div>
+        <div className="text-xs text-gray-500">
+          {row.profile?.qualifications?.length || 0} qualifications
+        </div>
       </div>
     ),
   },
   {
-    key: "profile",
+    key: "profile.certifications",
     label: "Certifications",
     sortable: false,
-    render: (value) => (
+    render: (value, row) => (
       <div className="text-sm">
-        {value.certifications.length > 0 ? (
+        {row.profile?.certifications && row.profile.certifications.length > 0 ? (
           <div className="flex flex-wrap gap-1">
-            {value.certifications.slice(0, 2).map((cert: string, index: number) => (
+            {row.profile.certifications.slice(0, 2).map((cert: string, index: number) => (
               <span key={index} className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                 {cert}
               </span>
             ))}
-            {value.certifications.length > 2 && (
+            {row.profile.certifications.length > 2 && (
               <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                +{value.certifications.length - 2}
+                +{row.profile.certifications.length - 2}
               </span>
             )}
           </div>
@@ -179,17 +183,17 @@ const getColumns = (userRole: string): Column<TeacherTrainerAccount>[] => [
     ),
   },
   {
-    key: "profile",
+    key: "profile.languages",
     label: "Languages",
     sortable: false,
-    render: (value) => (
+    render: (value, row) => (
       <div className="text-sm">
         <div className="flex flex-wrap gap-1">
-          {value.languages.map((lang: string, index: number) => (
+          {row.profile?.languages?.map((lang: string, index: number) => (
             <span key={index} className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
               {lang}
             </span>
-          ))}
+          )) || <span className="text-gray-400">None</span>}
         </div>
       </div>
     ),
