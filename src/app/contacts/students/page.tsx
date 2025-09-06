@@ -226,7 +226,7 @@ export default function StudentsPage() {
           </button>
         </div>
         
-        <div className="bg-white rounded-lg shadow">
+        <div>
           <DataTable
             data={data}
             columns={columns}

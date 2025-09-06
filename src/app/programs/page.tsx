@@ -6,6 +6,7 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { Program } from "@/types";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
@@ -232,6 +233,7 @@ const getColumns = (userRole: string, canEdit: boolean): Column<Program>[] => {
 };
 
 export default function ProgramsPage() {
+  const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
   const [data, setData] = useState<Program[]>(samplePrograms);
@@ -266,11 +268,11 @@ export default function ProgramsPage() {
     
     switch (action) {
       case "view":
-        alert(`Viewing program: ${row.name}`);
+        router.push(`/programs/${row.id}`);
         break;
       case "edit":
         if (canEdit) {
-          alert(`Editing program: ${row.name}`);
+          router.push(`/programs/${row.id}/edit`);
         } else {
           alert("You don't have permission to edit programs");
         }
@@ -339,7 +341,10 @@ export default function ProgramsPage() {
             </p>
           </div>
           {canEdit && (
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => router.push("/programs/new")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add Program
             </button>
@@ -367,7 +372,7 @@ export default function ProgramsPage() {
           </div>
         )}
         
-        <div className="bg-white rounded-lg shadow">
+        <div>
           <DataTable
             data={data}
             columns={columns}

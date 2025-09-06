@@ -26,7 +26,7 @@ export function withAuth<T extends object>(
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">iQuP</h1>
+            <h1 className="text-2xl font-bold text-gray-900">iqUP FMS</h1>
             <p className="text-gray-600">Redirecting to login...</p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export function AuthGuard({ children, fallback }: WithAuthProps) {
       fallback || (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">iQuP</h1>
+            <h1 className="text-2xl font-bold text-gray-900">iqUP FMS</h1>
             <p className="text-gray-600">Redirecting to login...</p>
           </div>
         </div>

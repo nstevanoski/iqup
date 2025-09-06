@@ -418,7 +418,7 @@ export default function TrainingTypesPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow">
+        <div>
           <DataTable
             data={data}
             columns={columns}

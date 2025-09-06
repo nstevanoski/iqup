@@ -532,7 +532,7 @@ export default function TrainingsPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow">
+        <div>
           <DataTable
             data={data}
             columns={columns}

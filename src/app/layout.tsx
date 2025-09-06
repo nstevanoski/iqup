@@ -44,14 +44,14 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
     images: [`${siteConfig.url}/images/og.jpg`],
-    // creator: '@th_clarence',
+    creator: '@nstevanoski',
   },
-  // authors: [
-  //   {
-  //     name: 'Theodorus Clarence',
-  //     url: 'https://theodorusclarence.com',
-  //   },
-  // ],
+  authors: [
+    {
+      name: 'Nikola Stevanoski',
+      url: 'https://nstevanoski.com',
+    },
+  ],
 };
 
 export default function RootLayout({
