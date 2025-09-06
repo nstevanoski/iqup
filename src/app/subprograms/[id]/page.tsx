@@ -262,7 +262,7 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
         </div>
 
         {/* SubProgram Detail */}
-        <SubProgramDetail subProgram={subProgram} program={program} onEdit={undefined} />
+        <SubProgramDetail subProgram={subProgram} program={program || undefined} onEdit={undefined} />
       </div>
     </DashboardLayout>
   );

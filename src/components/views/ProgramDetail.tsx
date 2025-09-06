@@ -18,6 +18,8 @@ export function ProgramDetail({ program, onEdit }: ProgramDetailProps) {
     vocational: "bg-green-100 text-green-800",
     certification: "bg-purple-100 text-purple-800",
     workshop: "bg-orange-100 text-orange-800",
+    birthday_party: "bg-pink-100 text-pink-800",
+    stem_camp: "bg-indigo-100 text-indigo-800",
   };
 
   const statusColors = {

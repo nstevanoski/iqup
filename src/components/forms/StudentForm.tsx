@@ -150,7 +150,10 @@ export function StudentForm({
       phone: student.phone || "",
       address: student.address || initialFormData.address,
       parentInfo: student.parentInfo,
-      emergencyContact: student.emergencyContact,
+      emergencyContact: {
+        email: student.emergencyContact?.email || "",
+        phone: student.emergencyContact?.phone || "",
+      },
       status: student.status,
       enrollmentDate: student.enrollmentDate.toISOString().split('T')[0],
       lastCurrentLG: student.lastCurrentLG ? {
@@ -218,7 +221,7 @@ export function StudentForm({
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof FormData],
+          ...(prev[parent as keyof FormData] as any || {}),
           [child]: value,
         },
       }));
@@ -620,11 +623,11 @@ export function StudentForm({
             <select
               value={formData.accountFranchise.id}
               onChange={(e) => {
-                const selectedScope = selectedScope?.id === e.target.value ? selectedScope : null;
+                const selectedAccount = selectedScope?.id === e.target.value ? selectedScope : null;
                 handleInputChange("accountFranchise", {
                   id: e.target.value,
-                  name: selectedScope?.name || "",
-                  type: selectedScope?.type === "MF" ? "MF" : "LC",
+                  name: selectedAccount?.name || "",
+                  type: selectedAccount?.type === "MF" ? "MF" : "LC",
                 });
               }}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${

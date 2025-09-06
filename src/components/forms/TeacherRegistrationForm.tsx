@@ -28,6 +28,8 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
         title: "Mr.",
         email: "john.smith@example.com",
         phone: "+1-555-0123",
+        dateOfBirth: new Date("1985-03-15"),
+        gender: "male",
         status: "active",
         centers: [{
           centerId: "center_1",
@@ -68,6 +70,8 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
         title: "Ms.",
         email: "sarah.johnson@example.com",
         phone: "+1-555-0124",
+        dateOfBirth: new Date("1988-07-22"),
+        gender: "female",
         status: "active",
         centers: [{
           centerId: "center_1",
@@ -114,6 +118,8 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
         title: "Dr.",
         email: "michael.brown@example.com",
         phone: "+1-555-0125",
+        dateOfBirth: new Date("1982-11-08"),
+        gender: "male",
         status: "active",
         centers: [{
           centerId: "center_2",
