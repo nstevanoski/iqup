@@ -428,7 +428,7 @@ export default function LearningGroupsPage() {
           </button>
         </div>
         
-        <div className="bg-white rounded-lg shadow">
+        <div>
           <DataTable
             data={data}
             columns={columns}
