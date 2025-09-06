@@ -35,7 +35,7 @@ const sampleStudents: Student[] = [
     lastName: "Doe",
     email: "john.doe@example.com",
     phone: "+1-555-1001",
-    dateOfBirth: "1995-05-15",
+    dateOfBirth: new Date("1995-05-15"),
     address: {
       street: "123 Main St",
       city: "Boston",
@@ -44,13 +44,15 @@ const sampleStudents: Student[] = [
       country: "USA",
     },
     emergencyContact: {
-      name: "Jane Doe",
-      relationship: "Mother",
+      email: "jane.doe@example.com",
       phone: "+1-555-1002",
     },
     status: "active",
-    enrollmentDate: "2024-01-15",
-    programId: "prog_1",
+    enrollmentDate: new Date("2024-01-15"),
+    programIds: ["prog_1"],
+    subProgramIds: [],
+    learningGroupIds: [],
+    gender: "male",
     notes: "Excellent student",
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-15"),
@@ -61,7 +63,7 @@ const sampleStudents: Student[] = [
     lastName: "Smith",
     email: "alice.smith@example.com",
     phone: "+1-555-1003",
-    dateOfBirth: "1998-08-22",
+    dateOfBirth: new Date("1998-08-22"),
     address: {
       street: "456 Oak Ave",
       city: "Seattle",
@@ -70,13 +72,15 @@ const sampleStudents: Student[] = [
       country: "USA",
     },
     emergencyContact: {
-      name: "Bob Smith",
-      relationship: "Father",
+      email: "bob.smith@example.com",
       phone: "+1-555-1004",
     },
     status: "active",
-    enrollmentDate: "2024-01-20",
-    programId: "prog_2",
+    enrollmentDate: new Date("2024-01-20"),
+    programIds: ["prog_2"],
+    subProgramIds: [],
+    learningGroupIds: [],
+    gender: "female",
     notes: "Quick learner",
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-20"),
@@ -87,7 +91,7 @@ const sampleStudents: Student[] = [
     lastName: "Johnson",
     email: "michael.johnson@example.com",
     phone: "+1-555-1005",
-    dateOfBirth: "1993-12-10",
+    dateOfBirth: new Date("1993-12-10"),
     address: {
       street: "789 Pine St",
       city: "Austin",
@@ -96,13 +100,15 @@ const sampleStudents: Student[] = [
       country: "USA",
     },
     emergencyContact: {
-      name: "Sarah Johnson",
-      relationship: "Sister",
+      email: "sarah.johnson@example.com",
       phone: "+1-555-1006",
     },
     status: "active",
-    enrollmentDate: "2024-02-01",
-    programId: "prog_3",
+    enrollmentDate: new Date("2024-02-01"),
+    programIds: ["prog_3"],
+    subProgramIds: [],
+    learningGroupIds: [],
+    gender: "male",
     notes: "Very motivated",
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-02-01"),
@@ -116,9 +122,25 @@ const sampleProducts: Product[] = [
     description: "Comprehensive grammar exercises for English learners",
     category: "Books",
     price: 29.99,
+    cost: 15.00,
     sku: "EGW-001",
-    stock: 100,
     status: "active",
+    tags: ["grammar", "workbook", "english"],
+    images: ["grammar-workbook.jpg"],
+    specifications: {
+      pages: 200,
+      language: "English",
+      level: "Intermediate",
+    },
+    code: "EGW-001",
+    qty: 100,
+    minStock: 10,
+    maxStock: 200,
+    unit: "pieces",
+    supplier: "Educational Books Inc.",
+    markup: 100,
+    sellingPrice: 29.99,
+    productLists: ["list_1", "list_2"],
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
   },
@@ -128,9 +150,24 @@ const sampleProducts: Product[] = [
     description: "Complete mathematics study guide with practice problems",
     category: "Books",
     price: 39.99,
+    cost: 20.00,
     sku: "MSG-001",
-    stock: 75,
     status: "active",
+    tags: ["mathematics", "study", "guide"],
+    images: ["math-guide.jpg"],
+    specifications: {
+      pages: 300,
+      level: "Advanced",
+    },
+    code: "MSG-001",
+    qty: 75,
+    minStock: 15,
+    maxStock: 150,
+    unit: "pieces",
+    supplier: "Math Publishers Ltd.",
+    markup: 100,
+    sellingPrice: 39.99,
+    productLists: ["list_1", "list_3"],
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
   },
@@ -140,9 +177,25 @@ const sampleProducts: Product[] = [
     description: "Complete physics experiment kit for hands-on learning",
     category: "Equipment",
     price: 149.99,
+    cost: 75.00,
     sku: "PLK-001",
-    stock: 25,
     status: "active",
+    tags: ["physics", "lab", "equipment"],
+    images: ["physics-kit.jpg"],
+    specifications: {
+      weight: "2.5kg",
+      experiments: 15,
+      level: "Advanced",
+    },
+    code: "PLK-001",
+    qty: 25,
+    minStock: 5,
+    maxStock: 50,
+    unit: "kits",
+    supplier: "Science Equipment Co.",
+    markup: 100,
+    sellingPrice: 149.99,
+    productLists: ["list_2", "list_3"],
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
   },
@@ -263,7 +316,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                     {selectedStudent.email} • {selectedStudent.phone}
                   </div>
                   <div className="text-blue-600 text-xs mt-1">
-                    Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate}
+                    Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate.toLocaleDateString()}
                   </div>
                 </div>
               </div>
@@ -286,7 +339,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
               <option value="">Choose a product...</option>
               {sampleProducts.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.name} - ${product.price} (Stock: {product.stock})
+                  {product.name} - ${product.price} (Stock: {product.qty})
                 </option>
               ))}
             </select>
@@ -302,7 +355,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                     {selectedProduct.description}
                   </div>
                   <div className="text-green-600 text-xs mt-1">
-                    Price: ${selectedProduct.price} • SKU: {selectedProduct.sku} • Stock: {selectedProduct.stock}
+                    Price: ${selectedProduct.price} • SKU: {selectedProduct.sku} • Stock: {selectedProduct.qty}
                   </div>
                 </div>
               </div>
@@ -391,7 +444,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                   <div className="mt-2 text-sm text-yellow-700">
                     <p>
                       Assigning this product will decrement the LC inventory by 1 unit.
-                      Current stock: {selectedProduct.stock} units.
+                      Current stock: {selectedProduct.qty} units.
                     </p>
                   </div>
                 </div>
