@@ -59,6 +59,12 @@ export const navigationItems: NavigationItem[] = [
     roles: ["HQ", "MF", "LC"],
   },
   {
+    label: "Products",
+    href: "/orders/products",
+    icon: "Package",
+    roles: ["HQ"],
+  },
+  {
     label: "Trainings",
     href: "/trainings",
     icon: "BookOpenCheck",
@@ -119,6 +125,7 @@ export const navigationRules: NavigationRule[] = [
       "/contacts/teachers",
       "/learning-groups",
       "/orders",
+      "/orders/products",
       "/trainings",
       "/teacher-trainers",
       "/accounts",
