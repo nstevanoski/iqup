@@ -20,6 +20,8 @@ import {
   ApiResponse,
   PaginatedResponse,
   FilterOptions,
+  Account,
+  Application,
 } from "@/types";
 
 // Helper function to create API response
@@ -1521,6 +1523,209 @@ const teacherTrainerHandlers = [
   }),
 ];
 
+// Account Handlers
+const accountHandlers = [
+  http.get("/api/accounts", ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search") || "";
+    const status = url.searchParams.get("status") || "";
+    const type = url.searchParams.get("type") || "";
+    const sortBy = url.searchParams.get("sortBy") || "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let filteredAccounts = db.getAccounts();
+
+    // Filter by search
+    if (search) {
+      filteredAccounts = filteredAccounts.filter((acc: Account) =>
+        acc.name.toLowerCase().includes(search.toLowerCase()) ||
+        acc.contactInfo.email.toLowerCase().includes(search.toLowerCase()) ||
+        acc.owner.firstName.toLowerCase().includes(search.toLowerCase()) ||
+        acc.owner.lastName.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (status) {
+      filteredAccounts = filteredAccounts.filter((acc: Account) => acc.status === status);
+    }
+
+    // Filter by type
+    if (type) {
+      filteredAccounts = filteredAccounts.filter((acc: Account) => acc.type === type);
+    }
+
+    // Sort
+    filteredAccounts.sort((a: Account, b: Account) => {
+      const aValue = (a[sortBy as keyof Account] as any) || "";
+      const bValue = (b[sortBy as keyof Account] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedAccounts = filteredAccounts.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedAccounts,
+      total: filteredAccounts.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredAccounts.length / limit),
+    });
+  }),
+
+  http.get("/api/accounts/:id", ({ params }) => {
+    const account = db.getAccountById(params.id as string);
+    if (!account) {
+      return HttpResponse.json({ error: "Account not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: account });
+  }),
+
+  http.post("/api/accounts", async ({ request }) => {
+    const accountData = await request.json() as Omit<Account, "id" | "createdAt" | "updatedAt">;
+    const newAccount = db.createAccount(accountData);
+    return HttpResponse.json({ data: newAccount }, { status: 201 });
+  }),
+
+  http.put("/api/accounts/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<Account>;
+    const updatedAccount = db.updateAccount(params.id as string, updates);
+    if (!updatedAccount) {
+      return HttpResponse.json({ error: "Account not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: updatedAccount });
+  }),
+
+  http.delete("/api/accounts/:id", ({ params }) => {
+    const success = db.deleteAccount(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Account not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Account deleted successfully" });
+  }),
+];
+
+// Application Handlers
+const applicationHandlers = [
+  http.get("/api/applications", ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search") || "";
+    const status = url.searchParams.get("status") || "";
+    const type = url.searchParams.get("type") || "";
+    const sortBy = url.searchParams.get("sortBy") || "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let filteredApplications = db.getApplications();
+
+    // Filter by search
+    if (search) {
+      filteredApplications = filteredApplications.filter((app: Application) =>
+        app.applicantInfo.firstName.toLowerCase().includes(search.toLowerCase()) ||
+        app.applicantInfo.lastName.toLowerCase().includes(search.toLowerCase()) ||
+        app.applicantInfo.email.toLowerCase().includes(search.toLowerCase()) ||
+        app.businessInfo.businessName.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (status) {
+      filteredApplications = filteredApplications.filter((app: Application) => app.status === status);
+    }
+
+    // Filter by type
+    if (type) {
+      filteredApplications = filteredApplications.filter((app: Application) => app.applicationType === type);
+    }
+
+    // Sort
+    filteredApplications.sort((a: Application, b: Application) => {
+      const aValue = (a[sortBy as keyof Application] as any) || "";
+      const bValue = (b[sortBy as keyof Application] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedApplications = filteredApplications.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedApplications,
+      total: filteredApplications.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredApplications.length / limit),
+    });
+  }),
+
+  http.get("/api/applications/:id", ({ params }) => {
+    const application = db.getApplicationById(params.id as string);
+    if (!application) {
+      return HttpResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: application });
+  }),
+
+  http.post("/api/applications", async ({ request }) => {
+    const applicationData = await request.json() as Omit<Application, "id" | "createdAt" | "updatedAt">;
+    const newApplication = db.createApplication(applicationData);
+    return HttpResponse.json({ data: newApplication }, { status: 201 });
+  }),
+
+  http.put("/api/applications/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<Application>;
+    const updatedApplication = db.updateApplication(params.id as string, updates);
+    if (!updatedApplication) {
+      return HttpResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: updatedApplication });
+  }),
+
+  http.delete("/api/applications/:id", ({ params }) => {
+    const success = db.deleteApplication(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Application deleted successfully" });
+  }),
+
+  // Application approval workflow
+  http.post("/api/applications/:id/approve", async ({ params, request }) => {
+    const reviewInfo = await request.json() as Application["reviewInfo"];
+    const approvedApplication = db.approveApplication(params.id as string, reviewInfo);
+    if (!approvedApplication) {
+      return HttpResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: approvedApplication });
+  }),
+
+  http.post("/api/applications/:id/reject", async ({ params, request }) => {
+    const reviewInfo = await request.json() as Application["reviewInfo"];
+    const rejectedApplication = db.rejectApplication(params.id as string, reviewInfo);
+    if (!rejectedApplication) {
+      return HttpResponse.json({ error: "Application not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: rejectedApplication });
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
@@ -1536,4 +1741,6 @@ export const handlers = [
   ...trainingHandlers,
   ...trainingRegistrationHandlers,
   ...teacherTrainerHandlers,
+  ...accountHandlers,
+  ...applicationHandlers,
 ];

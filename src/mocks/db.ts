@@ -17,6 +17,8 @@ import {
   StudentReportRow,
   DashboardStats,
   RecentActivity,
+  Account,
+  Application,
 } from "@/types";
 import { Role } from "@/lib/rbac";
 
@@ -1772,6 +1774,230 @@ export const recentActivities: RecentActivity[] = [
 ];
 
 // Database class for managing data
+// Seed data for Accounts
+export const accounts: Account[] = [
+  {
+    id: "acc_1",
+    name: "Boston MF Region",
+    type: "MF",
+    status: "active",
+    contactInfo: {
+      email: "contact@bostonmf.com",
+      phone: "+1-555-0100",
+      address: {
+        street: "123 Education St",
+        city: "Boston",
+        state: "MA",
+        zipCode: "02101",
+        country: "USA",
+      },
+    },
+    businessInfo: {
+      businessName: "Boston Educational Services LLC",
+      taxId: "12-3456789",
+      registrationNumber: "REG-2023-001",
+      establishedDate: new Date("2023-01-15"),
+    },
+    owner: {
+      firstName: "John",
+      lastName: "Smith",
+      email: "john.smith@bostonmf.com",
+      phone: "+1-555-0101",
+      title: "Regional Manager",
+    },
+    permissions: [
+      { resource: "programs", actions: ["read", "write"] },
+      { resource: "students", actions: ["read", "write"] },
+      { resource: "teachers", actions: ["read", "write"] },
+    ],
+    lastLogin: new Date("2024-01-15"),
+    createdBy: "user_1",
+    createdAt: new Date("2023-01-15"),
+    updatedAt: new Date("2024-01-15"),
+  },
+  {
+    id: "acc_2",
+    name: "Boston Learning Center",
+    type: "LC",
+    status: "active",
+    contactInfo: {
+      email: "contact@bostonlc.com",
+      phone: "+1-555-0200",
+      address: {
+        street: "456 Learning Ave",
+        city: "Boston",
+        state: "MA",
+        zipCode: "02102",
+        country: "USA",
+      },
+    },
+    businessInfo: {
+      businessName: "Boston Learning Center Inc",
+      taxId: "98-7654321",
+      registrationNumber: "REG-2023-002",
+      establishedDate: new Date("2023-02-01"),
+    },
+    owner: {
+      firstName: "Sarah",
+      lastName: "Johnson",
+      email: "sarah.johnson@bostonlc.com",
+      phone: "+1-555-0201",
+      title: "Center Director",
+    },
+    permissions: [
+      { resource: "students", actions: ["read", "write"] },
+      { resource: "teachers", actions: ["read", "write"] },
+      { resource: "orders", actions: ["read", "write"] },
+    ],
+    lastLogin: new Date("2024-01-14"),
+    createdBy: "user_1",
+    parentAccountId: "acc_1",
+    createdAt: new Date("2023-02-01"),
+    updatedAt: new Date("2024-01-14"),
+  },
+];
+
+// Seed data for Applications
+export const applications: Application[] = [
+  {
+    id: "app_1",
+    applicantInfo: {
+      firstName: "Michael",
+      lastName: "Brown",
+      email: "michael.brown@newcenter.com",
+      phone: "+1-555-0300",
+      title: "Owner",
+      company: "New Learning Center",
+      website: "https://newcenter.com",
+      address: {
+        street: "789 Education Blvd",
+        city: "Cambridge",
+        state: "MA",
+        zipCode: "02139",
+        country: "USA",
+      },
+    },
+    businessInfo: {
+      businessName: "New Learning Center LLC",
+      taxId: "11-2233445",
+      registrationNumber: "REG-2024-001",
+      establishedDate: new Date("2024-01-01"),
+      businessType: "Educational Services",
+      numberOfEmployees: 5,
+      annualRevenue: 500000,
+    },
+    applicationType: "LC",
+    status: "new",
+    studentGoals: {
+      year1: {
+        targetStudents: 50,
+        programs: ["English Grammar", "Mathematics"],
+        revenue: 75000,
+        milestones: ["Complete setup", "Hire 2 teachers", "Launch marketing"],
+      },
+      year2: {
+        targetStudents: 100,
+        programs: ["English Grammar", "Mathematics", "Science"],
+        revenue: 150000,
+        milestones: ["Expand to 2 locations", "Add science program"],
+      },
+      year3: {
+        targetStudents: 150,
+        programs: ["English Grammar", "Mathematics", "Science", "Computer Skills"],
+        revenue: 225000,
+        milestones: ["Add computer skills program", "Hire 5 more teachers"],
+      },
+      year4: {
+        targetStudents: 200,
+        programs: ["English Grammar", "Mathematics", "Science", "Computer Skills", "Business English"],
+        revenue: 300000,
+        milestones: ["Add business English", "Expand to 3 locations"],
+      },
+    },
+    documents: {
+      businessLicense: "license_2024_001.pdf",
+      taxCertificate: "tax_cert_2024_001.pdf",
+      financialStatements: ["financial_2023.pdf", "financial_2024_q1.pdf"],
+      marketingPlan: "marketing_plan_2024.pdf",
+      otherDocuments: ["insurance_cert.pdf", "facility_lease.pdf"],
+    },
+    createdAt: new Date("2024-01-10"),
+    updatedAt: new Date("2024-01-10"),
+  },
+  {
+    id: "app_2",
+    applicantInfo: {
+      firstName: "Emily",
+      lastName: "Davis",
+      email: "emily.davis@regionmf.com",
+      phone: "+1-555-0400",
+      title: "CEO",
+      company: "Regional MF Services",
+      website: "https://regionmf.com",
+      address: {
+        street: "321 Business Park",
+        city: "Worcester",
+        state: "MA",
+        zipCode: "01608",
+        country: "USA",
+      },
+    },
+    businessInfo: {
+      businessName: "Regional MF Services Inc",
+      taxId: "22-3344556",
+      registrationNumber: "REG-2024-002",
+      establishedDate: new Date("2023-12-01"),
+      businessType: "Educational Franchise",
+      numberOfEmployees: 15,
+      annualRevenue: 2000000,
+    },
+    applicationType: "MF",
+    status: "under_review",
+    studentGoals: {
+      year1: {
+        targetStudents: 500,
+        programs: ["All Programs"],
+        revenue: 750000,
+        milestones: ["Setup 5 learning centers", "Hire regional team"],
+      },
+      year2: {
+        targetStudents: 1000,
+        programs: ["All Programs"],
+        revenue: 1500000,
+        milestones: ["Expand to 10 centers", "Add specialized programs"],
+      },
+      year3: {
+        targetStudents: 1500,
+        programs: ["All Programs"],
+        revenue: 2250000,
+        milestones: ["Expand to 15 centers", "Launch online programs"],
+      },
+      year4: {
+        targetStudents: 2000,
+        programs: ["All Programs"],
+        revenue: 3000000,
+        milestones: ["Expand to 20 centers", "Launch corporate training"],
+      },
+    },
+    documents: {
+      businessLicense: "license_2024_002.pdf",
+      taxCertificate: "tax_cert_2024_002.pdf",
+      financialStatements: ["financial_2023.pdf", "financial_2024_q1.pdf"],
+      marketingPlan: "marketing_plan_2024_mf.pdf",
+      otherDocuments: ["insurance_cert.pdf", "facility_plans.pdf", "team_resumes.pdf"],
+    },
+    reviewInfo: {
+      reviewedBy: "user_1",
+      reviewedAt: new Date("2024-01-12"),
+      comments: "Application looks strong. Need to verify financial statements and facility plans.",
+      decision: "approved",
+      conditions: ["Verify financial statements", "Confirm facility locations"],
+    },
+    createdAt: new Date("2024-01-08"),
+    updatedAt: new Date("2024-01-12"),
+  },
+];
+
 export class MockDatabase {
   // Programs
   getPrograms(): Program[] {
@@ -2272,6 +2498,105 @@ export class MockDatabase {
 
     teacherTrainerAccounts.splice(index, 1);
     return true;
+  }
+
+  // Accounts
+  getAccounts(): Account[] {
+    return accounts;
+  }
+
+  getAccountById(id: string): Account | undefined {
+    return accounts.find(acc => acc.id === id);
+  }
+
+  createAccount(account: Omit<Account, "id" | "createdAt" | "updatedAt">): Account {
+    const newAccount: Account = {
+      ...account,
+      id: `acc_${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    accounts.push(newAccount);
+    return newAccount;
+  }
+
+  updateAccount(id: string, updates: Partial<Account>): Account | null {
+    const index = accounts.findIndex(acc => acc.id === id);
+    if (index === -1) return null;
+    
+    accounts[index] = {
+      ...accounts[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return accounts[index];
+  }
+
+  deleteAccount(id: string): boolean {
+    const index = accounts.findIndex(acc => acc.id === id);
+    if (index === -1) return false;
+    accounts.splice(index, 1);
+    return true;
+  }
+
+  // Applications
+  getApplications(): Application[] {
+    return applications;
+  }
+
+  getApplicationById(id: string): Application | undefined {
+    return applications.find(app => app.id === id);
+  }
+
+  createApplication(application: Omit<Application, "id" | "createdAt" | "updatedAt">): Application {
+    const newApplication: Application = {
+      ...application,
+      id: `app_${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    applications.push(newApplication);
+    return newApplication;
+  }
+
+  updateApplication(id: string, updates: Partial<Application>): Application | null {
+    const index = applications.findIndex(app => app.id === id);
+    if (index === -1) return null;
+    
+    applications[index] = {
+      ...applications[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return applications[index];
+  }
+
+  deleteApplication(id: string): boolean {
+    const index = applications.findIndex(app => app.id === id);
+    if (index === -1) return false;
+    applications.splice(index, 1);
+    return true;
+  }
+
+  // Application approval workflow
+  approveApplication(id: string, reviewInfo: Application["reviewInfo"]): Application | null {
+    const application = this.getApplicationById(id);
+    if (!application) return null;
+    
+    return this.updateApplication(id, {
+      status: "approved",
+      reviewInfo,
+    });
+  }
+
+  rejectApplication(id: string, reviewInfo: Application["reviewInfo"]): Application | null {
+    const application = this.getApplicationById(id);
+    if (!application) return null;
+    
+    return this.updateApplication(id, {
+      status: "rejected",
+      reviewInfo,
+    });
   }
 }
 

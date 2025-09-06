@@ -543,3 +543,109 @@ export interface RecentActivity {
   userId?: string;
   metadata?: Record<string, any>;
 }
+
+// Account Management Types
+export interface Account extends BaseEntity {
+  name: string;
+  type: "MF" | "LC";
+  status: "active" | "inactive" | "suspended";
+  contactInfo: {
+    email: string;
+    phone: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+    };
+  };
+  businessInfo: {
+    businessName: string;
+    taxId: string;
+    registrationNumber: string;
+    establishedDate: Date;
+  };
+  owner: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    title: string;
+  };
+  permissions: Permission[];
+  lastLogin?: Date;
+  createdBy: string; // User ID who created this account
+  parentAccountId?: string; // For LC accounts, link to parent MF
+}
+
+export interface Application extends BaseEntity {
+  applicantInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    title: string;
+    company: string;
+    website: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+    };
+  };
+  businessInfo: {
+    businessName: string;
+    taxId: string;
+    registrationNumber: string;
+    establishedDate: Date;
+    businessType: string;
+    numberOfEmployees: number;
+    annualRevenue: number;
+  };
+  applicationType: "MF" | "LC";
+  status: "new" | "under_review" | "approved" | "rejected";
+  studentGoals: {
+    year1: {
+      targetStudents: number;
+      programs: string[];
+      revenue: number;
+      milestones: string[];
+    };
+    year2: {
+      targetStudents: number;
+      programs: string[];
+      revenue: number;
+      milestones: string[];
+    };
+    year3: {
+      targetStudents: number;
+      programs: string[];
+      revenue: number;
+      milestones: string[];
+    };
+    year4: {
+      targetStudents: number;
+      programs: string[];
+      revenue: number;
+      milestones: string[];
+    };
+  };
+  documents: {
+    businessLicense: string;
+    taxCertificate: string;
+    financialStatements: string[];
+    marketingPlan: string;
+    otherDocuments: string[];
+  };
+  reviewInfo?: {
+    reviewedBy: string;
+    reviewedAt: Date;
+    comments: string;
+    decision: "approved" | "rejected";
+    conditions?: string[];
+  };
+  parentAccountId?: string; // For LC applications, link to parent MF
+}
