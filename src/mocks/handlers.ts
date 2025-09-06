@@ -241,6 +241,178 @@ export const programHandlers = [
   }),
 ];
 
+// SubPrograms handlers
+export const subProgramHandlers = [
+  // Get all subprograms
+  http.get("/api/subprograms", ({ request }) => {
+    const url = new URL(request.url);
+    const filters = parseQueryParams(url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    const userScope = url.searchParams.get("userScope");
+    
+    let subPrograms = db.getSubPrograms();
+    
+    // Apply role-based filtering
+    if (userRole === "LC") {
+      // LC can only see subprograms shared with their scope
+      subPrograms = subPrograms.filter((sp: SubProgram) => 
+        sp.visibility === "public" || 
+        (sp.visibility === "shared" && sp.sharedWithLCs.includes(userScope || ""))
+      );
+    } else if (userRole === "HQ") {
+      // HQ can see all subprograms (read-only)
+      // No filtering needed
+    } else if (userRole === "MF") {
+      // MF can see all subprograms (CRUD access)
+      // No filtering needed
+    } else if (userRole === "TT") {
+      // TT can only see public subprograms
+      subPrograms = subPrograms.filter((sp: SubProgram) => sp.visibility === "public");
+    }
+    
+    // Apply filters
+    if (filters.search) {
+      subPrograms = subPrograms.filter((sp: SubProgram) => 
+        sp.name.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        sp.description.toLowerCase().includes(filters.search!.toLowerCase()) ||
+        sp.pricingModel.toLowerCase().includes(filters.search!.toLowerCase())
+      );
+    }
+    
+    if (filters.status) {
+      subPrograms = subPrograms.filter((sp: SubProgram) => sp.status === filters.status);
+    }
+    
+    if (filters.category) {
+      subPrograms = subPrograms.filter((sp: SubProgram) => sp.programId === filters.category);
+    }
+    
+    // Apply sorting
+    if (filters.sortBy) {
+      subPrograms.sort((a: SubProgram, b: SubProgram) => {
+        const aVal = (a as any)[filters.sortBy!];
+        const bVal = (b as any)[filters.sortBy!];
+        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        return filters.sortOrder === "desc" ? -result : result;
+      });
+    }
+    
+    const response = createPaginatedResponse(subPrograms, filters.page, filters.limit);
+    return HttpResponse.json(response);
+  }),
+
+  // Get subprogram by ID
+  http.get("/api/subprograms/:id", ({ params, request }) => {
+    const url = new URL(request.url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    const userScope = url.searchParams.get("userScope");
+    
+    const subProgram = db.getSubProgramById(params.id as string);
+    if (!subProgram) {
+      return HttpResponse.json(
+        { success: false, message: "SubProgram not found" },
+        { status: 404 }
+      );
+    }
+    
+    // Check access permissions
+    if (userRole === "LC") {
+      if (subProgram.visibility !== "public" && 
+          !(subProgram.visibility === "shared" && subProgram.sharedWithLCs.includes(userScope || ""))) {
+        return HttpResponse.json(
+          { success: false, message: "Access denied" },
+          { status: 403 }
+        );
+      }
+    } else if (userRole === "TT") {
+      if (subProgram.visibility !== "public") {
+        return HttpResponse.json(
+          { success: false, message: "Access denied" },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return HttpResponse.json(createResponse(subProgram));
+  }),
+
+  // Create subprogram (MF only)
+  http.post("/api/subprograms", async ({ request }) => {
+    const url = new URL(request.url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    
+    if (userRole !== "MF") {
+      return HttpResponse.json(
+        { success: false, message: "Access denied. Only MF can create subprograms." },
+        { status: 403 }
+      );
+    }
+    
+    try {
+      const subProgramData = await request.json() as Omit<SubProgram, "id" | "createdAt" | "updatedAt">;
+      const subProgram = db.createSubProgram(subProgramData);
+      return HttpResponse.json(createResponse(subProgram, "SubProgram created successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Update subprogram (MF only)
+  http.put("/api/subprograms/:id", async ({ params, request }) => {
+    const url = new URL(request.url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    
+    if (userRole !== "MF") {
+      return HttpResponse.json(
+        { success: false, message: "Access denied. Only MF can update subprograms." },
+        { status: 403 }
+      );
+    }
+    
+    try {
+      const updates = await request.json() as Partial<SubProgram>;
+      const subProgram = db.updateSubProgram(params.id as string, updates);
+      if (!subProgram) {
+        return HttpResponse.json(
+          { success: false, message: "SubProgram not found" },
+          { status: 404 }
+        );
+      }
+      return HttpResponse.json(createResponse(subProgram, "SubProgram updated successfully"));
+    } catch (error) {
+      return HttpResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+  }),
+
+  // Delete subprogram (MF only)
+  http.delete("/api/subprograms/:id", ({ params, request }) => {
+    const url = new URL(request.url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    
+    if (userRole !== "MF") {
+      return HttpResponse.json(
+        { success: false, message: "Access denied. Only MF can delete subprograms." },
+        { status: 403 }
+      );
+    }
+    
+    const success = db.deleteSubProgram(params.id as string);
+    if (!success) {
+      return HttpResponse.json(
+        { success: false, message: "SubProgram not found" },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json(createResponse(null, "SubProgram deleted successfully"));
+  }),
+];
+
 // Students handlers
 export const studentHandlers = [
   // Get all students
@@ -519,6 +691,7 @@ export const reportHandlers = [
 // Combine all handlers
 export const handlers = [
   ...programHandlers,
+  ...subProgramHandlers,
   ...studentHandlers,
   ...teacherHandlers,
   ...orderHandlers,

@@ -14,8 +14,8 @@ import {
   StudentReportRow,
   DashboardStats,
   RecentActivity,
-  Role,
 } from "@/types";
+import { Role } from "@/lib/rbac";
 
 // Helper function to generate IDs
 const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
@@ -171,6 +171,10 @@ export const subPrograms: SubProgram[] = [
     prerequisites: [],
     learningObjectives: ["Basic vocabulary", "Simple grammar", "Pronunciation"],
     createdBy: "user_1",
+    pricingModel: "one-time",
+    coursePrice: 99.99,
+    sharedWithLCs: ["lc_region_1", "lc_region_2"],
+    visibility: "shared",
     createdAt: createDate(85),
     updatedAt: createDate(10),
   },
@@ -186,6 +190,12 @@ export const subPrograms: SubProgram[] = [
     prerequisites: ["Beginner English completion"],
     learningObjectives: ["Complex grammar", "Reading comprehension", "Writing skills"],
     createdBy: "user_1",
+    pricingModel: "installments",
+    coursePrice: 99.99,
+    numberOfPayments: 3,
+    gap: 30,
+    sharedWithLCs: ["lc_region_1"],
+    visibility: "shared",
     createdAt: createDate(80),
     updatedAt: createDate(8),
   },
@@ -201,8 +211,73 @@ export const subPrograms: SubProgram[] = [
     prerequisites: ["Basic arithmetic"],
     learningObjectives: ["Equation solving", "Graphing", "Word problems"],
     createdBy: "user_1",
+    pricingModel: "subscription",
+    coursePrice: 149.99,
+    pricePerMonth: 49.99,
+    sharedWithLCs: ["lc_region_2"],
+    visibility: "shared",
     createdAt: createDate(70),
     updatedAt: createDate(5),
+  },
+  {
+    id: generateId("sub"),
+    programId: programs[1].id,
+    name: "Calculus Advanced",
+    description: "Advanced calculus concepts and applications",
+    status: "draft",
+    order: 2,
+    duration: 16,
+    price: 199.99,
+    prerequisites: ["Algebra Fundamentals"],
+    learningObjectives: ["Derivatives", "Integrals", "Applications"],
+    createdBy: "user_1",
+    pricingModel: "one-time",
+    coursePrice: 199.99,
+    sharedWithLCs: [],
+    visibility: "private",
+    createdAt: createDate(50),
+    updatedAt: createDate(3),
+  },
+  {
+    id: generateId("sub"),
+    programId: programs[2].id,
+    name: "Social Media Marketing",
+    description: "Comprehensive social media marketing strategies",
+    status: "active",
+    order: 1,
+    duration: 4,
+    price: 79.99,
+    prerequisites: ["Basic computer skills"],
+    learningObjectives: ["Platform management", "Content creation", "Analytics"],
+    createdBy: "user_1",
+    pricingModel: "installments",
+    coursePrice: 79.99,
+    numberOfPayments: 2,
+    gap: 14,
+    sharedWithLCs: ["lc_region_1", "lc_region_2"],
+    visibility: "shared",
+    createdAt: createDate(25),
+    updatedAt: createDate(2),
+  },
+  {
+    id: generateId("sub"),
+    programId: programs[3].id,
+    name: "Python Programming",
+    description: "Learn Python programming from scratch",
+    status: "active",
+    order: 1,
+    duration: 12,
+    price: 299.99,
+    prerequisites: ["Basic computer skills"],
+    learningObjectives: ["Python syntax", "Data structures", "Algorithms"],
+    createdBy: "user_1",
+    pricingModel: "subscription",
+    coursePrice: 299.99,
+    pricePerMonth: 99.99,
+    sharedWithLCs: ["lc_region_1"],
+    visibility: "shared",
+    createdAt: createDate(35),
+    updatedAt: createDate(4),
   },
 ];
 
@@ -509,7 +584,7 @@ export const orders: Order[] = [
         totalPrice: 59.98,
       },
     ],
-    status: "completed",
+    status: "delivered",
     subtotal: 59.98,
     tax: 4.80,
     discount: 0,
@@ -803,6 +878,45 @@ export class MockDatabase {
     const index = programs.findIndex(p => p.id === id);
     if (index === -1) return false;
     programs.splice(index, 1);
+    return true;
+  }
+
+  // SubPrograms
+  getSubPrograms(): SubProgram[] {
+    return subPrograms;
+  }
+
+  getSubProgramById(id: string): SubProgram | undefined {
+    return subPrograms.find(sp => sp.id === id);
+  }
+
+  createSubProgram(subProgram: Omit<SubProgram, "id" | "createdAt" | "updatedAt">): SubProgram {
+    const newSubProgram: SubProgram = {
+      ...subProgram,
+      id: generateId("sub"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    subPrograms.push(newSubProgram);
+    return newSubProgram;
+  }
+
+  updateSubProgram(id: string, updates: Partial<SubProgram>): SubProgram | null {
+    const index = subPrograms.findIndex(sp => sp.id === id);
+    if (index === -1) return null;
+    
+    subPrograms[index] = {
+      ...subPrograms[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return subPrograms[index];
+  }
+
+  deleteSubProgram(id: string): boolean {
+    const index = subPrograms.findIndex(sp => sp.id === id);
+    if (index === -1) return false;
+    subPrograms.splice(index, 1);
     return true;
   }
 
