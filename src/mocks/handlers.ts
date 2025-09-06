@@ -1381,6 +1381,146 @@ const trainingRegistrationHandlers = [
   }),
 ];
 
+// Teacher Trainer Account Handlers
+const teacherTrainerHandlers = [
+  http.get("/api/teacher-trainers", ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get("search") || "";
+    const status = url.searchParams.get("status") || "";
+    const sortBy = url.searchParams.get("sortBy") || "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let teacherTrainers = db.getTeacherTrainerAccounts();
+
+    // Filter by search
+    if (search) {
+      teacherTrainers = teacherTrainers.filter((tt) =>
+        tt.firstName.toLowerCase().includes(search.toLowerCase()) ||
+        tt.lastName.toLowerCase().includes(search.toLowerCase()) ||
+        tt.email.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (status) {
+      teacherTrainers = teacherTrainers.filter((tt) => tt.status === status);
+    }
+
+    // Sort
+    teacherTrainers.sort((a, b) => {
+      const aValue = a[sortBy as keyof typeof a];
+      const bValue = b[sortBy as keyof typeof b];
+      
+      if (sortOrder === "asc") {
+        return (aValue || "") > (bValue || "") ? 1 : -1;
+      } else {
+        return (aValue || "") < (bValue || "") ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = teacherTrainers.slice(startIndex, endIndex);
+
+    const response = {
+      data: paginatedData,
+      pagination: {
+        page,
+        limit,
+        total: teacherTrainers.length,
+        totalPages: Math.ceil(teacherTrainers.length / limit),
+      },
+    };
+
+    return HttpResponse.json(response);
+  }),
+
+  http.get("/api/teacher-trainers/:id", ({ params }) => {
+    const teacherTrainer = db.getTeacherTrainerAccountById(params.id as string);
+    
+    if (!teacherTrainer) {
+      return HttpResponse.json(
+        { error: "Teacher trainer not found" },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({ data: teacherTrainer });
+  }),
+
+  http.post("/api/teacher-trainers", async ({ request }) => {
+    const data = await request.json() as Partial<TeacherTrainerAccount>;
+    
+    const teacherTrainer = db.createTeacherTrainerAccount({
+      ...data,
+      role: "TT",
+    } as Omit<TeacherTrainerAccount, "id" | "createdAt" | "updatedAt">);
+
+    return HttpResponse.json({ data: teacherTrainer }, { status: 201 });
+  }),
+
+  http.put("/api/teacher-trainers/:id", async ({ params, request }) => {
+    const data = await request.json() as Partial<TeacherTrainerAccount>;
+    
+    const teacherTrainer = db.updateTeacherTrainerAccount(params.id as string, data);
+    
+    if (!teacherTrainer) {
+      return HttpResponse.json(
+        { error: "Teacher trainer not found" },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({ data: teacherTrainer });
+  }),
+
+  http.delete("/api/teacher-trainers/:id", ({ params }) => {
+    const success = db.deleteTeacherTrainerAccount(params.id as string);
+    
+    if (!success) {
+      return HttpResponse.json(
+        { error: "Teacher trainer not found" },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({ message: "Teacher trainer deleted successfully" });
+  }),
+
+  // Get assigned trainings for a TT
+  http.get("/api/teacher-trainers/:id/trainings", ({ params }) => {
+    const ttId = params.id as string;
+    const trainings = db.getTrainings().filter(training => 
+      training.teacherTrainer.id === ttId || training.assistant?.id === ttId
+    );
+
+    return HttpResponse.json({ data: trainings });
+  }),
+
+  // Update TT status for a training
+  http.put("/api/teacher-trainers/:id/trainings/:trainingId/status", async ({ params, request }) => {
+    const { trainingId } = params;
+    const { ttStatus, ttComments } = await request.json() as { ttStatus: string; ttComments: string };
+    
+    const training = db.updateTraining(trainingId as string, {
+      ttStatus: ttStatus as "pending" | "in_progress" | "completed" | "failed",
+      ttComments,
+    });
+    
+    if (!training) {
+      return HttpResponse.json(
+        { error: "Training not found" },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({ data: training });
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
@@ -1395,4 +1535,5 @@ export const handlers = [
   ...trainingTypeHandlers,
   ...trainingHandlers,
   ...trainingRegistrationHandlers,
+  ...teacherTrainerHandlers,
 ];

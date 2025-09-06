@@ -1595,6 +1595,81 @@ export const teacherTrainerAccounts: TeacherTrainerAccount[] = [
     createdAt: createDate(300),
     updatedAt: createDate(2),
   },
+  {
+    id: "tt_1",
+    firstName: "Sarah",
+    lastName: "Wilson",
+    email: "sarah.wilson@example.com",
+    phone: "+1-555-0101",
+    role: "TT",
+    status: "active",
+    permissions: [
+      { resource: "trainings", actions: ["read", "update"] },
+      { resource: "assessments", actions: ["create", "read", "update"] },
+    ],
+    lastLogin: createDate(15),
+    profile: {
+      bio: "Experienced teacher trainer with 10+ years in education",
+      specialization: ["Teaching Methodology", "Classroom Management", "Assessment Design"],
+      experience: 10,
+      qualifications: ["PhD in Education", "Master's in Curriculum Design"],
+      certifications: ["Certified Teacher Trainer", "Assessment Specialist"],
+      languages: ["English", "Spanish"],
+      timezone: "EST",
+      avatar: "/avatars/sarah-wilson.jpg",
+    },
+    createdAt: createDate(365),
+    updatedAt: createDate(15),
+  },
+  {
+    id: "tt_2",
+    firstName: "Michael",
+    lastName: "Brown",
+    email: "michael.brown@example.com",
+    phone: "+1-555-0102",
+    role: "TT",
+    status: "active",
+    permissions: [
+      { resource: "trainings", actions: ["read", "update"] },
+      { resource: "assessments", actions: ["create", "read", "update"] },
+    ],
+    lastLogin: createDate(14),
+    profile: {
+      bio: "Technology integration specialist and teacher trainer",
+      specialization: ["Technology Integration", "Digital Learning", "Online Teaching"],
+      experience: 8,
+      qualifications: ["Master's in Educational Technology", "Bachelor's in Computer Science"],
+      certifications: ["Google Certified Educator", "Microsoft Innovative Educator"],
+      languages: ["English", "French"],
+      timezone: "PST",
+    },
+    createdAt: createDate(300),
+    updatedAt: createDate(14),
+  },
+  {
+    id: "tt_3",
+    firstName: "Emily",
+    lastName: "Davis",
+    email: "emily.davis@example.com",
+    phone: "+1-555-0103",
+    role: "TT",
+    status: "inactive",
+    permissions: [
+      { resource: "trainings", actions: ["read"] },
+    ],
+    lastLogin: createDate(90),
+    profile: {
+      bio: "Special education teacher trainer",
+      specialization: ["Special Education", "Inclusive Teaching", "Behavioral Management"],
+      experience: 12,
+      qualifications: ["Master's in Special Education", "PhD in Educational Psychology"],
+      certifications: ["Special Education Specialist", "Behavioral Analyst"],
+      languages: ["English", "ASL"],
+      timezone: "CST",
+    },
+    createdAt: createDate(180),
+    updatedAt: createDate(90),
+  },
 ];
 
 // Seed data for Royalty Reports
@@ -2157,6 +2232,46 @@ export class MockDatabase {
 
   getRecentActivities(): RecentActivity[] {
     return recentActivities;
+  }
+
+  // Teacher Trainer Account methods
+  getTeacherTrainerAccounts(): TeacherTrainerAccount[] {
+    return teacherTrainerAccounts;
+  }
+
+  getTeacherTrainerAccountById(id: string): TeacherTrainerAccount | undefined {
+    return teacherTrainerAccounts.find(tt => tt.id === id);
+  }
+
+  createTeacherTrainerAccount(ttAccount: Omit<TeacherTrainerAccount, "id" | "createdAt" | "updatedAt">): TeacherTrainerAccount {
+    const newTTAccount: TeacherTrainerAccount = {
+      ...ttAccount,
+      id: generateId("tt"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    teacherTrainerAccounts.push(newTTAccount);
+    return newTTAccount;
+  }
+
+  updateTeacherTrainerAccount(id: string, updates: Partial<TeacherTrainerAccount>): TeacherTrainerAccount | null {
+    const index = teacherTrainerAccounts.findIndex(tt => tt.id === id);
+    if (index === -1) return null;
+
+    teacherTrainerAccounts[index] = {
+      ...teacherTrainerAccounts[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return teacherTrainerAccounts[index];
+  }
+
+  deleteTeacherTrainerAccount(id: string): boolean {
+    const index = teacherTrainerAccounts.findIndex(tt => tt.id === id);
+    if (index === -1) return false;
+
+    teacherTrainerAccounts.splice(index, 1);
+    return true;
   }
 }
 
