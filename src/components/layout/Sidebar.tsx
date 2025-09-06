@@ -71,16 +71,6 @@ export function Sidebar({ className }: SidebarProps) {
         {!isCollapsed && (
           <h1 className="text-lg font-semibold text-gray-900">iQuP</h1>
         )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </button>
       </div>
 
       {/* Navigation */}
@@ -109,30 +99,6 @@ export function Sidebar({ className }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* User Info */}
-      {!isCollapsed && (
-        <div className="border-t p-4">
-          <div className="flex items-center space-x-3">
-            <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-              <span className="text-sm font-medium text-white">
-                {user.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user.name}
-              </p>
-              <p className="text-xs text-gray-500 truncate">{user.role}</p>
-              {selectedScope && (
-                <p className="text-xs text-blue-600 truncate font-medium">
-                  {selectedScope.name}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
