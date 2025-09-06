@@ -22,6 +22,12 @@ import {
   RoyaltyCommissionCalculation,
   RoyaltyCommissionSummary,
   RoyaltyCommissionReport,
+  StudentReportData,
+  StudentReportFilter,
+  GenericReportConfig,
+  RoleBasedDashboard,
+  DashboardMetrics,
+  DashboardActivity,
 } from "@/types";
 import { Role } from "@/lib/rbac";
 
@@ -2172,6 +2178,641 @@ export const royaltyCommissionReports: RoyaltyCommissionReport[] = [
   },
 ];
 
+// Seed data for Student Reports
+export const studentReportData: StudentReportData[] = [
+  {
+    id: "sr_1",
+    studentId: "STU001",
+    studentName: "Alice Johnson",
+    age: 25,
+    country: "USA",
+    city: "Boston",
+    lcId: "acc_2",
+    lcName: "Boston Learning Center",
+    programId: "prog_1",
+    programName: "English Language Program",
+    subProgramId: "sub_1",
+    subProgramName: "Business English",
+    enrollmentDate: new Date("2024-01-15"),
+    graduationDate: undefined,
+    status: "active",
+    totalHours: 120,
+    completedHours: 45,
+    progress: 37.5,
+    currentGroupId: "lg_1",
+    currentGroupName: "Business English Group A",
+    teacherId: "teach_1",
+    teacherName: "Sarah Wilson",
+    totalPaid: 1200,
+    totalDue: 800,
+    lastPaymentDate: new Date("2024-01-20"),
+    notes: "Excellent progress, very motivated",
+  },
+  {
+    id: "sr_2",
+    studentId: "STU002",
+    studentName: "Bob Smith",
+    age: 32,
+    country: "USA",
+    city: "Cambridge",
+    lcId: "acc_3",
+    lcName: "Cambridge Learning Center",
+    programId: "prog_2",
+    programName: "Spanish Language Program",
+    subProgramId: "sub_2",
+    subProgramName: "Conversational Spanish",
+    enrollmentDate: new Date("2023-11-10"),
+    graduationDate: new Date("2024-02-15"),
+    status: "graduated",
+    totalHours: 80,
+    completedHours: 80,
+    progress: 100,
+    currentGroupId: undefined,
+    currentGroupName: undefined,
+    teacherId: "teach_2",
+    teacherName: "Maria Garcia",
+    totalPaid: 1600,
+    totalDue: 0,
+    lastPaymentDate: new Date("2024-01-15"),
+    notes: "Completed with distinction",
+  },
+  {
+    id: "sr_3",
+    studentId: "STU003",
+    studentName: "Carol Davis",
+    age: 28,
+    country: "Canada",
+    city: "Toronto",
+    lcId: "acc_4",
+    lcName: "Somerville Learning Center",
+    programId: "prog_1",
+    programName: "English Language Program",
+    subProgramId: "sub_3",
+    subProgramName: "Academic English",
+    enrollmentDate: new Date("2024-02-01"),
+    graduationDate: undefined,
+    status: "active",
+    totalHours: 100,
+    completedHours: 20,
+    progress: 20,
+    currentGroupId: "lg_2",
+    currentGroupName: "Academic English Group B",
+    teacherId: "teach_3",
+    teacherName: "John Brown",
+    totalPaid: 600,
+    totalDue: 1400,
+    lastPaymentDate: new Date("2024-02-05"),
+    notes: "New student, adjusting well",
+  },
+  {
+    id: "sr_4",
+    studentId: "STU004",
+    studentName: "David Wilson",
+    age: 35,
+    country: "USA",
+    city: "Boston",
+    lcId: "acc_2",
+    lcName: "Boston Learning Center",
+    programId: "prog_3",
+    programName: "French Language Program",
+    subProgramId: "sub_4",
+    subProgramName: "French for Travel",
+    enrollmentDate: new Date("2023-09-15"),
+    graduationDate: undefined,
+    status: "inactive",
+    totalHours: 60,
+    completedHours: 30,
+    progress: 50,
+    currentGroupId: undefined,
+    currentGroupName: undefined,
+    teacherId: "teach_4",
+    teacherName: "Pierre Dubois",
+    totalPaid: 900,
+    totalDue: 300,
+    lastPaymentDate: new Date("2023-12-10"),
+    notes: "On hold due to work commitments",
+  },
+];
+
+// Seed data for Generic Report Configs
+export const genericReportConfigs: GenericReportConfig[] = [
+  {
+    id: "config_1",
+    name: "Active Students Report",
+    description: "Report showing all active students with their progress and payment status",
+    entityType: "students",
+    filters: {
+      status: "active",
+    },
+    columns: [
+      { key: "studentName", label: "Student Name", visible: true, sortable: true, filterable: true },
+      { key: "studentId", label: "Student ID", visible: true, sortable: true, filterable: true },
+      { key: "programName", label: "Program", visible: true, sortable: true, filterable: true },
+      { key: "progress", label: "Progress", visible: true, sortable: true, filterable: true },
+      { key: "totalPaid", label: "Total Paid", visible: true, sortable: true, filterable: true },
+    ],
+    sorting: {
+      column: "studentName",
+      direction: "asc",
+    },
+    createdBy: "user_1",
+    createdAt: new Date("2024-01-15"),
+    updatedAt: new Date("2024-01-15"),
+  },
+  {
+    id: "config_2",
+    name: "Training Completion Report",
+    description: "Report showing training completion rates and participant details",
+    entityType: "trainings",
+    filters: {
+      status: "completed",
+    },
+    columns: [
+      { key: "name", label: "Training Name", visible: true, sortable: true, filterable: true },
+      { key: "type", label: "Type", visible: true, sortable: true, filterable: true },
+      { key: "startDate", label: "Start Date", visible: true, sortable: true, filterable: true },
+      { key: "endDate", label: "End Date", visible: true, sortable: true, filterable: true },
+      { key: "maxParticipants", label: "Max Participants", visible: true, sortable: true, filterable: true },
+    ],
+    sorting: {
+      column: "startDate",
+      direction: "desc",
+    },
+    createdBy: "user_1",
+    createdAt: new Date("2024-01-20"),
+    updatedAt: new Date("2024-01-20"),
+  },
+];
+
+// Dashboard Data
+export const dashboardData: Record<string, RoleBasedDashboard> = {
+  HQ: {
+    role: "HQ",
+    metrics: {
+      totalStudents: 1250,
+      activeStudents: 980,
+      totalTeachers: 85,
+      activeTeachers: 72,
+      totalPrograms: 12,
+      totalRevenue: 1250000,
+      monthlyRevenue: 125000,
+      completionRate: 78.5,
+      averageProgress: 65.2,
+      totalLearningGroups: 45,
+      activeLearningGroups: 38,
+      totalTrainings: 24,
+      upcomingTrainings: 6,
+      totalOrders: 156,
+      pendingOrders: 12,
+      totalProducts: 48,
+      lowStockProducts: 3,
+    },
+    charts: {
+      revenue: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "Revenue",
+          data: [95000, 110000, 105000, 125000, 130000, 125000],
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          borderColor: "rgba(59, 130, 246, 1)",
+        }],
+      },
+      studentProgress: {
+        labels: ["0-25%", "26-50%", "51-75%", "76-100%"],
+        datasets: [{
+          label: "Students",
+          data: [120, 280, 350, 230],
+          backgroundColor: "rgba(34, 197, 94, 0.1)",
+          borderColor: "rgba(34, 197, 94, 1)",
+        }],
+      },
+      enrollmentTrends: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "New Enrollments",
+          data: [45, 52, 48, 61, 58, 55],
+          backgroundColor: "rgba(168, 85, 247, 0.1)",
+          borderColor: "rgba(168, 85, 247, 1)",
+        }],
+      },
+      programDistribution: {
+        labels: ["English", "Spanish", "French", "German", "Other"],
+        datasets: [{
+          label: "Students",
+          data: [450, 320, 180, 95, 105],
+          backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"],
+        }],
+      },
+    },
+    activities: [
+      {
+        id: "act_1",
+        type: "enrollment",
+        title: "New Student Enrollment",
+        description: "Alice Johnson enrolled in Business English program",
+        timestamp: new Date("2024-01-20T10:30:00"),
+        user: "Boston Learning Center",
+        status: "success",
+      },
+      {
+        id: "act_2",
+        type: "payment",
+        title: "Payment Received",
+        description: "Payment of $1,200 received from Bob Smith",
+        timestamp: new Date("2024-01-20T09:15:00"),
+        amount: 1200,
+        status: "success",
+      },
+      {
+        id: "act_3",
+        type: "training",
+        title: "Training Completed",
+        description: "Teacher Training: Advanced Teaching Methods completed",
+        timestamp: new Date("2024-01-19T16:45:00"),
+        user: "Sarah Wilson",
+        status: "success",
+      },
+    ],
+    widgets: [],
+    quickActions: [
+      {
+        id: "qa_1",
+        title: "Create Program",
+        description: "Add a new educational program",
+        icon: "BookOpen",
+        href: "/programs/new",
+        color: "blue",
+      },
+      {
+        id: "qa_2",
+        title: "View Reports",
+        description: "Access comprehensive reports",
+        icon: "BarChart3",
+        href: "/reports/royalties",
+        color: "green",
+      },
+      {
+        id: "qa_3",
+        title: "Manage Accounts",
+        description: "Create and manage MF/LC accounts",
+        icon: "Building",
+        href: "/accounts",
+        color: "purple",
+      },
+      {
+        id: "qa_4",
+        title: "System Settings",
+        description: "Configure system preferences",
+        icon: "Zap",
+        href: "/settings",
+        color: "orange",
+      },
+    ],
+  },
+  MF: {
+    role: "MF",
+    metrics: {
+      totalStudents: 450,
+      activeStudents: 380,
+      totalTeachers: 25,
+      activeTeachers: 22,
+      totalPrograms: 8,
+      totalRevenue: 450000,
+      monthlyRevenue: 45000,
+      completionRate: 82.3,
+      averageProgress: 68.7,
+      totalLearningGroups: 18,
+      activeLearningGroups: 15,
+      totalTrainings: 8,
+      upcomingTrainings: 2,
+      totalOrders: 45,
+      pendingOrders: 3,
+      totalProducts: 24,
+      lowStockProducts: 1,
+    },
+    charts: {
+      revenue: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "Revenue",
+          data: [35000, 42000, 38000, 45000, 48000, 45000],
+          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          borderColor: "rgba(16, 185, 129, 1)",
+        }],
+      },
+      studentProgress: {
+        labels: ["0-25%", "26-50%", "51-75%", "76-100%"],
+        datasets: [{
+          label: "Students",
+          data: [45, 120, 150, 65],
+          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          borderColor: "rgba(16, 185, 129, 1)",
+        }],
+      },
+      enrollmentTrends: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "New Enrollments",
+          data: [18, 22, 19, 25, 23, 21],
+          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          borderColor: "rgba(16, 185, 129, 1)",
+        }],
+      },
+      programDistribution: {
+        labels: ["English", "Spanish", "French", "Other"],
+        datasets: [{
+          label: "Students",
+          data: [180, 120, 60, 90],
+          backgroundColor: ["#10B981", "#3B82F6", "#F59E0B", "#8B5CF6"],
+        }],
+      },
+    },
+    activities: [
+      {
+        id: "act_1",
+        type: "enrollment",
+        title: "New Student Enrollment",
+        description: "Carol Davis enrolled in Academic English program",
+        timestamp: new Date("2024-01-20T11:15:00"),
+        user: "Somerville Learning Center",
+        status: "success",
+      },
+      {
+        id: "act_2",
+        type: "payment",
+        title: "Payment Received",
+        description: "Payment of $800 received from David Wilson",
+        timestamp: new Date("2024-01-20T08:30:00"),
+        amount: 800,
+        status: "success",
+      },
+    ],
+    widgets: [],
+    quickActions: [
+      {
+        id: "qa_1",
+        title: "Create SubProgram",
+        description: "Add a new subprogram",
+        icon: "BookOpen",
+        href: "/subprograms/new",
+        color: "blue",
+      },
+      {
+        id: "qa_2",
+        title: "View Orders",
+        description: "Manage product orders",
+        icon: "ShoppingCart",
+        href: "/orders",
+        color: "green",
+      },
+      {
+        id: "qa_3",
+        title: "Create Training",
+        description: "Schedule new training session",
+        icon: "GraduationCap",
+        href: "/trainings/new",
+        color: "purple",
+      },
+      {
+        id: "qa_4",
+        title: "View Reports",
+        description: "Access regional reports",
+        icon: "BarChart3",
+        href: "/reports/students",
+        color: "orange",
+      },
+    ],
+  },
+  LC: {
+    role: "LC",
+    metrics: {
+      totalStudents: 120,
+      activeStudents: 95,
+      totalTeachers: 8,
+      activeTeachers: 7,
+      totalPrograms: 4,
+      totalRevenue: 120000,
+      monthlyRevenue: 12000,
+      completionRate: 85.2,
+      averageProgress: 72.1,
+      totalLearningGroups: 6,
+      activeLearningGroups: 5,
+      totalTrainings: 3,
+      upcomingTrainings: 1,
+      totalOrders: 12,
+      pendingOrders: 1,
+      totalProducts: 15,
+      lowStockProducts: 2,
+    },
+    charts: {
+      revenue: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "Revenue",
+          data: [9000, 11000, 10500, 12000, 12500, 12000],
+          backgroundColor: "rgba(245, 158, 11, 0.1)",
+          borderColor: "rgba(245, 158, 11, 1)",
+        }],
+      },
+      studentProgress: {
+        labels: ["0-25%", "26-50%", "51-75%", "76-100%"],
+        datasets: [{
+          label: "Students",
+          data: [12, 28, 35, 20],
+          backgroundColor: "rgba(245, 158, 11, 0.1)",
+          borderColor: "rgba(245, 158, 11, 1)",
+        }],
+      },
+      enrollmentTrends: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "New Enrollments",
+          data: [5, 8, 6, 10, 9, 7],
+          backgroundColor: "rgba(245, 158, 11, 0.1)",
+          borderColor: "rgba(245, 158, 11, 1)",
+        }],
+      },
+      programDistribution: {
+        labels: ["English", "Spanish", "French"],
+        datasets: [{
+          label: "Students",
+          data: [60, 35, 25],
+          backgroundColor: ["#F59E0B", "#3B82F6", "#10B981"],
+        }],
+      },
+    },
+    activities: [
+      {
+        id: "act_1",
+        type: "enrollment",
+        title: "New Student Enrollment",
+        description: "Emma Thompson enrolled in Business English program",
+        timestamp: new Date("2024-01-20T13:20:00"),
+        user: "Boston Learning Center",
+        status: "success",
+      },
+      {
+        id: "act_2",
+        type: "graduation",
+        title: "Student Graduated",
+        description: "Michael Brown completed Spanish Language program",
+        timestamp: new Date("2024-01-19T16:00:00"),
+        user: "Boston Learning Center",
+        status: "success",
+      },
+    ],
+    widgets: [],
+    quickActions: [
+      {
+        id: "qa_1",
+        title: "Add Student",
+        description: "Enroll a new student",
+        icon: "Users",
+        href: "/contacts/students/new",
+        color: "blue",
+      },
+      {
+        id: "qa_2",
+        title: "Create Learning Group",
+        description: "Start a new learning group",
+        icon: "BookOpen",
+        href: "/learning-groups/new",
+        color: "green",
+      },
+      {
+        id: "qa_3",
+        title: "Place Order",
+        description: "Order products and materials",
+        icon: "ShoppingCart",
+        href: "/orders/new",
+        color: "purple",
+      },
+      {
+        id: "qa_4",
+        title: "View Progress",
+        description: "Check student progress",
+        icon: "TrendingUp",
+        href: "/reports/students",
+        color: "orange",
+      },
+    ],
+  },
+  TT: {
+    role: "TT",
+    metrics: {
+      totalStudents: 0,
+      activeStudents: 0,
+      totalTeachers: 45,
+      activeTeachers: 42,
+      totalPrograms: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      completionRate: 88.9,
+      averageProgress: 0,
+      totalLearningGroups: 0,
+      activeLearningGroups: 0,
+      totalTrainings: 12,
+      upcomingTrainings: 3,
+      totalOrders: 0,
+      pendingOrders: 0,
+      totalProducts: 0,
+      lowStockProducts: 0,
+    },
+    charts: {
+      revenue: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "Training Sessions",
+          data: [8, 10, 9, 12, 11, 10],
+          backgroundColor: "rgba(139, 92, 246, 0.1)",
+          borderColor: "rgba(139, 92, 246, 1)",
+        }],
+      },
+      studentProgress: {
+        labels: ["Passed", "Failed", "In Progress"],
+        datasets: [{
+          label: "Teachers",
+          data: [35, 5, 2],
+          backgroundColor: "rgba(139, 92, 246, 0.1)",
+          borderColor: "rgba(139, 92, 246, 1)",
+        }],
+      },
+      enrollmentTrends: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        datasets: [{
+          label: "Training Completions",
+          data: [6, 8, 7, 10, 9, 8],
+          backgroundColor: "rgba(139, 92, 246, 0.1)",
+          borderColor: "rgba(139, 92, 246, 1)",
+        }],
+      },
+      programDistribution: {
+        labels: ["Advanced Teaching", "Classroom Management", "Assessment", "Technology"],
+        datasets: [{
+          label: "Trainings",
+          data: [15, 12, 10, 8],
+          backgroundColor: ["#8B5CF6", "#3B82F6", "#10B981", "#F59E0B"],
+        }],
+      },
+    },
+    activities: [
+      {
+        id: "act_1",
+        type: "training",
+        title: "Training Completed",
+        description: "Sarah Wilson completed Advanced Teaching Methods training",
+        timestamp: new Date("2024-01-20T15:30:00"),
+        user: "Sarah Wilson",
+        status: "success",
+      },
+      {
+        id: "act_2",
+        type: "training",
+        title: "Training Scheduled",
+        description: "Classroom Management training scheduled for next week",
+        timestamp: new Date("2024-01-19T10:00:00"),
+        user: "John Brown",
+        status: "info",
+      },
+    ],
+    widgets: [],
+    quickActions: [
+      {
+        id: "qa_1",
+        title: "View Trainings",
+        description: "See assigned training sessions",
+        icon: "GraduationCap",
+        href: "/trainings",
+        color: "blue",
+      },
+      {
+        id: "qa_2",
+        title: "Mark Progress",
+        description: "Update teacher training progress",
+        icon: "UserCheck",
+        href: "/teacher-trainers",
+        color: "green",
+      },
+      {
+        id: "qa_3",
+        title: "Generate Certificates",
+        description: "Create completion certificates",
+        icon: "Award",
+        href: "/trainings/certificates",
+        color: "purple",
+      },
+      {
+        id: "qa_4",
+        title: "View Reports",
+        description: "Access training reports",
+        icon: "BarChart3",
+        href: "/reports/trainings",
+        color: "orange",
+      },
+    ],
+  },
+};
+
 export class MockDatabase {
   // Programs
   getPrograms(): Program[] {
@@ -2912,6 +3553,127 @@ export class MockDatabase {
       collectedFromLc: lcToMfAmount,
       rate: 0.5,
       amount: lcToMfAmount * 0.5,
+    };
+  }
+
+  // Student Reports
+  getStudentReportData(): StudentReportData[] {
+    return studentReportData;
+  }
+
+  getStudentReportDataById(id: string): StudentReportData | undefined {
+    return studentReportData.find(data => data.id === id);
+  }
+
+  getStudentReportDataByFilters(filters: StudentReportFilter): StudentReportData[] {
+    let filtered = [...studentReportData];
+
+    if (filters.lcId) {
+      filtered = filtered.filter(data => data.lcId === filters.lcId);
+    }
+    
+    if (filters.programId) {
+      filtered = filtered.filter(data => data.programId === filters.programId);
+    }
+    
+    if (filters.ageRange) {
+      filtered = filtered.filter(data => 
+        data.age >= filters.ageRange!.min && data.age <= filters.ageRange!.max
+      );
+    }
+    
+    if (filters.country) {
+      filtered = filtered.filter(data => data.country === filters.country);
+    }
+    
+    if (filters.city) {
+      filtered = filtered.filter(data => data.city === filters.city);
+    }
+    
+    if (filters.status) {
+      filtered = filtered.filter(data => data.status === filters.status);
+    }
+    
+    if (filters.enrollmentDate) {
+      filtered = filtered.filter(data => 
+        data.enrollmentDate >= filters.enrollmentDate!.start &&
+        data.enrollmentDate <= filters.enrollmentDate!.end
+      );
+    }
+
+    return filtered;
+  }
+
+  // Generic Report Configs
+  getGenericReportConfigs(): GenericReportConfig[] {
+    return genericReportConfigs;
+  }
+
+  getGenericReportConfigById(id: string): GenericReportConfig | undefined {
+    return genericReportConfigs.find(config => config.id === id);
+  }
+
+  createGenericReportConfig(config: Omit<GenericReportConfig, "id" | "createdAt" | "updatedAt">): GenericReportConfig {
+    const newConfig: GenericReportConfig = {
+      ...config,
+      id: `config_${Date.now()}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    genericReportConfigs.push(newConfig);
+    return newConfig;
+  }
+
+  updateGenericReportConfig(id: string, updates: Partial<GenericReportConfig>): GenericReportConfig | null {
+    const index = genericReportConfigs.findIndex(config => config.id === id);
+    if (index === -1) return null;
+    
+    genericReportConfigs[index] = {
+      ...genericReportConfigs[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    return genericReportConfigs[index];
+  }
+
+  deleteGenericReportConfig(id: string): boolean {
+    const index = genericReportConfigs.findIndex(config => config.id === id);
+    if (index === -1) return false;
+    genericReportConfigs.splice(index, 1);
+    return true;
+  }
+
+  // Dashboard Data
+  getDashboardData(role: "HQ" | "MF" | "LC" | "TT"): RoleBasedDashboard {
+    return dashboardData[role] || dashboardData.HQ;
+  }
+
+  updateDashboardMetrics(role: "HQ" | "MF" | "LC" | "TT", metrics: Partial<DashboardMetrics>): DashboardMetrics {
+    const dashboard = dashboardData[role];
+    if (dashboard) {
+      dashboard.metrics = { ...dashboard.metrics, ...metrics };
+      return dashboard.metrics;
+    }
+    return dashboardData.HQ.metrics;
+  }
+
+  addDashboardActivity(role: "HQ" | "MF" | "LC" | "TT", activity: Omit<DashboardActivity, "id">): DashboardActivity {
+    const dashboard = dashboardData[role];
+    if (dashboard) {
+      const newActivity: DashboardActivity = {
+        ...activity,
+        id: `act_${Date.now()}`,
+      };
+      dashboard.activities.unshift(newActivity);
+      // Keep only last 10 activities
+      if (dashboard.activities.length > 10) {
+        dashboard.activities = dashboard.activities.slice(0, 10);
+      }
+      return newActivity;
+    }
+    return {
+      ...activity,
+      id: `act_${Date.now()}`,
     };
   }
 }

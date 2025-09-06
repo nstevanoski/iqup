@@ -732,3 +732,204 @@ export interface RoyaltyCommissionReport {
   mfSummaries: RoyaltyCommissionSummary[];
   lcCalculations: RoyaltyCommissionCalculation[];
 }
+
+// Student Report Types
+export interface StudentReportFilter {
+  lcId?: string;
+  programId?: string;
+  ageRange?: {
+    min: number;
+    max: number;
+  };
+  country?: string;
+  city?: string;
+  status?: "active" | "inactive" | "graduated" | "dropped";
+  enrollmentDate?: {
+    start: Date;
+    end: Date;
+  };
+  graduationDate?: {
+    start: Date;
+    end: Date;
+  };
+}
+
+export interface StudentReportData {
+  id: string;
+  studentId: string;
+  studentName: string;
+  age: number;
+  country: string;
+  city: string;
+  lcId: string;
+  lcName: string;
+  programId: string;
+  programName: string;
+  subProgramId?: string;
+  subProgramName?: string;
+  enrollmentDate: Date;
+  graduationDate?: Date;
+  status: "active" | "inactive" | "graduated" | "dropped";
+  totalHours: number;
+  completedHours: number;
+  progress: number; // percentage
+  currentGroupId?: string;
+  currentGroupName?: string;
+  teacherId?: string;
+  teacherName?: string;
+  totalPaid: number;
+  totalDue: number;
+  lastPaymentDate?: Date;
+  notes?: string;
+}
+
+export interface GenericReportConfig {
+  id: string;
+  name: string;
+  description: string;
+  entityType: "students" | "trainings" | "programs" | "products" | "teachers";
+  filters: Record<string, any>;
+  columns: {
+    key: string;
+    label: string;
+    visible: boolean;
+    sortable: boolean;
+    filterable: boolean;
+  }[];
+  sorting: {
+    column: string;
+    direction: "asc" | "desc";
+  };
+  grouping?: {
+    column: string;
+    enabled: boolean;
+  };
+  aggregation?: {
+    column: string;
+    function: "sum" | "count" | "avg" | "min" | "max";
+  }[];
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ReportBuilderState {
+  selectedEntityType: "students" | "trainings" | "programs" | "products" | "teachers";
+  availableColumns: {
+    key: string;
+    label: string;
+    type: "string" | "number" | "date" | "boolean";
+    filterable: boolean;
+    sortable: boolean;
+  }[];
+  selectedColumns: string[];
+  filters: Record<string, any>;
+  sorting: {
+    column: string;
+    direction: "asc" | "desc";
+  };
+  grouping?: {
+    column: string;
+    enabled: boolean;
+  };
+  aggregation?: {
+    column: string;
+    function: "sum" | "count" | "avg" | "min" | "max";
+  }[];
+}
+
+// Dashboard Types
+export interface DashboardMetrics {
+  totalStudents: number;
+  activeStudents: number;
+  totalTeachers: number;
+  activeTeachers: number;
+  totalPrograms: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+  completionRate: number;
+  averageProgress: number;
+  totalLearningGroups: number;
+  activeLearningGroups: number;
+  totalTrainings: number;
+  upcomingTrainings: number;
+  totalOrders: number;
+  pendingOrders: number;
+  totalProducts: number;
+  lowStockProducts: number;
+}
+
+export interface DashboardChartData {
+  revenue: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+    }[];
+  };
+  studentProgress: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+    }[];
+  };
+  enrollmentTrends: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string;
+      borderColor: string;
+    }[];
+  };
+  programDistribution: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string[];
+    }[];
+  };
+}
+
+export interface DashboardActivity {
+  id: string;
+  type: "enrollment" | "graduation" | "payment" | "training" | "order" | "system";
+  title: string;
+  description: string;
+  timestamp: Date;
+  user?: string;
+  amount?: number;
+  status?: "success" | "warning" | "error" | "info";
+}
+
+export interface DashboardWidget {
+  id: string;
+  title: string;
+  type: "metric" | "chart" | "table" | "list";
+  size: "small" | "medium" | "large";
+  position: { x: number; y: number };
+  data: any;
+  visible: boolean;
+}
+
+export interface RoleBasedDashboard {
+  role: "HQ" | "MF" | "LC" | "TT";
+  metrics: DashboardMetrics;
+  charts: DashboardChartData;
+  activities: DashboardActivity[];
+  widgets: DashboardWidget[];
+  quickActions: {
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    href: string;
+    color: string;
+  }[];
+}

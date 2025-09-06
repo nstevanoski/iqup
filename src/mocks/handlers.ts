@@ -25,6 +25,12 @@ import {
   RoyaltyCommissionCalculation,
   RoyaltyCommissionSummary,
   RoyaltyCommissionReport,
+  StudentReportData,
+  StudentReportFilter,
+  GenericReportConfig,
+  RoleBasedDashboard,
+  DashboardMetrics,
+  DashboardActivity,
 } from "@/types";
 
 // Helper function to create API response
@@ -673,19 +679,6 @@ export const orderHandlers = [
   }),
 ];
 
-// Dashboard handlers
-export const dashboardHandlers = [
-  // Get dashboard stats
-  http.get("/api/dashboard", () => {
-    const stats = db.getDashboardStats();
-    const activities = db.getRecentActivities();
-    
-    return HttpResponse.json(createResponse({
-      stats,
-      recentActivity: activities,
-    }));
-  }),
-];
 
 // Reports handlers
 export const reportHandlers = [
@@ -1994,6 +1987,220 @@ const royaltyHandlers = [
   }),
 ];
 
+// Student Report Handlers
+const studentReportHandlers = [
+  http.get("/api/student-reports", ({ request }) => {
+    const url = new URL(request.url);
+    const lcId = url.searchParams.get("lcId") || "";
+    const programId = url.searchParams.get("programId") || "";
+    const country = url.searchParams.get("country") || "";
+    const city = url.searchParams.get("city") || "";
+    const status = url.searchParams.get("status") || "";
+    const ageMin = url.searchParams.get("ageMin") || "";
+    const ageMax = url.searchParams.get("ageMax") || "";
+    const enrollmentStart = url.searchParams.get("enrollmentStart") || "";
+    const enrollmentEnd = url.searchParams.get("enrollmentEnd") || "";
+    const sortBy = url.searchParams.get("sortBy") || "studentName";
+    const sortOrder = url.searchParams.get("sortOrder") || "asc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    // Build filters object
+    const filters: StudentReportFilter = {};
+    if (lcId) filters.lcId = lcId;
+    if (programId) filters.programId = programId;
+    if (country) filters.country = country;
+    if (city) filters.city = city;
+    if (status) filters.status = status as any;
+    if (ageMin || ageMax) {
+      filters.ageRange = {
+        min: parseInt(ageMin) || 0,
+        max: parseInt(ageMax) || 100,
+      };
+    }
+    if (enrollmentStart && enrollmentEnd) {
+      filters.enrollmentDate = {
+        start: new Date(enrollmentStart),
+        end: new Date(enrollmentEnd),
+      };
+    }
+
+    let filteredData = db.getStudentReportDataByFilters(filters);
+
+    // Sort
+    filteredData.sort((a: StudentReportData, b: StudentReportData) => {
+      const aValue = (a[sortBy as keyof StudentReportData] as any) || "";
+      const bValue = (b[sortBy as keyof StudentReportData] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = filteredData.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedData,
+      total: filteredData.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredData.length / limit),
+    });
+  }),
+
+  http.get("/api/student-reports/:id", ({ params }) => {
+    const data = db.getStudentReportDataById(params.id as string);
+    if (!data) {
+      return HttpResponse.json({ error: "Student report data not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data });
+  }),
+
+  // Generic Report Config Handlers
+  http.get("/api/report-configs", ({ request }) => {
+    const url = new URL(request.url);
+    const entityType = url.searchParams.get("entityType") || "";
+    const sortBy = url.searchParams.get("sortBy") || "createdAt";
+    const sortOrder = url.searchParams.get("sortOrder") || "desc";
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+
+    let filteredConfigs = db.getGenericReportConfigs();
+
+    // Filter by entity type
+    if (entityType) {
+      filteredConfigs = filteredConfigs.filter((config: GenericReportConfig) => config.entityType === entityType);
+    }
+
+    // Sort
+    filteredConfigs.sort((a: GenericReportConfig, b: GenericReportConfig) => {
+      const aValue = (a[sortBy as keyof GenericReportConfig] as any) || "";
+      const bValue = (b[sortBy as keyof GenericReportConfig] as any) || "";
+      
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    // Paginate
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedConfigs = filteredConfigs.slice(startIndex, endIndex);
+
+    return HttpResponse.json({
+      data: paginatedConfigs,
+      total: filteredConfigs.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filteredConfigs.length / limit),
+    });
+  }),
+
+  http.get("/api/report-configs/:id", ({ params }) => {
+    const config = db.getGenericReportConfigById(params.id as string);
+    if (!config) {
+      return HttpResponse.json({ error: "Report config not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: config });
+  }),
+
+  http.post("/api/report-configs", async ({ request }) => {
+    const configData = await request.json() as Omit<GenericReportConfig, "id" | "createdAt" | "updatedAt">;
+    const newConfig = db.createGenericReportConfig(configData);
+    return HttpResponse.json({ data: newConfig }, { status: 201 });
+  }),
+
+  http.put("/api/report-configs/:id", async ({ params, request }) => {
+    const updates = await request.json() as Partial<GenericReportConfig>;
+    const updatedConfig = db.updateGenericReportConfig(params.id as string, updates);
+    if (!updatedConfig) {
+      return HttpResponse.json({ error: "Report config not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ data: updatedConfig });
+  }),
+
+  http.delete("/api/report-configs/:id", ({ params }) => {
+    const success = db.deleteGenericReportConfig(params.id as string);
+    if (!success) {
+      return HttpResponse.json({ error: "Report config not found" }, { status: 404 });
+    }
+    return HttpResponse.json({ message: "Report config deleted successfully" });
+  }),
+
+  // CSV Export endpoint
+  http.post("/api/student-reports/export", async ({ request }) => {
+    const { filters, format = "csv" } = await request.json() as { 
+      filters: StudentReportFilter; 
+      format: "csv" | "excel" 
+    };
+    
+    const data = db.getStudentReportDataByFilters(filters);
+    
+    // In a real app, this would generate and return the actual CSV/Excel file
+    return HttpResponse.json({
+      data: {
+        downloadUrl: `/api/downloads/student-report-${Date.now()}.${format}`,
+        recordCount: data.length,
+        generatedAt: new Date(),
+      },
+    });
+  }),
+];
+
+// Dashboard Handlers
+const dashboardHandlers = [
+  http.get("/api/dashboard/:role", ({ params }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const dashboardData = db.getDashboardData(role);
+    return HttpResponse.json({ data: dashboardData });
+  }),
+
+  http.get("/api/dashboard/:role/metrics", ({ params }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const dashboardData = db.getDashboardData(role);
+    return HttpResponse.json({ data: dashboardData.metrics });
+  }),
+
+  http.put("/api/dashboard/:role/metrics", async ({ params, request }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const updates = await request.json() as Partial<DashboardMetrics>;
+    const updatedMetrics = db.updateDashboardMetrics(role, updates);
+    return HttpResponse.json({ data: updatedMetrics });
+  }),
+
+  http.get("/api/dashboard/:role/activities", ({ params }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const dashboardData = db.getDashboardData(role);
+    return HttpResponse.json({ data: dashboardData.activities });
+  }),
+
+  http.post("/api/dashboard/:role/activities", async ({ params, request }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const activityData = await request.json() as Omit<DashboardActivity, "id">;
+    const newActivity = db.addDashboardActivity(role, activityData);
+    return HttpResponse.json({ data: newActivity }, { status: 201 });
+  }),
+
+  http.get("/api/dashboard/:role/charts", ({ params }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const dashboardData = db.getDashboardData(role);
+    return HttpResponse.json({ data: dashboardData.charts });
+  }),
+
+  http.get("/api/dashboard/:role/quick-actions", ({ params }) => {
+    const role = params.role as "HQ" | "MF" | "LC" | "TT";
+    const dashboardData = db.getDashboardData(role);
+    return HttpResponse.json({ data: dashboardData.quickActions });
+  }),
+];
+
 export const handlers = [
   ...programHandlers,
   ...subProgramHandlers,
@@ -2012,4 +2219,5 @@ export const handlers = [
   ...accountHandlers,
   ...applicationHandlers,
   ...royaltyHandlers,
+  ...studentReportHandlers,
 ];
