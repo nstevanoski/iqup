@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { db } from "./db";
+import { getParentMfIdForLcScope } from "@/store/auth";
 import {
   Program,
   SubProgram,
@@ -101,10 +102,19 @@ export const programHandlers = [
     
     // Apply role-based filtering
     if (userRole === "MF" || userRole === "LC") {
-      // MF and LC can only see programs shared with their scope
+      // MF can see shared programs for their MF scope
+      // LC inherits visibility from its parent MF
+      const allowedMfIds: string[] = [];
+      if (userRole === "MF" && userScope) {
+        allowedMfIds.push(userScope);
+      } else if (userRole === "LC" && userScope) {
+        const parentMf = getParentMfIdForLcScope(userScope);
+        if (parentMf) allowedMfIds.push(parentMf);
+      }
+
       programs = programs.filter(p => 
         p.visibility === "public" || 
-        (p.visibility === "shared" && p.sharedWithMFs.includes(userScope || ""))
+        (p.visibility === "shared" && allowedMfIds.some(mfId => p.sharedWithMFs.includes(mfId)))
       );
     } else if (userRole === "TT") {
       // TT can only see public programs
@@ -163,8 +173,16 @@ export const programHandlers = [
     
     // Check access permissions
     if (userRole === "MF" || userRole === "LC") {
-      if (program.visibility !== "public" && 
-          !(program.visibility === "shared" && program.sharedWithMFs.includes(userScope || ""))) {
+      let allowed = program.visibility === "public";
+      if (!allowed && program.visibility === "shared") {
+        const allowedMf = userRole === "MF"
+          ? (userScope || null)
+          : getParentMfIdForLcScope(userScope || null);
+        if (allowedMf) {
+          allowed = program.sharedWithMFs.includes(allowedMf);
+        }
+      }
+      if (!allowed) {
         return HttpResponse.json(
           { success: false, message: "Access denied" },
           { status: 403 }

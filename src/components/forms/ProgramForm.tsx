@@ -59,7 +59,7 @@ const programCategories = [
 ];
 
 const programKinds = [
-  { value: "academic", label: "Academic" },
+  { value: "academic", label: "Regular Program" },
   { value: "vocational", label: "Vocational" },
   { value: "certification", label: "Certification" },
   { value: "workshop", label: "Workshop" },

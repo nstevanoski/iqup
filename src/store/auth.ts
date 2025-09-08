@@ -311,6 +311,19 @@ export const useAuthActions = () => {
   };
 };
 
+// Temporary helper mapping LC scopes to their parent MF scope IDs
+// In a real application, this would come from the accounts hierarchy.
+const lcToMfParentMap: Record<string, string> = {
+  lc_center_nyc: "mf_region_1",
+  lc_center_la: "mf_region_2",
+  lc_center_chicago: "mf_region_1",
+};
+
+export function getParentMfIdForLcScope(scopeId: string | undefined | null): string | null {
+  if (!scopeId) return null;
+  return lcToMfParentMap[scopeId] || null;
+}
+
 // Helper function to get available scopes for a role
 export const getScopesForRole = (role: Role): AuthScope[] => {
   return mockScopes.filter(scope => scope.type === role);

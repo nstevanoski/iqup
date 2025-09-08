@@ -178,6 +178,7 @@ export const navigationRules: NavigationRule[] = [
     role: "LC",
     allowedRoutes: [
       "/dashboard",
+      "/programs",
       "/contacts/students",
       "/contacts/teachers",
       "/learning-groups",
@@ -186,6 +187,10 @@ export const navigationRules: NavigationRule[] = [
       "/trainings",
     ],
     scopedRoutes: {
+      "/programs": {
+        scope: ["MF"],
+        description: "Programs visible based on parent MF sharing",
+      },
       "/orders": {
         scope: ["MF"],
         description: "Orders routed to MF for processing",
