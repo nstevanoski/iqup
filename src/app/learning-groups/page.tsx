@@ -6,7 +6,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { LearningGroup } from "@/types";
 import { useState } from "react";
-import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, MapPin, Calendar, User } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, Euro, MapPin, Calendar, User } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
 const sampleLearningGroups: LearningGroup[] = [
@@ -346,12 +346,12 @@ const columns: Column<LearningGroup>[] = [
     render: (value) => (
       <div className="text-sm">
         <div className="flex items-center font-medium">
-          <DollarSign className="h-4 w-4 mr-1 text-gray-400" />
-          <span>${value.finalPrice}</span>
+          <Euro className="h-4 w-4 mr-1 text-gray-400" />
+          <span>€{value.finalPrice}</span>
         </div>
         {value.discount && (
           <div className="text-xs text-green-600">
-            ${value.discount} discount
+            €{value.discount} discount
           </div>
         )}
       </div>

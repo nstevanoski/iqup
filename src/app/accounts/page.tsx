@@ -48,6 +48,76 @@ const sampleAccounts: Account[] = [
     createdAt: new Date("2023-01-15"),
     updatedAt: new Date("2024-01-15"),
   },
+  {
+    id: "acc_2",
+    name: "Cambridge Learning Center",
+    type: "LC",
+    status: "active",
+    contactInfo: {
+      email: "contact@cambridge-lc.com",
+      phone: "+1-555-0200",
+      address: {
+        street: "456 Learning Ave",
+        city: "Cambridge",
+        state: "MA",
+        zipCode: "02139",
+        country: "USA",
+      },
+    },
+    businessInfo: {
+      businessName: "Cambridge LC LLC",
+      taxId: "98-7654321",
+      registrationNumber: "REG-2023-002",
+      establishedDate: new Date("2023-03-10"),
+    },
+    owner: {
+      firstName: "Emily",
+      lastName: "Clark",
+      email: "emily.clark@cambridge-lc.com",
+      phone: "+1-555-0201",
+      title: "Center Manager",
+    },
+    permissions: [],
+    createdBy: "user_1",
+    createdAt: new Date("2023-03-10"),
+    updatedAt: new Date("2024-02-10"),
+    parentAccountId: "acc_1",
+  },
+  {
+    id: "acc_3",
+    name: "Somerville Learning Center",
+    type: "LC",
+    status: "inactive",
+    contactInfo: {
+      email: "contact@somerville-lc.com",
+      phone: "+1-555-0202",
+      address: {
+        street: "12 Education Way",
+        city: "Somerville",
+        state: "MA",
+        zipCode: "02143",
+        country: "USA",
+      },
+    },
+    businessInfo: {
+      businessName: "Somerville LC Inc",
+      taxId: "21-0987654",
+      registrationNumber: "REG-2023-003",
+      establishedDate: new Date("2023-05-05"),
+    },
+    owner: {
+      firstName: "David",
+      lastName: "Lee",
+      email: "david.lee@somerville-lc.com",
+      phone: "+1-555-0203",
+      title: "Center Owner",
+    },
+    permissions: [],
+    createdBy: "user_1",
+    createdAt: new Date("2023-05-05"),
+    updatedAt: new Date("2024-02-15"),
+    parentAccountId: "acc_1",
+  },
 ];
 
 const sampleApplications: Application[] = [
@@ -116,25 +186,77 @@ export default function AccountsPage() {
   const router = useRouter();
   const user = useUser();
   const [activeTab, setActiveTab] = useState<"accounts" | "applications">("accounts");
+  const [accountTypeFilter, setAccountTypeFilter] = useState<"all" | "MF" | "LC">("all");
   const [accounts, setAccounts] = useState<Account[]>(sampleAccounts);
   const [applications, setApplications] = useState<Application[]>(sampleApplications);
 
-  // Only HQ users can access this page
+  // Non-HQ users (e.g., MF) cannot manage accounts; MF can preview their LC accounts and submit applications
   if (user?.role !== "HQ") {
     return (
       <DashboardLayout>
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>Only HQ users can manage accounts and applications.</p>
+        <div className="space-y-6">
+          <div>
+            <button
+              onClick={() => router.push("/accounts/applications/new")}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Submit New Application
+            </button>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Restricted Access</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>
+                    You don’t have permissions to manage accounts. If you need a new account, please submit an application to Headquarters.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* MF read-only list of LC accounts under their MF */}
+          {user?.role === "MF" && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Your Learning Centers</h3>
+                  <p className="text-sm text-gray-600">Read-only preview of LC accounts under your MF.</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {sampleAccounts
+                  .filter(acc => acc.type === "LC" && acc.parentAccountId === "acc_1")
+                  .map(account => (
+                    <div key={account.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{account.name}</h4>
+                          <p className="text-sm text-gray-500">{account.contactInfo.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(account.status)}`}>
+                              {account.status}
+                            </span>
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                              LC
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                ))}
+                {sampleAccounts.filter(acc => acc.type === "LC" && acc.parentAccountId === "acc_1").length === 0 && (
+                  <p className="text-sm text-gray-500">No LC accounts found under your MF.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </DashboardLayout>
     );
@@ -256,8 +378,37 @@ export default function AccountsPage() {
           {activeTab === "accounts" ? (
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Accounts</h3>
+              {/* Type Filter */}
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm text-gray-600">Filter:</span>
+                <button
+                  onClick={() => setAccountTypeFilter("all")}
+                  className={`px-3 py-1 text-sm rounded-md border ${accountTypeFilter === "all" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setAccountTypeFilter("MF")}
+                  className={`px-3 py-1 text-sm rounded-md border ${accountTypeFilter === "MF" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
+                >
+                  MF
+                </button>
+                <button
+                  onClick={() => setAccountTypeFilter("LC")}
+                  className={`px-3 py-1 text-sm rounded-md border ${accountTypeFilter === "LC" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
+                >
+                  LC
+                </button>
+                <div className="ml-auto text-xs text-gray-500 flex items-center gap-3">
+                  <span>Total: {accounts.length}</span>
+                  <span>MF: {accounts.filter(a => a.type === "MF").length}</span>
+                  <span>LC: {accounts.filter(a => a.type === "LC").length}</span>
+                </div>
+              </div>
               <div className="space-y-4">
-                {accounts.map((account) => (
+                {accounts
+                  .filter(acc => accountTypeFilter === "all" ? true : acc.type === accountTypeFilter)
+                  .map((account) => (
                   <div key={account.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -275,10 +426,10 @@ export default function AccountsPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-800">
+                        <button
+                          onClick={() => router.push(`/accounts/${account.id}/edit`)}
+                          className="text-gray-600 hover:text-gray-800"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
                       </div>
@@ -312,13 +463,22 @@ export default function AccountsPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button className="text-green-600 hover:text-green-800">
+                        <button
+                          onClick={() => setApplications(prev => prev.map(app => app.id === application.id ? { ...app, status: "approved" } : app))}
+                          className="text-green-600 hover:text-green-800"
+                        >
                           <CheckCircle className="h-4 w-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-800">
+                        <button
+                          onClick={() => setApplications(prev => prev.map(app => app.id === application.id ? { ...app, status: "rejected" } : app))}
+                          className="text-red-600 hover:text-red-800"
+                        >
                           <XCircle className="h-4 w-4" />
                         </button>
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button
+                          onClick={() => router.push(`/accounts/applications/${application.id}`)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
                       </div>

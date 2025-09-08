@@ -8,7 +8,7 @@ import {
   Calendar, 
   Clock, 
   MapPin, 
-  DollarSign, 
+  Euro, 
   User, 
   Building, 
   Plus, 
@@ -250,11 +250,11 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
 
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-600" />
+                <Euro className="h-8 w-8 text-green-600" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-green-600">Revenue</p>
                   <p className="text-2xl font-bold text-green-900">
-                    ${totalRevenue.toFixed(2)}
+                    €{totalRevenue.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -320,34 +320,34 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                   <span className="ml-2 text-sm font-medium">{learningGroup.franchisee.name}</span>
                 </div>
                 <div className="flex items-center">
-                  <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                  <Euro className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Final Price:</span>
-                  <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.finalPrice}</span>
+                  <span className="ml-2 text-sm font-medium">€{learningGroup.pricingSnapshot.finalPrice}</span>
                 </div>
                 <div className="flex items-center">
-                  <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                  <Euro className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Course Price:</span>
-                  <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.coursePrice}</span>
+                  <span className="ml-2 text-sm font-medium">€{learningGroup.pricingSnapshot.coursePrice}</span>
                 </div>
                 <div className="flex items-center">
-                  <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                  <CreditCard className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Payment Method:</span>
                   <span className="ml-2 text-sm font-medium capitalize">{learningGroup.pricingSnapshot.paymentMethod?.replace('-', ' ')}</span>
                 </div>
                 {learningGroup.pricingSnapshot.numberOfPayments && learningGroup.pricingSnapshot.numberOfPayments > 1 && (
                   <>
                     <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                      <Calendar className="h-4 w-4 text-gray-400 mr-3" />
                       <span className="text-sm text-gray-600">Number of Payments:</span>
                       <span className="ml-2 text-sm font-medium">{learningGroup.pricingSnapshot.numberOfPayments}</span>
                     </div>
                     <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                      <Euro className="h-4 w-4 text-gray-400 mr-3" />
                       <span className="text-sm text-gray-600">Price per Payment:</span>
-                      <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.pricePerMonth?.toFixed(2)}</span>
+                      <span className="ml-2 text-sm font-medium">€{learningGroup.pricingSnapshot.pricePerMonth?.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                      <Clock className="h-4 w-4 text-gray-400 mr-3" />
                       <span className="text-sm text-gray-600">Gap Between Payments:</span>
                       <span className="ml-2 text-sm font-medium">{learningGroup.pricingSnapshot.gapBetweenPayments} days</span>
                     </div>
@@ -355,9 +355,9 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                 )}
                 {learningGroup.pricingSnapshot.discount && (
                   <div className="flex items-center">
-                    <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
+                    <Euro className="h-4 w-4 text-gray-400 mr-3" />
                     <span className="text-sm text-gray-600">Discount:</span>
-                    <span className="ml-2 text-sm font-medium text-green-600">-${learningGroup.pricingSnapshot.discount}</span>
+                    <span className="ml-2 text-sm font-medium text-green-600">-€{learningGroup.pricingSnapshot.discount}</span>
                   </div>
                 )}
               </div>

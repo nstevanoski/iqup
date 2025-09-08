@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
+import { getParentMfIdForLcScope } from "@/store/auth";
 import { Program } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -246,10 +247,19 @@ export default function ProgramsPage() {
     let filteredPrograms = samplePrograms;
 
     if (user.role === "MF" || user.role === "LC") {
-      // MF and LC can only see programs shared with their scope
-      filteredPrograms = samplePrograms.filter(p => 
-        p.visibility === "public" || 
-        (p.visibility === "shared" && p.sharedWithMFs.includes(selectedScope.id))
+      // MF can see programs shared with their own MF scope
+      // LC inherits visibility from its parent MF
+      const allowedMfIds = new Set<string>();
+      if (user.role === "MF") {
+        allowedMfIds.add(selectedScope.id);
+      } else {
+        const parentMfId = getParentMfIdForLcScope(selectedScope.id);
+        if (parentMfId) allowedMfIds.add(parentMfId);
+      }
+
+      filteredPrograms = samplePrograms.filter(p =>
+        p.visibility === "public" ||
+        (p.visibility === "shared" && p.sharedWithMFs.some((mfId) => allowedMfIds.has(mfId)))
       );
     } else if (user.role === "TT") {
       // TT can only see public programs

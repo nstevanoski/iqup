@@ -8,7 +8,7 @@ import { useUser, useSelectedScope } from "@/store/auth";
 import { Order, Product } from "@/types";
 import { useState, useEffect } from "react";
 import { OrderConsolidationForm } from "@/components/forms/OrderConsolidationForm";
-import { Plus, Eye, Edit, Trash2, Package, DollarSign, Calendar, User, Building, Truck, AlertCircle, Layers } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Package, Euro, Calendar, User, Building, AlertCircle, Layers } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
 const sampleOrders: Order[] = [
@@ -379,8 +379,8 @@ const getColumns = (userRole: string, canEdit: boolean): Column<Order>[] => [
     sortable: true,
     render: (value) => (
       <div className="text-sm">
-        <div className="font-medium text-gray-900">${value.toFixed(2)}</div>
-        <div className="text-xs text-gray-500">Subtotal: ${(value * 0.92).toFixed(2)}</div>
+        <div className="font-medium text-gray-900">€{value.toFixed(2)}</div>
+        <div className="text-xs text-gray-500">Subtotal: €{(value * 0.92).toFixed(2)}</div>
       </div>
     ),
   },
@@ -560,7 +560,7 @@ export default function OrdersPage() {
               onClick={() => router.push("/orders/price-management")}
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
             >
-              <DollarSign className="h-4 w-4" />
+              <Euro className="h-4 w-4" />
               Price Management
             </button>
           )}

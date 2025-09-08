@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useUser } from "@/store/auth";
 import { Application } from "@/types";
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Clock, AlertCircle, Building, User, Target, FileText, Calendar, DollarSign, Users, MapPin, Globe } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Building, User, Target, FileText, Euro, Users, MapPin } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 // Sample application data
@@ -378,8 +378,8 @@ export default function ApplicationDetailPage() {
                     </div>
                     
                     <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
-                      <span className="text-sm">${yearData.revenue.toLocaleString()}</span>
+                      <Euro className="h-4 w-4 mr-2 text-gray-400" />
+                      <span className="text-sm">€{yearData.revenue.toLocaleString()}</span>
                     </div>
                     
                     <div>

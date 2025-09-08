@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { db } from "./db";
+import { getParentMfIdForLcScope } from "@/store/auth";
 import {
   Program,
   SubProgram,
@@ -101,10 +102,19 @@ export const programHandlers = [
     
     // Apply role-based filtering
     if (userRole === "MF" || userRole === "LC") {
-      // MF and LC can only see programs shared with their scope
+      // MF can see shared programs for their MF scope
+      // LC inherits visibility from its parent MF
+      const allowedMfIds: string[] = [];
+      if (userRole === "MF" && userScope) {
+        allowedMfIds.push(userScope);
+      } else if (userRole === "LC" && userScope) {
+        const parentMf = getParentMfIdForLcScope(userScope);
+        if (parentMf) allowedMfIds.push(parentMf);
+      }
+
       programs = programs.filter(p => 
         p.visibility === "public" || 
-        (p.visibility === "shared" && p.sharedWithMFs.includes(userScope || ""))
+        (p.visibility === "shared" && allowedMfIds.some(mfId => p.sharedWithMFs.includes(mfId)))
       );
     } else if (userRole === "TT") {
       // TT can only see public programs
@@ -163,8 +173,16 @@ export const programHandlers = [
     
     // Check access permissions
     if (userRole === "MF" || userRole === "LC") {
-      if (program.visibility !== "public" && 
-          !(program.visibility === "shared" && program.sharedWithMFs.includes(userScope || ""))) {
+      let allowed = program.visibility === "public";
+      if (!allowed && program.visibility === "shared") {
+        const allowedMf = userRole === "MF"
+          ? (userScope || null)
+          : getParentMfIdForLcScope(userScope || null);
+        if (allowedMf) {
+          allowed = program.sharedWithMFs.includes(allowedMf);
+        }
+      }
+      if (!allowed) {
         return HttpResponse.json(
           { success: false, message: "Access denied" },
           { status: 403 }
@@ -368,6 +386,41 @@ export const subProgramHandlers = [
     
     try {
       const subProgramData = await request.json() as Omit<SubProgram, "id" | "createdAt" | "updatedAt">;
+
+      // Enforce pricing model restrictions: only program_price or subscription
+      const allowedModels = new Set(["program_price", "subscription"]);
+      if (!allowedModels.has(subProgramData.pricingModel as string)) {
+        return HttpResponse.json(
+          { success: false, message: "Invalid pricing model. Use 'program_price' or 'subscription'." },
+          { status: 400 }
+        );
+      }
+
+      // Validate required fields based on pricing model
+      if (subProgramData.pricingModel === "program_price") {
+        if (!subProgramData.coursePrice || subProgramData.coursePrice <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Course price is required and must be > 0 for Program Price." },
+            { status: 400 }
+          );
+        }
+        // Clear non-applicable fields
+        (subProgramData as any).pricePerMonth = undefined;
+        (subProgramData as any).numberOfPayments = undefined;
+        (subProgramData as any).gap = undefined;
+      } else if (subProgramData.pricingModel === "subscription") {
+        if (!subProgramData.pricePerMonth || subProgramData.pricePerMonth <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Price per month is required and must be > 0 for Subscription." },
+            { status: 400 }
+          );
+        }
+        // Clear non-applicable fields
+        (subProgramData as any).coursePrice = 0;
+        (subProgramData as any).numberOfPayments = undefined;
+        (subProgramData as any).gap = undefined;
+      }
+
       const subProgram = db.createSubProgram(subProgramData);
       return HttpResponse.json(createResponse(subProgram, "SubProgram created successfully"));
     } catch (error) {
@@ -392,6 +445,39 @@ export const subProgramHandlers = [
     
     try {
       const updates = await request.json() as Partial<SubProgram>;
+
+      if (updates.pricingModel) {
+        const allowedModels = new Set(["program_price", "subscription"]);
+        if (!allowedModels.has(updates.pricingModel as string)) {
+          return HttpResponse.json(
+            { success: false, message: "Invalid pricing model. Use 'program_price' or 'subscription'." },
+            { status: 400 }
+          );
+        }
+      }
+
+      if (updates.pricingModel === "program_price") {
+        if (updates.coursePrice !== undefined && updates.coursePrice <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Course price must be > 0 for Program Price." },
+            { status: 400 }
+          );
+        }
+        updates.pricePerMonth = undefined;
+        updates.numberOfPayments = undefined;
+        updates.gap = undefined;
+      } else if (updates.pricingModel === "subscription") {
+        if (updates.pricePerMonth !== undefined && updates.pricePerMonth <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Price per month must be > 0 for Subscription." },
+            { status: 400 }
+          );
+        }
+        updates.coursePrice = 0;
+        updates.numberOfPayments = undefined;
+        updates.gap = undefined;
+      }
+
       const subProgram = db.updateSubProgram(params.id as string, updates);
       if (!subProgram) {
         return HttpResponse.json(
@@ -748,8 +834,41 @@ export const studentHandlers = [
   http.get("/api/students", ({ request }) => {
     const url = new URL(request.url);
     const filters = parseQueryParams(url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    const userScope = url.searchParams.get("userScope");
     
     let students = db.getStudents();
+    
+    // Apply role-based filtering
+    if (userRole === "MF" && userScope) {
+      students = students.filter((s: Student) => {
+        const franchise: any = (s as any).accountFranchise;
+        const studentMfId: string | undefined = (s as any).mfId || (s as any).parentMfId;
+        const studentMfName: string | undefined = (s as any).mfName;
+
+        // Prefer ID-based checks when available
+        const byId = Boolean(
+          (studentMfId && studentMfId === userScope) ||
+          (franchise && franchise.type === "MF" && franchise.id === userScope) ||
+          (franchise && franchise.type === "LC" && franchise.parentMfId === userScope)
+        );
+        
+        // Fallback to name-based checks
+        const byName = Boolean(
+          (studentMfName && studentMfName === userScope) ||
+          (franchise && franchise.type === "MF" && franchise.name === userScope) ||
+          (franchise && franchise.type === "LC" && studentMfName === userScope)
+        );
+
+        return byId || byName;
+      });
+    } else if (userRole === "LC" && userScope) {
+      // LC sees only students under the LC scope
+      students = students.filter((s: Student) => {
+        const franchise: any = (s as any).accountFranchise;
+        return Boolean(franchise && franchise.type === "LC" && (franchise.id === userScope || franchise.name === userScope));
+      });
+    }
     
     // Apply filters
     if (filters.search) {

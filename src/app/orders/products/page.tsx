@@ -8,7 +8,7 @@ import { useUser } from "@/store/auth";
 import { Product, ProductList } from "@/types";
 import { useState, useEffect } from "react";
 import { StockReceivingForm } from "@/components/forms/StockReceivingForm";
-import { Plus, Eye, Edit, Trash2, Package, DollarSign, AlertTriangle, CheckCircle, XCircle, Share2, Truck } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Package, Euro, AlertTriangle, CheckCircle, XCircle, Share2, Truck } from "lucide-react";
 
 // Sample data - in a real app, this would come from an API
 const sampleProducts: Product[] = [
@@ -256,7 +256,7 @@ const getColumns = (): Column<Product>[] => [
     sortable: true,
     render: (value, row) => (
       <div className="text-sm">
-        <div className="font-medium text-gray-900">${value.toFixed(2)}</div>
+        <div className="font-medium text-gray-900">€{value.toFixed(2)}</div>
         <div className="text-xs text-gray-500">Markup: {row.markup}%</div>
       </div>
     ),
@@ -266,7 +266,7 @@ const getColumns = (): Column<Product>[] => [
     label: "Selling Price",
     sortable: true,
     render: (value) => (
-      <div className="font-medium text-gray-900">${value.toFixed(2)}</div>
+      <div className="font-medium text-gray-900">€{value.toFixed(2)}</div>
     ),
   },
   {

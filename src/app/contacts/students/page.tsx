@@ -3,7 +3,7 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { useUser } from "@/store/auth";
+import { useUser, useSelectedScope } from "@/store/auth";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, DollarSign, Award } from "lucide-react";
@@ -184,6 +184,7 @@ const columns: Column<StudentListItem>[] = [
 export default function StudentsPage() {
   const router = useRouter();
   const user = useUser();
+  const selectedScope = useSelectedScope();
   const [data, setData] = useState<StudentListItem[]>(sampleStudents);
   const [loading, setLoading] = useState(true);
 
@@ -191,10 +192,14 @@ export default function StudentsPage() {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/students");
+        const params = new URLSearchParams();
+        if (user?.role) params.set("userRole", user.role);
+        if (selectedScope?.id) params.set("userScope", selectedScope.id);
+        const response = await fetch(`/api/students?${params.toString()}`);
         if (response.ok) {
           const result = await response.json();
           const students: Student[] = result.data || [];
+          // API enforces filtering; just map
           setData(students.map(convertStudentToListItem));
         } else {
           // Fallback to sample data

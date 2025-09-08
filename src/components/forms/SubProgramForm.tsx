@@ -22,7 +22,7 @@ interface FormData {
   price: number;
   prerequisites: string[];
   learningObjectives: string[];
-  pricingModel: "one-time" | "installments" | "subscription" | "program_price";
+  pricingModel: "subscription" | "program_price" | "one-time" | "installments";
   coursePrice: number;
   numberOfPayments?: number;
   gap?: number;
@@ -41,7 +41,7 @@ const initialFormData: FormData = {
   price: 0,
   prerequisites: [],
   learningObjectives: [],
-  pricingModel: "one-time",
+  pricingModel: "program_price",
   coursePrice: 0,
   numberOfPayments: undefined,
   gap: undefined,
@@ -51,10 +51,8 @@ const initialFormData: FormData = {
 };
 
 const pricingModels = [
-  { value: "one-time", label: "One-time Payment" },
-  { value: "installments", label: "Installments" },
-  { value: "subscription", label: "Monthly Subscription" },
-  { value: "program_price", label: "Program Price" }
+  { value: "program_price", label: "Program Price" },
+  { value: "subscription", label: "Price per Month" },
 ];
 
 const availableLCScopes = [
@@ -108,14 +106,8 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     if (formData.duration <= 0) {
       newErrors.duration = "Duration must be greater than 0";
     }
-    if (formData.coursePrice < 0) {
-      newErrors.coursePrice = "Course price cannot be negative";
-    }
-    if (formData.pricingModel === "installments" && (!formData.numberOfPayments || formData.numberOfPayments <= 0)) {
-      newErrors.numberOfPayments = "Number of payments is required for installment model";
-    }
-    if (formData.pricingModel === "installments" && (!formData.gap || formData.gap <= 0)) {
-      newErrors.gap = "Gap between payments is required for installment model";
+    if (formData.pricingModel === "program_price" && (!formData.coursePrice || formData.coursePrice <= 0)) {
+      newErrors.coursePrice = "Course price is required for Program Price";
     }
     if (formData.pricingModel === "subscription" && (!formData.pricePerMonth || formData.pricePerMonth <= 0)) {
       newErrors.pricePerMonth = "Price per month is required for subscription model";
@@ -351,61 +343,27 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Course Price *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.coursePrice}
-              onChange={(e) => handleInputChange("coursePrice", parseFloat(e.target.value) || 0)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.coursePrice ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="0.00"
-            />
-            {errors.coursePrice && <p className="text-red-500 text-sm mt-1">{errors.coursePrice}</p>}
-          </div>
-
-          {formData.pricingModel === "installments" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Payments *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.numberOfPayments || ""}
-                  onChange={(e) => handleInputChange("numberOfPayments", parseInt(e.target.value) || undefined)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.numberOfPayments ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="e.g., 3"
-                />
-                {errors.numberOfPayments && <p className="text-red-500 text-sm mt-1">{errors.numberOfPayments}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gap between Payments (days) *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.gap || ""}
-                  onChange={(e) => handleInputChange("gap", parseInt(e.target.value) || undefined)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.gap ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="e.g., 30"
-                />
-                {errors.gap && <p className="text-red-500 text-sm mt-1">{errors.gap}</p>}
-              </div>
-            </>
+          {formData.pricingModel === "program_price" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Course Price *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.coursePrice}
+                onChange={(e) => handleInputChange("coursePrice", parseFloat(e.target.value) || 0)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.coursePrice ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="0.00"
+              />
+              {errors.coursePrice && <p className="text-red-500 text-sm mt-1">{errors.coursePrice}</p>}
+            </div>
           )}
+
+          {/* Installments model removed per requirements */}
 
           {formData.pricingModel === "subscription" && (
             <div>
