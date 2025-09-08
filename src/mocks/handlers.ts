@@ -386,6 +386,41 @@ export const subProgramHandlers = [
     
     try {
       const subProgramData = await request.json() as Omit<SubProgram, "id" | "createdAt" | "updatedAt">;
+
+      // Enforce pricing model restrictions: only program_price or subscription
+      const allowedModels = new Set(["program_price", "subscription"]);
+      if (!allowedModels.has(subProgramData.pricingModel as string)) {
+        return HttpResponse.json(
+          { success: false, message: "Invalid pricing model. Use 'program_price' or 'subscription'." },
+          { status: 400 }
+        );
+      }
+
+      // Validate required fields based on pricing model
+      if (subProgramData.pricingModel === "program_price") {
+        if (!subProgramData.coursePrice || subProgramData.coursePrice <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Course price is required and must be > 0 for Program Price." },
+            { status: 400 }
+          );
+        }
+        // Clear non-applicable fields
+        (subProgramData as any).pricePerMonth = undefined;
+        (subProgramData as any).numberOfPayments = undefined;
+        (subProgramData as any).gap = undefined;
+      } else if (subProgramData.pricingModel === "subscription") {
+        if (!subProgramData.pricePerMonth || subProgramData.pricePerMonth <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Price per month is required and must be > 0 for Subscription." },
+            { status: 400 }
+          );
+        }
+        // Clear non-applicable fields
+        (subProgramData as any).coursePrice = 0;
+        (subProgramData as any).numberOfPayments = undefined;
+        (subProgramData as any).gap = undefined;
+      }
+
       const subProgram = db.createSubProgram(subProgramData);
       return HttpResponse.json(createResponse(subProgram, "SubProgram created successfully"));
     } catch (error) {
@@ -410,6 +445,39 @@ export const subProgramHandlers = [
     
     try {
       const updates = await request.json() as Partial<SubProgram>;
+
+      if (updates.pricingModel) {
+        const allowedModels = new Set(["program_price", "subscription"]);
+        if (!allowedModels.has(updates.pricingModel as string)) {
+          return HttpResponse.json(
+            { success: false, message: "Invalid pricing model. Use 'program_price' or 'subscription'." },
+            { status: 400 }
+          );
+        }
+      }
+
+      if (updates.pricingModel === "program_price") {
+        if (updates.coursePrice !== undefined && updates.coursePrice <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Course price must be > 0 for Program Price." },
+            { status: 400 }
+          );
+        }
+        updates.pricePerMonth = undefined;
+        updates.numberOfPayments = undefined;
+        updates.gap = undefined;
+      } else if (updates.pricingModel === "subscription") {
+        if (updates.pricePerMonth !== undefined && updates.pricePerMonth <= 0) {
+          return HttpResponse.json(
+            { success: false, message: "Price per month must be > 0 for Subscription." },
+            { status: 400 }
+          );
+        }
+        updates.coursePrice = 0;
+        updates.numberOfPayments = undefined;
+        updates.gap = undefined;
+      }
+
       const subProgram = db.updateSubProgram(params.id as string, updates);
       if (!subProgram) {
         return HttpResponse.json(
