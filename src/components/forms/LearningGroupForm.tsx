@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { LearningGroup } from "@/types";
-import { X, Plus, Trash2, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users } from "lucide-react";
+import { X, Plus, Trash2, Save, Loader2, Calendar, Clock, MapPin, Euro, Users } from "lucide-react";
 
 interface LearningGroupFormProps {
   learningGroup?: LearningGroup;
@@ -562,7 +562,7 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <DollarSign className="h-4 w-4 inline mr-1" />
+                  <Euro className="h-4 w-4 inline mr-1" />
                   Program Price
                 </label>
                 <input

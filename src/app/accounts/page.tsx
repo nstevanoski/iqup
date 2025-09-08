@@ -116,6 +116,7 @@ export default function AccountsPage() {
   const router = useRouter();
   const user = useUser();
   const [activeTab, setActiveTab] = useState<"accounts" | "applications">("accounts");
+  const [accountTypeFilter, setAccountTypeFilter] = useState<"all" | "MF" | "LC">("all");
   const [accounts, setAccounts] = useState<Account[]>(sampleAccounts);
   const [applications, setApplications] = useState<Application[]>(sampleApplications);
 
@@ -256,8 +257,37 @@ export default function AccountsPage() {
           {activeTab === "accounts" ? (
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Accounts</h3>
+              {/* Type Filter */}
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm text-gray-600">Filter:</span>
+                <button
+                  onClick={() => setAccountTypeFilter("all")}
+                  className={`px-3 py-1 text-sm rounded-md border ${accountTypeFilter === "all" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setAccountTypeFilter("MF")}
+                  className={`px-3 py-1 text-sm rounded-md border ${accountTypeFilter === "MF" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
+                >
+                  MF
+                </button>
+                <button
+                  onClick={() => setAccountTypeFilter("LC")}
+                  className={`px-3 py-1 text-sm rounded-md border ${accountTypeFilter === "LC" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"}`}
+                >
+                  LC
+                </button>
+                <div className="ml-auto text-xs text-gray-500 flex items-center gap-3">
+                  <span>Total: {accounts.length}</span>
+                  <span>MF: {accounts.filter(a => a.type === "MF").length}</span>
+                  <span>LC: {accounts.filter(a => a.type === "LC").length}</span>
+                </div>
+              </div>
               <div className="space-y-4">
-                {accounts.map((account) => (
+                {accounts
+                  .filter(acc => accountTypeFilter === "all" ? true : acc.type === accountTypeFilter)
+                  .map((account) => (
                   <div key={account.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -275,10 +305,10 @@ export default function AccountsPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button className="text-blue-600 hover:text-blue-800">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-800">
+                        <button
+                          onClick={() => router.push(`/accounts/${account.id}/edit`)}
+                          className="text-gray-600 hover:text-gray-800"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
                       </div>
@@ -312,13 +342,22 @@ export default function AccountsPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button className="text-green-600 hover:text-green-800">
+                        <button
+                          onClick={() => setApplications(prev => prev.map(app => app.id === application.id ? { ...app, status: "approved" } : app))}
+                          className="text-green-600 hover:text-green-800"
+                        >
                           <CheckCircle className="h-4 w-4" />
                         </button>
-                        <button className="text-red-600 hover:text-red-800">
+                        <button
+                          onClick={() => setApplications(prev => prev.map(app => app.id === application.id ? { ...app, status: "rejected" } : app))}
+                          className="text-red-600 hover:text-red-800"
+                        >
                           <XCircle className="h-4 w-4" />
                         </button>
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button
+                          onClick={() => router.push(`/accounts/applications/${application.id}`)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
                       </div>

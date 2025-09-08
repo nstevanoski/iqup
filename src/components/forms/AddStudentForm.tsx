@@ -515,7 +515,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                     {selectedProduct.description}
                   </div>
                   <div className="text-green-600 text-xs mt-1">
-                    Price: ${selectedProduct.price} • SKU: {selectedProduct.sku} • Stock: {selectedProduct.qty}
+                    Price: €{selectedProduct.price} • SKU: {selectedProduct.sku} • Stock: {selectedProduct.qty}
                   </div>
                 </div>
               </div>
