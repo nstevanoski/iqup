@@ -834,8 +834,41 @@ export const studentHandlers = [
   http.get("/api/students", ({ request }) => {
     const url = new URL(request.url);
     const filters = parseQueryParams(url);
+    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
+    const userScope = url.searchParams.get("userScope");
     
     let students = db.getStudents();
+    
+    // Apply role-based filtering
+    if (userRole === "MF" && userScope) {
+      students = students.filter((s: Student) => {
+        const franchise: any = (s as any).accountFranchise;
+        const studentMfId: string | undefined = (s as any).mfId || (s as any).parentMfId;
+        const studentMfName: string | undefined = (s as any).mfName;
+
+        // Prefer ID-based checks when available
+        const byId = Boolean(
+          (studentMfId && studentMfId === userScope) ||
+          (franchise && franchise.type === "MF" && franchise.id === userScope) ||
+          (franchise && franchise.type === "LC" && franchise.parentMfId === userScope)
+        );
+        
+        // Fallback to name-based checks
+        const byName = Boolean(
+          (studentMfName && studentMfName === userScope) ||
+          (franchise && franchise.type === "MF" && franchise.name === userScope) ||
+          (franchise && franchise.type === "LC" && studentMfName === userScope)
+        );
+
+        return byId || byName;
+      });
+    } else if (userRole === "LC" && userScope) {
+      // LC sees only students under the LC scope
+      students = students.filter((s: Student) => {
+        const franchise: any = (s as any).accountFranchise;
+        return Boolean(franchise && franchise.type === "LC" && (franchise.id === userScope || franchise.name === userScope));
+      });
+    }
     
     // Apply filters
     if (filters.search) {

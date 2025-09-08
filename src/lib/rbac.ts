@@ -74,7 +74,7 @@ export const navigationItems: NavigationItem[] = [
     label: "Teacher Trainers",
     href: "/teacher-trainers",
     icon: "UserCheck",
-    roles: ["HQ", "MF"],
+    roles: ["HQ"],
   },
   {
     label: "Accounts",
@@ -138,7 +138,6 @@ export const navigationRules: NavigationRule[] = [
       "/learning-groups",
       "/orders",
       "/trainings",
-      "/teacher-trainers",
       "/accounts",
       "/reports/royalties",
       "/reports/students",
