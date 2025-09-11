@@ -200,8 +200,8 @@ export async function POST(request: NextRequest) {
       visibility = 'PRIVATE'
     } = body
 
-    // Validation
-    if (!name || !description || !category || !duration || !price || !maxStudents || !hours || !lessonLength || !kind) {
+    // Validation - only check fields that are actually provided by the frontend form
+    if (!name || !description || !duration || !maxStudents || !hours || !lessonLength || !kind) {
       return errorResponse('Missing required fields', 400)
     }
 
@@ -228,13 +228,13 @@ export async function POST(request: NextRequest) {
         name,
         description,
         status: status.toUpperCase() as any,
-        category,
+        category: category || 'General', // Default category if not provided
         duration: parseInt(duration),
-        price: parseFloat(price),
+        price: parseFloat(price || '0'), // Default price if not provided
         maxStudents: parseInt(maxStudents),
         currentStudents: parseInt(currentStudents),
-        requirements: requirements,
-        learningObjectives: learningObjectives,
+        requirements: requirements || [], // Default empty array if not provided
+        learningObjectives: learningObjectives || [], // Default empty array if not provided
         createdBy: user.id,
         hours: parseInt(hours),
         lessonLength: parseInt(lessonLength),

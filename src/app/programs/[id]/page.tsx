@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProgramDetail } from "@/components/views/ProgramDetail";
-import { useUser } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program } from "@/types";
 import { ArrowLeft, Edit } from "lucide-react";
+import { getProgram, programsAPI } from "@/lib/api/programs";
 
 interface ProgramDetailPageProps {
   params: Promise<{
@@ -15,127 +16,49 @@ interface ProgramDetailPageProps {
   }>;
 }
 
-// Sample data - in a real app, this would come from an API
-const samplePrograms: Program[] = [
-  {
-    id: "1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program for all levels",
-    status: "active",
-    category: "Language",
-    duration: 24,
-    price: 299.99,
-    maxStudents: 100,
-    currentStudents: 45,
-    requirements: ["Basic reading skills", "Age 16+"],
-    learningObjectives: ["Fluency in English", "Grammar mastery", "Conversational skills"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum covering algebra, calculus, and statistics",
-    status: "active",
-    category: "STEM",
-    duration: 36,
-    price: 399.99,
-    maxStudents: 80,
-    currentStudents: 32,
-    requirements: ["High school diploma", "Basic math skills"],
-    learningObjectives: ["Advanced problem solving", "Mathematical reasoning", "Statistical analysis"],
-    createdBy: "user_1",
-    hours: 180,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "3",
-    name: "Digital Marketing Workshop",
-    description: "Intensive workshop on digital marketing strategies and tools",
-    status: "active",
-    category: "Business",
-    duration: 8,
-    price: 199.99,
-    maxStudents: 30,
-    currentStudents: 15,
-    requirements: ["Basic computer skills", "Marketing interest"],
-    learningObjectives: ["Social media marketing", "SEO basics", "Analytics"],
-    createdBy: "user_1",
-    hours: 40,
-    lessonLength: 120,
-    kind: "workshop",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-20"),
-  },
-  {
-    id: "4",
-    name: "Computer Science Program",
-    description: "Modern computer science curriculum with programming and software development",
-    status: "draft",
-    category: "Technology",
-    duration: 48,
-    price: 499.99,
-    maxStudents: 50,
-    currentStudents: 0,
-    requirements: ["Basic computer skills", "Logical thinking"],
-    learningObjectives: ["Programming proficiency", "Software development", "System design"],
-    createdBy: "user_1",
-    hours: 240,
-    lessonLength: 120,
-    kind: "certification",
-    sharedWithMFs: [],
-    visibility: "private",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-25"),
-  },
-];
 
 export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const router = useRouter();
   const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const resolvedParams = use(params);
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
     const fetchProgram = async () => {
+      if (!user || !selectedScope || !token) return;
+
       try {
         setLoading(true);
-        
-        // In a real app, this would be an API call
-        const foundProgram = samplePrograms.find(p => p.id === resolvedParams.id);
-        
-        if (!foundProgram) {
+        setError(null);
+
+        // Update API token
+        programsAPI.updateToken(token);
+
+        const response = await getProgram(
+          resolvedParams.id,
+          user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+          selectedScope.id
+        );
+
+        if (response.success) {
+          setProgram(response.data);
+        } else {
           setError("Program not found");
-          return;
         }
-        
-        setProgram(foundProgram);
       } catch (err) {
-        setError("Failed to load program");
         console.error("Error fetching program:", err);
+        setError(err instanceof Error ? err.message : "Failed to load program");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProgram();
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleEdit = () => {
     router.push(`/programs/${resolvedParams.id}/edit`);

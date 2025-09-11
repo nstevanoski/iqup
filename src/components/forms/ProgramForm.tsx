@@ -17,8 +17,6 @@ interface FormData {
   status: "active" | "inactive" | "draft";
   duration: number;
   maxStudents: number;
-  requirements: string[];
-  learningObjectives: string[];
   hours: number;
   lessonLength: number;
   kind: "academic" | "worksheet" | "birthday_party" | "stem_camp";
@@ -32,8 +30,6 @@ const initialFormData: FormData = {
   status: "draft",
   duration: 1,
   maxStudents: 20,
-  requirements: [],
-  learningObjectives: [],
   hours: 0,
   lessonLength: 60,
   kind: "academic",
@@ -65,8 +61,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       status: program.status,
       duration: program.duration,
       maxStudents: program.maxStudents,
-      requirements: program.requirements,
-      learningObjectives: program.learningObjectives,
       hours: program.hours,
       lessonLength: program.lessonLength,
       // Map unknown kinds to closest allowed option for safety
@@ -80,8 +74,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [requirementInput, setRequirementInput] = useState("");
-  const [objectiveInput, setObjectiveInput] = useState("");
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -110,15 +102,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       newErrors.lessonLength = "Lesson length must be greater than 0";
     }
 
-    // For create flow, requirements and learning objectives are optional per new requirements
-    if (program) {
-      if (formData.requirements.length === 0) {
-        newErrors.requirements = "At least one requirement is needed";
-      }
-      if (formData.learningObjectives.length === 0) {
-        newErrors.learningObjectives = "At least one learning objective is needed";
-      }
-    }
 
     if (formData.visibility === "shared" && formData.sharedWithMFs.length === 0) {
       newErrors.sharedWithMFs = "Please select at least one scope to share with";
@@ -143,39 +126,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
     }
   };
 
-  const addRequirement = () => {
-    if (requirementInput.trim() && !formData.requirements.includes(requirementInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, requirementInput.trim()],
-      }));
-      setRequirementInput("");
-    }
-  };
-
-  const removeRequirement = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      requirements: prev.requirements.filter((_, i) => i !== index),
-    }));
-  };
-
-  const addObjective = () => {
-    if (objectiveInput.trim() && !formData.learningObjectives.includes(objectiveInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        learningObjectives: [...prev.learningObjectives, objectiveInput.trim()],
-      }));
-      setObjectiveInput("");
-    }
-  };
-
-  const removeObjective = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      learningObjectives: prev.learningObjectives.filter((_, i) => i !== index),
-    }));
-  };
 
   const handleScopeChange = (scopeId: string, checked: boolean) => {
     if (checked) {
@@ -355,90 +305,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
         </div>
       </div>
 
-      {/* Requirements and Learning Objectives are omitted in create flow */}
-      {program && (
-        <>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Requirements</h3>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={requirementInput}
-                  onChange={(e) => setRequirementInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRequirement())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter a requirement"
-                />
-                <button
-                  type="button"
-                  onClick={addRequirement}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Add
-                </button>
-              </div>
-              {formData.requirements.length > 0 && (
-                <div className="space-y-2">
-                  {formData.requirements.map((requirement, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-                      <span className="text-sm">{requirement}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeRequirement(index)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {errors.requirements && <p className="text-red-500 text-sm">{errors.requirements}</p>}
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Objectives</h3>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={objectiveInput}
-                  onChange={(e) => setObjectiveInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addObjective())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter a learning objective"
-                />
-                <button
-                  type="button"
-                  onClick={addObjective}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Add
-                </button>
-              </div>
-              {formData.learningObjectives.length > 0 && (
-                <div className="space-y-2">
-                  {formData.learningObjectives.map((objective, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-                      <span className="text-sm">{objective}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeObjective(index)}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {errors.learningObjectives && <p className="text-red-500 text-sm">{errors.learningObjectives}</p>}
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Visibility Settings */}
       <div className="bg-white p-6 rounded-lg shadow">

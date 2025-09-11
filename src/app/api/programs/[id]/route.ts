@@ -12,7 +12,8 @@ export async function GET(
   if (error) return error
 
   try {
-    const programId = parseInt(params.id)
+    const resolvedParams = await params;
+    const programId = parseInt(resolvedParams.id)
     
     if (isNaN(programId)) {
       return errorResponse('Invalid program ID', 400)
@@ -149,7 +150,8 @@ export async function PUT(
   }
 
   try {
-    const programId = parseInt(params.id)
+    const resolvedParams = await params;
+    const programId = parseInt(resolvedParams.id)
     
     if (isNaN(programId)) {
       return errorResponse('Invalid program ID', 400)
@@ -281,7 +283,8 @@ export async function DELETE(
   }
 
   try {
-    const programId = parseInt(params.id)
+    const resolvedParams = await params;
+    const programId = parseInt(resolvedParams.id)
     
     if (isNaN(programId)) {
       return errorResponse('Invalid program ID', 400)

@@ -3,99 +3,13 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { useUser, useSelectedScope } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen } from "lucide-react";
+import { getPrograms, deleteProgram, programsAPI } from "@/lib/api/programs";
 
-// Sample data - in a real app, this would come from an API
-const samplePrograms: Program[] = [
-  {
-    id: "1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program for all levels",
-    status: "active",
-    category: "Language",
-    duration: 24,
-    price: 299.99,
-    maxStudents: 100,
-    currentStudents: 45,
-    requirements: ["Basic reading skills", "Age 16+"],
-    learningObjectives: ["Fluency in English", "Grammar mastery", "Conversational skills"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum covering algebra, calculus, and statistics",
-    status: "active",
-    category: "STEM",
-    duration: 36,
-    price: 399.99,
-    maxStudents: 80,
-    currentStudents: 32,
-    requirements: ["High school diploma", "Basic math skills"],
-    learningObjectives: ["Advanced problem solving", "Mathematical reasoning", "Statistical analysis"],
-    createdBy: "user_1",
-    hours: 180,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "3",
-    name: "Digital Marketing Workshop",
-    description: "Intensive workshop on digital marketing strategies and tools",
-    status: "active",
-    category: "Business",
-    duration: 8,
-    price: 199.99,
-    maxStudents: 30,
-    currentStudents: 15,
-    requirements: ["Basic computer skills", "Marketing interest"],
-    learningObjectives: ["Social media marketing", "SEO basics", "Analytics"],
-    createdBy: "user_1",
-    hours: 40,
-    lessonLength: 120,
-    kind: "workshop",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-20"),
-  },
-  {
-    id: "4",
-    name: "Computer Science Program",
-    description: "Modern computer science curriculum with programming and software development",
-    status: "draft",
-    category: "Technology",
-    duration: 48,
-    price: 499.99,
-    maxStudents: 50,
-    currentStudents: 0,
-    requirements: ["Basic computer skills", "Logical thinking"],
-    learningObjectives: ["Programming proficiency", "Software development", "System design"],
-    createdBy: "user_1",
-    hours: 240,
-    lessonLength: 120,
-    kind: "certification",
-    sharedWithMFs: [],
-    visibility: "private",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-25"),
-  },
-];
 
 // Helper function to get MF scope names
 const getMFScopeNames = (scopeIds: string[]): string[] => {
@@ -234,44 +148,50 @@ export default function ProgramsPage() {
   const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
-  const [data, setData] = useState<Program[]>(samplePrograms);
-  const [loading, setLoading] = useState(false);
+  const token = useToken();
+  const [data, setData] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter data based on user role and scope
+  // Fetch programs from API
   useEffect(() => {
-    if (!user || !selectedScope) return;
+    const fetchPrograms = async () => {
+      if (!user || !selectedScope || !token) return;
 
-    let filteredPrograms = samplePrograms;
+      try {
+        setLoading(true);
+        setError(null);
 
-    if (user.role === "MF" || user.role === "LC") {
-      // MF can see programs shared with their own MF scope
-      // LC inherits visibility from its parent MF
-      const allowedMfIds = new Set<string>();
-      if (user.role === "MF") {
-        allowedMfIds.add(selectedScope.id);
-      } else {
-        // LC users can see programs - in a real app, this would get the parent MF from the backend
-        // For now, we'll allow LC users to see public and their own shared programs
-        allowedMfIds.add(selectedScope.id);
+        // Update API token
+        programsAPI.updateToken(token);
+
+        const response = await getPrograms({
+          userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+          userScope: selectedScope.id,
+          page: 1,
+          limit: 100, // Get all programs for now
+        });
+
+        if (response.success) {
+          setData(response.data.data);
+        } else {
+          setError("Failed to fetch programs");
+        }
+      } catch (err) {
+        console.error("Error fetching programs:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch programs");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      filteredPrograms = samplePrograms.filter(p =>
-        p.visibility === "public" ||
-        (p.visibility === "shared" && p.sharedWithMFs.some((mfId) => allowedMfIds.has(mfId)))
-      );
-    } else if (user.role === "TT") {
-      // TT can only see public programs
-      filteredPrograms = samplePrograms.filter(p => p.visibility === "public");
-    }
-    // HQ can see all programs (no filtering)
-
-    setData(filteredPrograms);
-  }, [user, selectedScope]);
+    fetchPrograms();
+  }, [user, selectedScope, token]);
 
   const canEdit = user?.role === "HQ";
   const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`));
 
-  const handleRowAction = (action: string, row: Program) => {
+  const handleRowAction = async (action: string, row: Program) => {
     console.log(`${action} action for program:`, row);
     
     switch (action) {
@@ -288,7 +208,20 @@ export default function ProgramsPage() {
       case "delete":
         if (canEdit) {
           if (confirm(`Are you sure you want to delete ${row.name}?`)) {
-            setData(prev => prev.filter(item => item.id !== row.id));
+            try {
+              setLoading(true);
+              const response = await deleteProgram(row.id);
+              if (response.success) {
+                setData(prev => prev.filter(item => item.id !== row.id));
+              } else {
+                alert("Failed to delete program. Please try again.");
+              }
+            } catch (err) {
+              console.error("Error deleting program:", err);
+              alert("Failed to delete program. Please try again.");
+            } finally {
+              setLoading(false);
+            }
           }
         } else {
           alert("You don't have permission to delete programs");
@@ -375,6 +308,34 @@ export default function ProgramsPage() {
                     ? `You can view programs shared with ${selectedScope?.name || "your scope"}.`
                     : "You can view public programs only."}
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error Loading Programs
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm hover:bg-red-200 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
               </div>
             </div>
           </div>
