@@ -1,0 +1,270 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for user roles and account types
+enum UserRole {
+  HQ_ADMIN
+  HQ_STAFF
+  MF_ADMIN
+  MF_STAFF
+  LC_ADMIN
+  LC_STAFF
+  TT_ADMIN
+  TT_STAFF
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// Main User model for authentication
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // Will store hashed password
+  firstName String
+  lastName  String
+  phone     String?
+  role      UserRole
+  status    AccountStatus @default(ACTIVE)
+  
+  // Relationships
+  hqId      Int?
+  mfId      Int?
+  lcId      Int?
+  ttId      Int?
+  
+  hq        HQ?              @relation(fields: [hqId], references: [id])
+  mf        MasterFranchisee? @relation(fields: [mfId], references: [id])
+  lc        LearningCenter?   @relation(fields: [lcId], references: [id])
+  tt        TeacherTrainer?   @relation(fields: [ttId], references: [id])
+  
+  // Program relationships
+  createdPrograms   Program[]
+  createdSubPrograms SubProgram[]
+  
+  // Authentication fields
+  lastLoginAt    DateTime?
+  emailVerified  Boolean   @default(false)
+  resetToken     String?
+  resetTokenExp  DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// Headquarters (Top level)
+model HQ {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique // HQ code for identification
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  postalCode  String?
+  status      AccountStatus @default(ACTIVE)
+  
+  // Relationships
+  users             User[]
+  masterFranchisees MasterFranchisee[]
+  teacherTrainers   TeacherTrainer[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("headquarters")
+}
+
+// Master Franchisee (Under HQ)
+model MasterFranchisee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique // MF code for identification
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  status     AccountStatus @default(ACTIVE)
+  
+  // Relationship to HQ
+  hqId       Int
+  hq         HQ @relation(fields: [hqId], references: [id])
+  
+  // Relationships
+  users          User[]
+  learningCenters LearningCenter[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("master_franchisees")
+}
+
+// Learning Center (Under MF)
+model LearningCenter {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique // LC code for identification
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  status     AccountStatus @default(ACTIVE)
+  
+  // Relationship to MF
+  mfId       Int
+  mf         MasterFranchisee @relation(fields: [mfId], references: [id])
+  
+  // Relationships
+  users      User[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_centers")
+}
+
+// Teacher Trainer (Under HQ)
+model TeacherTrainer {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique // TT code for identification
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  status     AccountStatus @default(ACTIVE)
+  
+  // Relationship to HQ
+  hqId       Int
+  hq         HQ @relation(fields: [hqId], references: [id])
+  
+  // Relationships
+  users      User[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("teacher_trainers")
+}
+
+// Program model
+model Program {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String   @db.Text
+  status            ProgramStatus @default(DRAFT)
+  category          String
+  duration          Int      // in weeks
+  price             Decimal  @db.Decimal(10, 2)
+  maxStudents       Int
+  currentStudents   Int      @default(0)
+  requirements      Json     // Array of strings
+  learningObjectives Json    // Array of strings
+  createdBy         Int      // User ID
+  hours             Int      // Total program hours
+  lessonLength      Int      // Length of each lesson in minutes
+  kind              ProgramKind
+  sharedWithMFs     Json     // Array of MF IDs
+  visibility        ProgramVisibility @default(PRIVATE)
+  
+  // Relationships
+  creator           User     @relation(fields: [createdBy], references: [id])
+  subPrograms       SubProgram[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("programs")
+}
+
+// SubProgram model
+model SubProgram {
+  id                Int      @id @default(autoincrement())
+  programId         Int
+  name              String
+  description       String   @db.Text
+  status            ProgramStatus @default(DRAFT)
+  order             Int
+  duration          Int      // in weeks
+  price             Decimal  @db.Decimal(10, 2)
+  prerequisites     Json     // Array of strings
+  learningObjectives Json    // Array of strings
+  createdBy         Int      // User ID
+  pricingModel      PricingModel
+  coursePrice       Decimal  @db.Decimal(10, 2)
+  numberOfPayments  Int?
+  gap               Int?     // Gap between payments in days
+  pricePerMonth     Decimal? @db.Decimal(10, 2)
+  pricePerSession   Decimal? @db.Decimal(10, 2)
+  sharedWithLCs     Json     // Array of LC IDs
+  sharedWithMFs     Json?    // Array of MF IDs (when created by HQ)
+  visibility        ProgramVisibility @default(PRIVATE)
+  
+  // Relationships
+  program           Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  creator           User     @relation(fields: [createdBy], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subprograms")
+}
+
+// Enums for Program models
+enum ProgramStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum ProgramKind {
+  ACADEMIC
+  WORKSHEET
+  BIRTHDAY_PARTY
+  STEM_CAMP
+  VOCATIONAL
+  CERTIFICATION
+  WORKSHOP
+}
+
+enum ProgramVisibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+enum PricingModel {
+  PER_COURSE
+  PER_MONTH
+  PER_SESSION
+  SUBSCRIPTION
+  PROGRAM_PRICE
+  ONE_TIME
+  INSTALLMENTS
+}

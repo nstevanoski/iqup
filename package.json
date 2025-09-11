@@ -16,18 +16,29 @@
     "format:check": "prettier -c .",
     "postbuild": "next-sitemap --config next-sitemap.config.js",
     "prepare": "husky install",
-    "install:deps": "npm install @tanstack/react-query @tanstack/react-table react-hook-form zustand msw dayjs pdf-lib idb-keyval"
+    "install:deps": "npm install @tanstack/react-query @tanstack/react-table react-hook-form zustand msw dayjs pdf-lib idb-keyval",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset && npm run db:seed",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/client": "^6.16.1",
     "@tanstack/react-query": "^5.87.1",
     "@tanstack/react-table": "^8.21.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.2",
     "clsx": "^2.0.0",
     "dayjs": "^1.11.18",
     "idb-keyval": "^6.2.2",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.438.0",
     "msw": "^2.11.1",
     "next": "^15.4.3",
     "pdf-lib": "^1.17.1",
+    "prisma": "^6.16.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.62.0",
@@ -63,7 +74,11 @@
     "prettier": "^2.8.8",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4.1.11",
+    "tsx": "^4.20.5",
     "typescript": "^5.8.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "lint-staged": {
     "**/*.{js,jsx,ts,tsx}": [

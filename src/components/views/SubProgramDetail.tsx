@@ -7,7 +7,6 @@ import {
   DollarSign, 
   Users, 
   BookOpen, 
-  Target, 
   CheckCircle, 
   Eye, 
   EyeOff,
@@ -229,59 +228,30 @@ export function SubProgramDetail({ subProgram, program, onEdit }: SubProgramDeta
                   <p className="mt-1 text-sm text-gray-900">${subProgram.coursePrice.toFixed(2)}</p>
                 </div>
               </div>
-
-              {subProgram.pricingModel === "installments" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Number of Payments</label>
-                    <p className="mt-1 text-sm text-gray-900">{subProgram.numberOfPayments}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Gap between Payments</label>
-                    <p className="mt-1 text-sm text-gray-900">{subProgram.gap} days</p>
-                  </div>
-                </div>
-              )}
-
-              {subProgram.pricingModel === "subscription" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Price per Month</label>
-                  <p className="mt-1 text-sm text-gray-900">${subProgram.pricePerMonth?.toFixed(2)}</p>
+                  <p className="mt-1 text-sm text-gray-900">{subProgram.pricePerMonth != null ? `$${subProgram.pricePerMonth.toFixed(2)}` : "-"}</p>
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Price per Session</label>
+                  <p className="mt-1 text-sm text-gray-900">{(subProgram as any).pricePerSession != null ? `$${(subProgram as any).pricePerSession.toFixed(2)}` : "-"}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Number of Payments</label>
+                  <p className="mt-1 text-sm text-gray-900">{subProgram.numberOfPayments ?? "-"}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Gap between Payments (months)</label>
+                  <p className="mt-1 text-sm text-gray-900">{subProgram.gap != null ? subProgram.gap : "-"}</p>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Prerequisites */}
-          {subProgram.prerequisites.length > 0 && (
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Prerequisites</h3>
-              <ul className="space-y-2">
-                {subProgram.prerequisites.map((prerequisite, index) => (
-                  <li key={index} className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    <span className="text-sm text-gray-900">{prerequisite}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Learning Objectives */}
-          {subProgram.learningObjectives.length > 0 && (
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Learning Objectives</h3>
-              <ul className="space-y-2">
-                {subProgram.learningObjectives.map((objective, index) => (
-                  <li key={index} className="flex items-center">
-                    <Target className="h-4 w-4 text-blue-500 mr-2" />
-                    <span className="text-sm text-gray-900">{objective}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Prerequisites and Learning Objectives sections removed per requirements */}
         </div>
 
         {/* Right Column - Sharing & Metadata */}

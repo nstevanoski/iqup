@@ -7,6 +7,8 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProgramForm } from "@/components/forms/ProgramForm";
 import { Program } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
+import { getProgram, updateProgram, programsAPI } from "@/lib/api/programs";
 
 interface ProgramEditPageProps {
   params: Promise<{
@@ -14,143 +16,66 @@ interface ProgramEditPageProps {
   }>;
 }
 
-// Sample data - in a real app, this would come from an API
-const samplePrograms: Program[] = [
-  {
-    id: "1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program for all levels",
-    status: "active",
-    category: "Language",
-    duration: 24,
-    price: 299.99,
-    maxStudents: 100,
-    currentStudents: 45,
-    requirements: ["Basic reading skills", "Age 16+"],
-    learningObjectives: ["Fluency in English", "Grammar mastery", "Conversational skills"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum covering algebra, calculus, and statistics",
-    status: "active",
-    category: "STEM",
-    duration: 36,
-    price: 399.99,
-    maxStudents: 80,
-    currentStudents: 32,
-    requirements: ["High school diploma", "Basic math skills"],
-    learningObjectives: ["Advanced problem solving", "Mathematical reasoning", "Statistical analysis"],
-    createdBy: "user_1",
-    hours: 180,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "3",
-    name: "Digital Marketing Workshop",
-    description: "Intensive workshop on digital marketing strategies and tools",
-    status: "active",
-    category: "Business",
-    duration: 8,
-    price: 199.99,
-    maxStudents: 30,
-    currentStudents: 15,
-    requirements: ["Basic computer skills", "Marketing interest"],
-    learningObjectives: ["Social media marketing", "SEO basics", "Analytics"],
-    createdBy: "user_1",
-    hours: 40,
-    lessonLength: 120,
-    kind: "workshop",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-20"),
-  },
-  {
-    id: "4",
-    name: "Computer Science Program",
-    description: "Modern computer science curriculum with programming and software development",
-    status: "draft",
-    category: "Technology",
-    duration: 48,
-    price: 499.99,
-    maxStudents: 50,
-    currentStudents: 0,
-    requirements: ["Basic computer skills", "Logical thinking"],
-    learningObjectives: ["Programming proficiency", "Software development", "System design"],
-    createdBy: "user_1",
-    hours: 240,
-    lessonLength: 120,
-    kind: "certification",
-    sharedWithMFs: [],
-    visibility: "private",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-25"),
-  },
-];
 
 export default function ProgramEditPage({ params }: ProgramEditPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call to fetch program
     const fetchProgram = async () => {
+      if (!user || !selectedScope || !token) return;
+
       try {
         setLoading(true);
-        
-        // In a real app, this would be an API call
-        const foundProgram = samplePrograms.find(p => p.id === resolvedParams.id);
-        
-        if (!foundProgram) {
+        setError(null);
+
+        // Update API token
+        programsAPI.updateToken(token);
+
+        const response = await getProgram(
+          resolvedParams.id,
+          user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+          selectedScope.id
+        );
+
+        if (response.success) {
+          setProgram(response.data);
+        } else {
           setError("Program not found");
-          return;
         }
-        
-        setProgram(foundProgram);
       } catch (err) {
-        setError("Failed to load program");
         console.error("Error fetching program:", err);
+        setError(err instanceof Error ? err.message : "Failed to load program");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProgram();
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleSubmit = async (formData: Partial<Program>) => {
     try {
       setSaving(true);
       
-      // In a real app, this would be an API call
-      console.log("Updating program:", { id: resolvedParams.id, ...formData });
+      const response = await updateProgram(resolvedParams.id, formData);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate back to program detail
-      router.push(`/programs/${resolvedParams.id}`);
+      if (response.success) {
+        // Navigate back to program detail
+        router.push(`/programs/${resolvedParams.id}`);
+      } else {
+        alert("Failed to update program. Please try again.");
+      }
     } catch (err) {
       console.error("Error updating program:", err);
-      alert("Failed to update program. Please try again.");
+      alert(err instanceof Error ? err.message : "Failed to update program. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -163,6 +88,27 @@ export default function ProgramEditPage({ params }: ProgramEditPageProps) {
   const handleBack = () => {
     router.push("/programs");
   };
+
+  // HQ-only guard
+  if (user?.role !== "HQ") {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">Only Head Quarters can edit programs.</p>
+            <button
+              onClick={() => router.push(`/programs/${resolvedParams.id}`)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Program
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (loading) {
     return (

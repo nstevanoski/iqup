@@ -15,15 +15,11 @@ interface FormData {
   name: string;
   description: string;
   status: "active" | "inactive" | "draft";
-  category: string;
   duration: number;
-  price: number;
   maxStudents: number;
-  requirements: string[];
-  learningObjectives: string[];
   hours: number;
   lessonLength: number;
-  kind: "academic" | "vocational" | "certification" | "workshop" | "birthday_party" | "stem_camp";
+  kind: "academic" | "worksheet" | "birthday_party" | "stem_camp";
   sharedWithMFs: string[];
   visibility: "private" | "shared" | "public";
 }
@@ -32,12 +28,8 @@ const initialFormData: FormData = {
   name: "",
   description: "",
   status: "draft",
-  category: "",
   duration: 1,
-  price: 0,
   maxStudents: 20,
-  requirements: [],
-  learningObjectives: [],
   hours: 0,
   lessonLength: 60,
   kind: "academic",
@@ -45,24 +37,11 @@ const initialFormData: FormData = {
   visibility: "private",
 };
 
-const programCategories = [
-  "Language",
-  "STEM",
-  "Business",
-  "Technology",
-  "Arts",
-  "Sciences",
-  "Mathematics",
-  "Literature",
-  "History",
-  "Other"
-];
+// Category selection not required per latest requirements
 
 const programKinds = [
   { value: "academic", label: "Regular Program" },
-  { value: "vocational", label: "Vocational" },
-  { value: "certification", label: "Certification" },
-  { value: "workshop", label: "Workshop" },
+  { value: "worksheet", label: "Worksheet" },
   { value: "birthday_party", label: "Birthday Party" },
   { value: "stem_camp", label: "STEM Camp" }
 ];
@@ -80,23 +59,21 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       name: program.name,
       description: program.description,
       status: program.status,
-      category: program.category,
       duration: program.duration,
-      price: program.price,
       maxStudents: program.maxStudents,
-      requirements: program.requirements,
-      learningObjectives: program.learningObjectives,
       hours: program.hours,
       lessonLength: program.lessonLength,
-      kind: program.kind,
+      // Map unknown kinds to closest allowed option for safety
+      kind: ((): FormData["kind"] => {
+        const allowed = new Set(["academic", "worksheet", "birthday_party", "stem_camp"]);
+        return (allowed.has(program.kind as any) ? program.kind : "academic") as FormData["kind"];
+      })(),
       sharedWithMFs: program.sharedWithMFs,
       visibility: program.visibility,
     } : initialFormData
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [requirementInput, setRequirementInput] = useState("");
-  const [objectiveInput, setObjectiveInput] = useState("");
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -109,16 +86,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       newErrors.description = "Description is required";
     }
 
-    if (!formData.category.trim()) {
-      newErrors.category = "Category is required";
-    }
-
     if (formData.duration <= 0) {
       newErrors.duration = "Duration must be greater than 0";
-    }
-
-    if (formData.price < 0) {
-      newErrors.price = "Price cannot be negative";
     }
 
     if (formData.maxStudents <= 0) {
@@ -133,13 +102,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       newErrors.lessonLength = "Lesson length must be greater than 0";
     }
 
-    if (formData.requirements.length === 0) {
-      newErrors.requirements = "At least one requirement is needed";
-    }
-
-    if (formData.learningObjectives.length === 0) {
-      newErrors.learningObjectives = "At least one learning objective is needed";
-    }
 
     if (formData.visibility === "shared" && formData.sharedWithMFs.length === 0) {
       newErrors.sharedWithMFs = "Please select at least one scope to share with";
@@ -164,39 +126,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
     }
   };
 
-  const addRequirement = () => {
-    if (requirementInput.trim() && !formData.requirements.includes(requirementInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, requirementInput.trim()],
-      }));
-      setRequirementInput("");
-    }
-  };
-
-  const removeRequirement = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      requirements: prev.requirements.filter((_, i) => i !== index),
-    }));
-  };
-
-  const addObjective = () => {
-    if (objectiveInput.trim() && !formData.learningObjectives.includes(objectiveInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        learningObjectives: [...prev.learningObjectives, objectiveInput.trim()],
-      }));
-      setObjectiveInput("");
-    }
-  };
-
-  const removeObjective = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      learningObjectives: prev.learningObjectives.filter((_, i) => i !== index),
-    }));
-  };
 
   const handleScopeChange = (scopeId: string, checked: boolean) => {
     if (checked) {
@@ -255,25 +184,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
               placeholder="Enter program name"
             />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category *
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => handleInputChange("category", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.category ? "border-red-500" : "border-gray-300"
-              }`}
-            >
-              <option value="">Select a category</option>
-              {programCategories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
           </div>
 
           <div>
@@ -379,23 +289,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price ($) *
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.price}
-              onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.price ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
               Max Students *
             </label>
             <input
@@ -412,93 +305,6 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
         </div>
       </div>
 
-      {/* Requirements */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Requirements</h3>
-        
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={requirementInput}
-              onChange={(e) => setRequirementInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRequirement())}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter a requirement"
-            />
-            <button
-              type="button"
-              onClick={addRequirement}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Add
-            </button>
-          </div>
-
-          {formData.requirements.length > 0 && (
-            <div className="space-y-2">
-              {formData.requirements.map((requirement, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-                  <span className="text-sm">{requirement}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeRequirement(index)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {errors.requirements && <p className="text-red-500 text-sm">{errors.requirements}</p>}
-        </div>
-      </div>
-
-      {/* Learning Objectives */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Objectives</h3>
-        
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={objectiveInput}
-              onChange={(e) => setObjectiveInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addObjective())}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter a learning objective"
-            />
-            <button
-              type="button"
-              onClick={addObjective}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Add
-            </button>
-          </div>
-
-          {formData.learningObjectives.length > 0 && (
-            <div className="space-y-2">
-              {formData.learningObjectives.map((objective, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-                  <span className="text-sm">{objective}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeObjective(index)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {errors.learningObjectives && <p className="text-red-500 text-sm">{errors.learningObjectives}</p>}
-        </div>
-      </div>
 
       {/* Visibility Settings */}
       <div className="bg-white p-6 rounded-lg shadow">

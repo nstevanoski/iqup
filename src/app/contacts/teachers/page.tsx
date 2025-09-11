@@ -7,7 +7,8 @@ import { Teacher } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/store/auth";
-import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, GraduationCap, MapPin, Award } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Users, Clock, MapPin } from "lucide-react";
+import Link from "next/link";
 
 // Sample data - in a real app, this would come from an API
 const sampleTeachers: Teacher[] = [
@@ -287,20 +288,6 @@ const sampleTeachers: Teacher[] = [
   },
 ];
 
-// Helper function to get training status color
-const getTrainingStatusColor = (status: string) => {
-  switch (status) {
-    case "completed":
-      return "bg-green-100 text-green-800";
-    case "in_progress":
-      return "bg-blue-100 text-blue-800";
-    case "scheduled":
-      return "bg-yellow-100 text-yellow-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
 // Helper function to get active centers
 const getActiveCenters = (centers: Teacher["centers"]) => {
   return centers.filter(center => center.isActive);
@@ -316,11 +303,10 @@ const columns: Column<Teacher>[] = [
     filterable: true,
     render: (_, row) => (
       <div>
-        <div className="font-medium text-gray-900">
+        <Link href={`/contacts/teachers/${row.id}`} className="font-medium text-blue-600 hover:underline cursor-pointer">
           {row.title} {row.firstName} {row.lastName}
-        </div>
+        </Link>
         <div className="text-sm text-gray-500">{row.email}</div>
-        <div className="text-xs text-gray-400">{row.specialization.join(", ")}</div>
       </div>
     ),
   },
@@ -353,57 +339,7 @@ const columns: Column<Teacher>[] = [
       </div>
     ),
   },
-  {
-    key: "hourlyRate",
-    label: "Hourly Rate",
-    sortable: true,
-    render: (value) => (
-      <div className="flex items-center text-sm font-medium">
-        <DollarSign className="h-4 w-4 mr-1 text-gray-400" />
-        ${value}
-      </div>
-    ),
-  },
-  {
-    key: "education",
-    label: "Education",
-    sortable: false,
-    render: (value) => (
-      <div className="space-y-1">
-        {value.slice(0, 2).map((edu: any, index: number) => (
-          <div key={index} className="flex items-center text-xs">
-            <GraduationCap className="h-3 w-3 mr-1 text-gray-400" />
-            <span className="truncate">{edu.degree} - {edu.institution}</span>
-          </div>
-        ))}
-        {value.length > 2 && (
-          <div className="text-xs text-gray-500">+{value.length - 2} more</div>
-        )}
-      </div>
-    ),
-  },
-  {
-    key: "trainings",
-    label: "Trainings",
-    sortable: false,
-    render: (value) => (
-      <div className="space-y-1">
-        {value.slice(0, 2).map((training: any, index: number) => (
-          <div key={index} className="flex items-center gap-1">
-            <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${getTrainingStatusColor(training.status)}`}>
-              {training.status}
-            </span>
-            <span className="text-xs text-gray-600 truncate max-w-20">
-              {training.trainingName}
-            </span>
-          </div>
-        ))}
-        {value.length > 2 && (
-          <div className="text-xs text-gray-500">+{value.length - 2} more</div>
-        )}
-      </div>
-    ),
-  },
+  // Removed Hourly Rate, Education, Trainings columns per requirements
   {
     key: "centers",
     label: "Active Centers",
@@ -523,7 +459,6 @@ export default function TeachersPage() {
       { key: "specialization", label: "Specialization" },
       { key: "experience", label: "Experience (years)" },
       { key: "status", label: "Status" },
-      { key: "hourlyRate", label: "Hourly Rate" },
       { key: "address.city", label: "City" },
       { key: "address.state", label: "State" },
     ];

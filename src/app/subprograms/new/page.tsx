@@ -126,17 +126,15 @@ export default function NewSubProgramPage() {
     router.push("/subprograms");
   };
 
-  // Check if user has permission to create subprograms
-  if (user?.role !== "MF") {
+  // Check if user has permission to create subprograms (HQ and MF)
+  if (user?.role !== "MF" && user?.role !== "HQ") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
           <div className="text-center">
             <div className="text-red-600 text-6xl mb-4">🚫</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-6">
-              Only Master Franchisors (MF) can create subprograms.
-            </p>
+            <p className="text-gray-600 mb-6">Only Head Quarters and Master Franchisors can create subprograms.</p>
             <button
               onClick={() => router.push("/subprograms")}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"

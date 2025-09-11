@@ -6,13 +6,8 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  Calendar, 
   Users, 
   Clock, 
-  DollarSign, 
-  GraduationCap, 
-  Award, 
-  BookOpen,
   Edit,
   Trash2
 } from "lucide-react";
@@ -151,7 +146,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
       {/* Professional Information */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <GraduationCap className="h-5 w-5 mr-2" />
+          <User className="h-5 w-5 mr-2" />
           Professional Information
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -162,26 +157,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
               <span className="text-sm text-gray-600">{teacher.experience} years</span>
             </div>
           </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Hourly Rate</h3>
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-600">${teacher.hourlyRate}/hour</span>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Specializations</h3>
-            <div className="flex flex-wrap gap-1">
-              {teacher.specialization.map((spec, index) => (
-                <span
-                  key={index}
-                  className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                >
-                  {spec}
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* Removed Hourly Rate and Specializations per requirements */}
         </div>
         
         {teacher.bio && (
@@ -192,60 +168,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
         )}
       </div>
 
-      {/* Education */}
-      {teacher.education && teacher.education.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <GraduationCap className="h-5 w-5 mr-2" />
-            Education
-          </h2>
-          <div className="space-y-4">
-            {teacher.education.map((edu, index) => (
-              <div key={index} className="border-l-4 border-blue-200 pl-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-900">{edu.degree} in {edu.fieldOfStudy}</h3>
-                  <span className="text-xs text-gray-500">{edu.graduationYear}</span>
-                </div>
-                <p className="text-sm text-gray-600">{edu.institution}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Trainings */}
-      {teacher.trainings && teacher.trainings.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Award className="h-5 w-5 mr-2" />
-            Trainings & Certifications
-          </h2>
-          <div className="space-y-4">
-            {teacher.trainings.map((training, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900">{training.trainingName}</h3>
-                  {training.certification && (
-                    <p className="text-xs text-gray-600">{training.certification}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    training.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    training.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {training.status.replace('_', ' ')}
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(training.completedDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Education and Trainings removed per requirements */}
 
       {/* Active Centers */}
       {getActiveCenters().length > 0 && (

@@ -6,6 +6,7 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus, Eye, Edit, Trash2, DollarSign, Award } from "lucide-react";
 import { Student } from "@/types";
 
@@ -113,9 +114,9 @@ const columns: Column<StudentListItem>[] = [
     filterable: true,
     render: (_, row) => (
       <div>
-        <div className="font-medium text-gray-900">
+        <Link href={`/contacts/students/${row.id}`} className="font-medium text-blue-600 hover:underline">
           {row.firstName} {row.lastName}
-        </div>
+        </Link>
         <div className="text-sm text-gray-500">{row.email}</div>
       </div>
     ),
@@ -280,7 +281,7 @@ export default function StudentsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Students</h1>
             <p className="text-gray-600">Manage student contacts and information</p>
           </div>
-          {(user?.role === "LC" || user?.role === "MF") && (
+          {user?.role === "LC" && (
             <button 
               onClick={() => router.push("/contacts/students/new")}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"

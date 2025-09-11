@@ -37,7 +37,7 @@ export interface Program extends BaseEntity {
   // New fields for enhanced program management
   hours: number; // Total program hours
   lessonLength: number; // Length of each lesson in minutes
-  kind: "academic" | "vocational" | "certification" | "workshop" | "birthday_party" | "stem_camp";
+  kind: "academic" | "worksheet" | "birthday_party" | "stem_camp" | "vocational" | "certification" | "workshop";
   sharedWithMFs: string[]; // Array of MF scope IDs that can see this program
   visibility: "private" | "shared" | "public";
 }
@@ -54,12 +54,14 @@ export interface SubProgram extends BaseEntity {
   learningObjectives: string[];
   createdBy: string; // User ID
   // New fields for enhanced subprogram management
-  pricingModel: "one-time" | "installments" | "subscription" | "program_price";
+  pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
   coursePrice: number; // Base course price
   numberOfPayments?: number; // For installment model
   gap?: number; // Gap between payments in days
   pricePerMonth?: number; // For subscription model
+  pricePerSession?: number; // For per session pricing
   sharedWithLCs: string[]; // Array of LC scope IDs that can see this subprogram
+  sharedWithMFs?: string[]; // Array of MF scope IDs (when created by HQ)
   visibility: "private" | "shared" | "public";
 }
 
@@ -69,12 +71,12 @@ export interface Student extends BaseEntity, ContactInfo {
   lastName: string;
   dateOfBirth: Date;
   gender: "male" | "female" | "other";
-  enrollmentDate: Date;
+  enrollmentDate?: Date;
   status: "active" | "inactive" | "graduated" | "suspended";
   programIds: string[];
   subProgramIds: string[];
   learningGroupIds: string[];
-  emergencyContact: ContactInfo;
+  emergencyContact?: ContactInfo;
   notes?: string;
   avatar?: string;
   

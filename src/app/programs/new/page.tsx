@@ -6,37 +6,73 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProgramForm } from "@/components/forms/ProgramForm";
 import { Program } from "@/types";
+import { useUser, useToken } from "@/store/auth";
 import { ArrowLeft } from "lucide-react";
+import { createProgram, programsAPI, CreateProgramData } from "@/lib/api/programs";
 
 export default function NewProgramPage() {
   const router = useRouter();
+  const user = useUser();
+  const token = useToken();
   const [saving, setSaving] = useState(false);
+  // HQ-only guard
+  if (user?.role !== "HQ") {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">Only Head Quarters can create programs.</p>
+            <button
+              onClick={() => router.push("/programs")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Programs
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const handleSubmit = async (formData: Partial<Program>) => {
+    if (!token) {
+      alert("Authentication required. Please log in again.");
+      return;
+    }
+
     try {
       setSaving(true);
       
-      // In a real app, this would be an API call to create the program
-      const newProgram = {
-        ...formData,
-        id: `new_${Date.now()}`, // Generate a temporary ID
-        currentStudents: 0,
-        createdBy: "current_user", // Would be set from auth context
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      // Update API token
+      programsAPI.updateToken(token);
+
+      // Convert form data to CreateProgramData format
+      const createData: CreateProgramData = {
+        name: formData.name || "",
+        description: formData.description || "",
+        status: formData.status || "draft",
+        duration: formData.duration || 0,
+        maxStudents: formData.maxStudents || 0,
+        hours: formData.hours || 0,
+        lessonLength: formData.lessonLength || 0,
+        kind: formData.kind || "academic",
+        sharedWithMFs: formData.sharedWithMFs || [],
+        visibility: formData.visibility || "private",
       };
       
-      console.log("Creating new program:", newProgram);
+      const response = await createProgram(createData);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate to the new program's detail page
-      // In a real app, you'd use the actual ID returned from the API
-      router.push(`/programs/${newProgram.id}`);
+      if (response.success) {
+        // Navigate to the new program's detail page
+        router.push(`/programs/${response.data.id}`);
+      } else {
+        alert("Failed to create program. Please try again.");
+      }
     } catch (err) {
       console.error("Error creating program:", err);
-      alert("Failed to create program. Please try again.");
+      alert(err instanceof Error ? err.message : "Failed to create program. Please try again.");
     } finally {
       setSaving(false);
     }

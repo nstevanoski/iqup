@@ -169,7 +169,7 @@ const formatPricing = (subProgram: SubProgram): string => {
 };
 
 // Column definitions
-const getColumns = (userRole: string, canEdit: boolean): Column<SubProgram>[] => {
+const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: SubProgram) => void): Column<SubProgram>[] => {
   const baseColumns: Column<SubProgram>[] = [
     {
       key: "name",
@@ -179,7 +179,12 @@ const getColumns = (userRole: string, canEdit: boolean): Column<SubProgram>[] =>
       filterable: true,
       render: (value, row) => (
         <div>
-          <div className="font-medium text-gray-900">{value}</div>
+          <button
+            onClick={() => onNameClick(row)}
+            className="font-medium text-blue-600 hover:underline cursor-pointer"
+          >
+            {value}
+          </button>
           <div className="text-sm text-gray-500">{row.description}</div>
           <div className="text-xs text-blue-600 mt-1">
             {getProgramName(row.programId)}
@@ -308,7 +313,7 @@ export default function SubProgramsPage() {
 
   const canEdit = user?.role === "MF";
   const canView = user?.role === "MF" || user?.role === "LC" || user?.role === "HQ";
-  const columns = getColumns(user?.role || "", canEdit);
+  const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/subprograms/${row.id}`));
 
   const handleRowAction = (action: string, row: SubProgram) => {
     console.log(`${action} action for subprogram:`, row);

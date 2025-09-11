@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 import { db } from "./db";
-import { getParentMfIdForLcScope } from "@/store/auth";
 import {
   Program,
   SubProgram,
@@ -89,193 +88,8 @@ const parseQueryParams = (url: URL): FilterOptions & { kind?: string } => {
   };
 };
 
-// Programs handlers
-export const programHandlers = [
-  // Get all programs
-  http.get("/api/programs", ({ request }) => {
-    const url = new URL(request.url);
-    const filters = parseQueryParams(url);
-    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
-    const userScope = url.searchParams.get("userScope");
-    
-    let programs = db.getPrograms();
-    
-    // Apply role-based filtering
-    if (userRole === "MF" || userRole === "LC") {
-      // MF can see shared programs for their MF scope
-      // LC inherits visibility from its parent MF
-      const allowedMfIds: string[] = [];
-      if (userRole === "MF" && userScope) {
-        allowedMfIds.push(userScope);
-      } else if (userRole === "LC" && userScope) {
-        const parentMf = getParentMfIdForLcScope(userScope);
-        if (parentMf) allowedMfIds.push(parentMf);
-      }
-
-      programs = programs.filter(p => 
-        p.visibility === "public" || 
-        (p.visibility === "shared" && allowedMfIds.some(mfId => p.sharedWithMFs.includes(mfId)))
-      );
-    } else if (userRole === "TT") {
-      // TT can only see public programs
-      programs = programs.filter(p => p.visibility === "public");
-    }
-    // HQ can see all programs (no filtering)
-    
-    // Apply filters
-    if (filters.search) {
-      programs = programs.filter(p => 
-        p.name.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        p.description.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        p.kind.toLowerCase().includes(filters.search!.toLowerCase())
-      );
-    }
-    
-    if (filters.status) {
-      programs = programs.filter(p => p.status === filters.status);
-    }
-    
-    if (filters.category) {
-      programs = programs.filter(p => p.category === filters.category);
-    }
-    
-    if (filters.kind) {
-      programs = programs.filter(p => p.kind === filters.kind);
-    }
-    
-    // Apply sorting
-    if (filters.sortBy) {
-      programs.sort((a, b) => {
-        const aVal = (a as any)[filters.sortBy!];
-        const bVal = (b as any)[filters.sortBy!];
-        const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-        return filters.sortOrder === "desc" ? -result : result;
-      });
-    }
-    
-    const response = createPaginatedResponse(programs, filters.page, filters.limit);
-    return HttpResponse.json(response);
-  }),
-
-  // Get program by ID
-  http.get("/api/programs/:id", ({ params, request }) => {
-    const url = new URL(request.url);
-    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
-    const userScope = url.searchParams.get("userScope");
-    
-    const program = db.getProgramById(params.id as string);
-    if (!program) {
-      return HttpResponse.json(
-        { success: false, message: "Program not found" },
-        { status: 404 }
-      );
-    }
-    
-    // Check access permissions
-    if (userRole === "MF" || userRole === "LC") {
-      let allowed = program.visibility === "public";
-      if (!allowed && program.visibility === "shared") {
-        const allowedMf = userRole === "MF"
-          ? (userScope || null)
-          : getParentMfIdForLcScope(userScope || null);
-        if (allowedMf) {
-          allowed = program.sharedWithMFs.includes(allowedMf);
-        }
-      }
-      if (!allowed) {
-        return HttpResponse.json(
-          { success: false, message: "Access denied" },
-          { status: 403 }
-        );
-      }
-    } else if (userRole === "TT") {
-      if (program.visibility !== "public") {
-        return HttpResponse.json(
-          { success: false, message: "Access denied" },
-          { status: 403 }
-        );
-      }
-    }
-    
-    return HttpResponse.json(createResponse(program));
-  }),
-
-  // Create program (HQ only)
-  http.post("/api/programs", async ({ request }) => {
-    const url = new URL(request.url);
-    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
-    
-    if (userRole !== "HQ") {
-      return HttpResponse.json(
-        { success: false, message: "Access denied. Only HQ can create programs." },
-        { status: 403 }
-      );
-    }
-    
-    try {
-      const programData = await request.json() as Omit<Program, "id" | "createdAt" | "updatedAt">;
-      const program = db.createProgram(programData);
-      return HttpResponse.json(createResponse(program, "Program created successfully"));
-    } catch (error) {
-      return HttpResponse.json(
-        { success: false, message: "Invalid request data" },
-        { status: 400 }
-      );
-    }
-  }),
-
-  // Update program (HQ only)
-  http.put("/api/programs/:id", async ({ params, request }) => {
-    const url = new URL(request.url);
-    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
-    
-    if (userRole !== "HQ") {
-      return HttpResponse.json(
-        { success: false, message: "Access denied. Only HQ can update programs." },
-        { status: 403 }
-      );
-    }
-    
-    try {
-      const updates = await request.json() as Partial<Program>;
-      const program = db.updateProgram(params.id as string, updates);
-      if (!program) {
-        return HttpResponse.json(
-          { success: false, message: "Program not found" },
-          { status: 404 }
-        );
-      }
-      return HttpResponse.json(createResponse(program, "Program updated successfully"));
-    } catch (error) {
-      return HttpResponse.json(
-        { success: false, message: "Invalid request data" },
-        { status: 400 }
-      );
-    }
-  }),
-
-  // Delete program (HQ only)
-  http.delete("/api/programs/:id", ({ params, request }) => {
-    const url = new URL(request.url);
-    const userRole = url.searchParams.get("userRole") as "HQ" | "MF" | "LC" | "TT" | null;
-    
-    if (userRole !== "HQ") {
-      return HttpResponse.json(
-        { success: false, message: "Access denied. Only HQ can delete programs." },
-        { status: 403 }
-      );
-    }
-    
-    const success = db.deleteProgram(params.id as string);
-    if (!success) {
-      return HttpResponse.json(
-        { success: false, message: "Program not found" },
-        { status: 404 }
-      );
-    }
-    return HttpResponse.json(createResponse(null, "Program deleted successfully"));
-  }),
-];
+// Programs handlers - REMOVED: Now using real API
+// export const programHandlers = [];
 
 // SubPrograms handlers
 export const subProgramHandlers = [
@@ -2785,7 +2599,7 @@ const dashboardHandlers = [
 
 export const handlers = [
   ...authHandlers,
-  ...programHandlers,
+  // ...programHandlers, // REMOVED: Now using real API
   ...subProgramHandlers,
   ...studentHandlers,
   ...paymentHandlers,

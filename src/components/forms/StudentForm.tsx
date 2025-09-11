@@ -34,12 +34,9 @@ interface FormData {
     phone: string;
     email: string;
   };
-  emergencyContact: {
-    email: string;
-    phone: string;
-  };
+  // emergencyContact removed per requirements
   status: "active" | "inactive" | "graduated" | "suspended";
-  enrollmentDate: string;
+  enrollmentDate?: string;
   lastCurrentLG?: {
     id: string;
     name: string;
@@ -88,12 +85,9 @@ const initialFormData: FormData = {
     phone: "",
     email: "",
   },
-  emergencyContact: {
-    email: "",
-    phone: "",
-  },
+  // emergencyContact removed per requirements
   status: "active",
-  enrollmentDate: "",
+  enrollmentDate: undefined,
   lastCurrentLG: undefined,
   product: undefined,
   contactOwner: {
@@ -150,12 +144,9 @@ export function StudentForm({
       phone: student.phone || "",
       address: student.address || initialFormData.address,
       parentInfo: student.parentInfo,
-      emergencyContact: {
-        email: student.emergencyContact?.email || "",
-        phone: student.emergencyContact?.phone || "",
-      },
+      // emergencyContact removed per requirements
       status: student.status,
-      enrollmentDate: student.enrollmentDate.toISOString().split('T')[0],
+      enrollmentDate: student.enrollmentDate ? student.enrollmentDate.toISOString().split('T')[0] : undefined,
       lastCurrentLG: student.lastCurrentLG ? {
         ...student.lastCurrentLG,
         startDate: student.lastCurrentLG.startDate.toISOString().split('T')[0],
@@ -169,7 +160,13 @@ export function StudentForm({
       accountFranchise: student.accountFranchise,
       mfName: student.mfName,
       notes: student.notes || "",
-    } : initialFormData
+    } : {
+      ...initialFormData,
+      // Auto-fill organizational info for LC users based on current session
+      contactOwner: user ? { id: user.id, name: user.name, role: (user.role === "HQ" || user.role === "MF" || user.role === "LC") ? user.role : "LC" } : initialFormData.contactOwner,
+      accountFranchise: selectedScope ? { id: selectedScope.id, name: selectedScope.name, type: selectedScope.type === "MF" ? "MF" : "LC" } : initialFormData.accountFranchise,
+      mfName: selectedScope?.type === "LC" ? "" : initialFormData.mfName,
+    }
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -251,7 +248,7 @@ export function StudentForm({
     const submitData = {
       ...formData,
       dateOfBirth: new Date(formData.dateOfBirth),
-      enrollmentDate: new Date(formData.enrollmentDate),
+      enrollmentDate: formData.enrollmentDate ? new Date(formData.enrollmentDate) : undefined,
       lastCurrentLG: formData.lastCurrentLG ? {
         ...formData.lastCurrentLG,
         startDate: new Date(formData.lastCurrentLG.startDate),
@@ -272,7 +269,7 @@ export function StudentForm({
     onSubmit(submitData);
   };
 
-  const canEdit = user?.role === "LC" || user?.role === "MF";
+  const canEdit = user?.role === "LC";
 
   if (!canEdit) {
     return (
@@ -397,17 +394,7 @@ export function StudentForm({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Enrollment Date *
-            </label>
-            <input
-              type="date"
-              value={formData.enrollmentDate}
-              onChange={(e) => handleInputChange("enrollmentDate", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          {/* Enrollment Date removed per requirements */}
         </div>
       </div>
 
@@ -554,38 +541,7 @@ export function StudentForm({
         </div>
       </div>
 
-      {/* Emergency Contact */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Emergency Contact</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Emergency Contact Email
-            </label>
-            <input
-              type="email"
-              value={formData.emergencyContact.email}
-              onChange={(e) => handleInputChange("emergencyContact.email", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter emergency contact email"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Emergency Contact Phone
-            </label>
-            <input
-              type="tel"
-              value={formData.emergencyContact.phone}
-              onChange={(e) => handleInputChange("emergencyContact.phone", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter emergency contact phone"
-            />
-          </div>
-        </div>
-      </div>
+      {/* Emergency Contact removed per requirements */}
 
       {/* Organizational Information */}
       <div className="bg-white p-6 rounded-lg shadow">
@@ -596,23 +552,14 @@ export function StudentForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Contact Owner *
             </label>
-            <select
-              value={formData.contactOwner.id}
-              onChange={(e) => {
-                const selectedUser = user?.id === e.target.value ? user : null;
-                handleInputChange("contactOwner", {
-                  id: e.target.value,
-                  name: selectedUser?.name || "",
-                  role: selectedUser?.role || "LC",
-                });
-              }}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            <input
+              type="text"
+              value={formData.contactOwner.name || ""}
+              disabled
+              className={`w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-700 ${
                 errors.contactOwner ? "border-red-500" : "border-gray-300"
               }`}
-            >
-              <option value="">Select Contact Owner</option>
-              <option value={user?.id}>{user?.name} ({user?.role})</option>
-            </select>
+            />
             {errors.contactOwner && <p className="text-red-500 text-sm mt-1">{errors.contactOwner}</p>}
           </div>
 
@@ -620,23 +567,14 @@ export function StudentForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Account/Franchise Name *
             </label>
-            <select
-              value={formData.accountFranchise.id}
-              onChange={(e) => {
-                const selectedAccount = selectedScope?.id === e.target.value ? selectedScope : null;
-                handleInputChange("accountFranchise", {
-                  id: e.target.value,
-                  name: selectedAccount?.name || "",
-                  type: selectedAccount?.type === "MF" ? "MF" : "LC",
-                });
-              }}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            <input
+              type="text"
+              value={formData.accountFranchise.name || ""}
+              disabled
+              className={`w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-700 ${
                 errors.accountFranchise ? "border-red-500" : "border-gray-300"
               }`}
-            >
-              <option value="">Select Account/Franchise</option>
-              <option value={selectedScope?.id}>{selectedScope?.name} ({selectedScope?.type})</option>
-            </select>
+            />
             {errors.accountFranchise && <p className="text-red-500 text-sm mt-1">{errors.accountFranchise}</p>}
           </div>
 
@@ -648,7 +586,8 @@ export function StudentForm({
               type="text"
               value={formData.mfName}
               onChange={(e) => handleInputChange("mfName", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              disabled={user?.role === "LC"}
+              className={`w-full px-3 py-2 border rounded-md ${user?.role === "LC" ? "bg-gray-50 text-gray-700" : "focus:outline-none focus:ring-2 focus:ring-blue-500"} ${
                 errors.mfName ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Enter Master Franchisor name"

@@ -476,7 +476,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                     {selectedStudent.email} • {selectedStudent.phone}
                   </div>
                   <div className="text-blue-600 text-xs mt-1">
-                    Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate.toLocaleDateString()}
+                    Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate ? selectedStudent.enrollmentDate.toLocaleDateString() : "N/A"}
                   </div>
                 </div>
               </div>

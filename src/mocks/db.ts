@@ -2377,7 +2377,7 @@ export const studentReports: StudentReportRow[] = [
     studentName: `${students[0].firstName} ${students[0].lastName}`,
     programId: programs[0].id,
     programName: programs[0].name,
-    enrollmentDate: students[0].enrollmentDate,
+    enrollmentDate: students[0].enrollmentDate || new Date(),
     completionDate: undefined,
     status: "active",
     progress: 65,
