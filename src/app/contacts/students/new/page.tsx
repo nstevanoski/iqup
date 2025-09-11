@@ -156,8 +156,8 @@ export default function NewStudentPage() {
     router.push("/contacts/students");
   };
 
-  // Check if user has permission to create students
-  if (user?.role !== "LC" && user?.role !== "MF") {
+  // Check if user has permission to create students (LC only)
+  if (user?.role !== "LC") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
@@ -165,7 +165,7 @@ export default function NewStudentPage() {
             <div className="text-red-600 text-6xl mb-4">🚫</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
             <p className="text-gray-600 mb-6">
-              Only Learning Centers (LC) and Master Franchisors (MF) can create students.
+              Only Learning Centers (LC) can create students.
             </p>
             <button
               onClick={() => router.push("/contacts/students")}

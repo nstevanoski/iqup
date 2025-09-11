@@ -29,10 +29,7 @@ const mockStudent: Student = {
     zipCode: "02101",
     country: "USA",
   },
-  emergencyContact: {
-    email: "jane.doe@example.com",
-    phone: "+1-555-1002",
-  },
+  // emergencyContact removed per requirements
   status: "active",
   enrollmentDate: new Date("2024-01-15"),
   programIds: ["prog_1"],
@@ -237,7 +234,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <p className="text-gray-600">Student Profile</p>
             </div>
           </div>
-          {(user?.role === "LC" || user?.role === "MF") && (
+          {user?.role === "LC" && (
             <div className="flex space-x-3">
               <button
                 onClick={handleEdit}
@@ -266,19 +263,21 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Calendar className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Enrolled</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatDate(student.enrollmentDate)}
-                </p>
+          {student.enrollmentDate && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Calendar className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Enrolled</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {formatDate(student.enrollmentDate)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">

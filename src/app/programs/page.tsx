@@ -120,7 +120,7 @@ const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Progr
         <div>
           <button
             onClick={() => onNameClick(row)}
-            className="font-medium text-blue-600 hover:underline"
+            className="font-medium text-blue-600 hover:underline cursor-pointer"
           >
             {value}
           </button>

@@ -71,12 +71,12 @@ export interface Student extends BaseEntity, ContactInfo {
   lastName: string;
   dateOfBirth: Date;
   gender: "male" | "female" | "other";
-  enrollmentDate: Date;
+  enrollmentDate?: Date;
   status: "active" | "inactive" | "graduated" | "suspended";
   programIds: string[];
   subProgramIds: string[];
   learningGroupIds: string[];
-  emergencyContact: ContactInfo;
+  emergencyContact?: ContactInfo;
   notes?: string;
   avatar?: string;
   
