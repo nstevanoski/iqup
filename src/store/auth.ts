@@ -21,12 +21,14 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  isHydrated: boolean;
   authenticate: (credentials: LoginCredentials) => Promise<LoginResponse>;
   logout: () => void;
   setSelectedAccount: (accountId: string) => void;
   setSelectedScope: (scope: AuthScope) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setHydrated: (hydrated: boolean) => void;
 }
 
 // Real scopes based on actual account data - these will be populated from the backend
@@ -74,6 +76,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      isHydrated: false,
 
       login: (user: User, scope?: AuthScope) => {
         set({
@@ -198,6 +201,10 @@ export const useAuthStore = create<AuthState>()(
       setError: (error: string | null) => {
         set({ error });
       },
+
+      setHydrated: (hydrated: boolean) => {
+        set({ isHydrated: hydrated });
+      },
     }),
     {
       name: "auth-storage",
@@ -209,6 +216,11 @@ export const useAuthStore = create<AuthState>()(
         selectedScope: state.selectedScope,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.setHydrated(true);
+        }
+      },
     }
   )
 );
@@ -222,6 +234,7 @@ export const useIsLoading = () => useAuthStore((state) => state.isLoading);
 export const useAuthError = () => useAuthStore((state) => state.error);
 export const useSelectedAccount = () => useAuthStore((state) => state.selectedAccount);
 export const useSelectedScope = () => useAuthStore((state) => state.selectedScope);
+export const useIsHydrated = () => useAuthStore((state) => state.isHydrated);
 
 // Individual action selectors to avoid object recreation
 export const useAuthenticate = () => useAuthStore((state) => state.authenticate);
