@@ -4,7 +4,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
-import { getParentMfIdForLcScope } from "@/store/auth";
 import { Program } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -251,8 +250,9 @@ export default function ProgramsPage() {
       if (user.role === "MF") {
         allowedMfIds.add(selectedScope.id);
       } else {
-        const parentMfId = getParentMfIdForLcScope(selectedScope.id);
-        if (parentMfId) allowedMfIds.add(parentMfId);
+        // LC users can see programs - in a real app, this would get the parent MF from the backend
+        // For now, we'll allow LC users to see public and their own shared programs
+        allowedMfIds.add(selectedScope.id);
       }
 
       filteredPrograms = samplePrograms.filter(p =>

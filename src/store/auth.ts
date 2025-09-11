@@ -21,108 +21,47 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (user: User, scope?: AuthScope) => void;
   authenticate: (credentials: LoginCredentials) => Promise<LoginResponse>;
   logout: () => void;
   setSelectedAccount: (accountId: string) => void;
   setSelectedScope: (scope: AuthScope) => void;
-  mockLogin: (role: Role, scopeId?: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 
-// Mock users for different roles
-const mockUsers: Record<Role, User> = {
-  HQ: {
-    id: "1",
-    name: "HQ Admin",
-    role: "HQ",
-    email: "hq@example.com",
-  },
-  MF: {
-    id: "2",
-    name: "MF Manager",
-    role: "MF",
-    email: "mf@example.com",
-  },
-  LC: {
-    id: "3",
-    name: "LC Coordinator",
-    role: "LC",
-    email: "lc@example.com",
-  },
-  TT: {
-    id: "4",
-    name: "Teacher Trainer",
-    role: "TT",
-    email: "tt@example.com",
-  },
+// Real scopes based on actual account data - these will be populated from the backend
+const getAccountScopes = (backendUser: any): AuthScope | null => {
+  if (backendUser.account.hq) {
+    return {
+      id: backendUser.account.hq.id.toString(),
+      name: backendUser.account.hq.name,
+      type: "HQ" as Role,
+      description: `Headquarters: ${backendUser.account.hq.code}`,
+    };
+  } else if (backendUser.account.mf) {
+    return {
+      id: backendUser.account.mf.id.toString(),
+      name: backendUser.account.mf.name,
+      type: "MF" as Role,
+      description: `Master Franchisee: ${backendUser.account.mf.code}`,
+    };
+  } else if (backendUser.account.lc) {
+    return {
+      id: backendUser.account.lc.id.toString(),
+      name: backendUser.account.lc.name,
+      type: "LC" as Role,
+      description: `Learning Center: ${backendUser.account.lc.code}`,
+    };
+  } else if (backendUser.account.tt) {
+    return {
+      id: backendUser.account.tt.id.toString(),
+      name: backendUser.account.tt.name,
+      type: "TT" as Role,
+      description: `Teacher Trainer: ${backendUser.account.tt.code}`,
+    };
+  }
+  return null;
 };
-
-// Mock scopes for different organizational units
-const mockScopes: AuthScope[] = [
-  // HQ Scopes
-  {
-    id: "hq_global",
-    name: "Global Headquarters",
-    type: "HQ",
-    description: "Full system access across all regions",
-  },
-  {
-    id: "hq_north_america",
-    name: "North America HQ",
-    type: "HQ",
-    description: "Headquarters for North American operations",
-  },
-  
-  // MF Scopes
-  {
-    id: "mf_region_1",
-    name: "Region 1 Management",
-    type: "MF",
-    description: "Management functions for Region 1",
-  },
-  {
-    id: "mf_region_2",
-    name: "Region 2 Management",
-    type: "MF",
-    description: "Management functions for Region 2",
-  },
-  
-  // LC Scopes
-  {
-    id: "lc_center_nyc",
-    name: "New York Learning Center",
-    type: "LC",
-    description: "Learning center operations in New York",
-  },
-  {
-    id: "lc_center_la",
-    name: "Los Angeles Learning Center",
-    type: "LC",
-    description: "Learning center operations in Los Angeles",
-  },
-  {
-    id: "lc_center_chicago",
-    name: "Chicago Learning Center",
-    type: "LC",
-    description: "Learning center operations in Chicago",
-  },
-  
-  // TT Scopes
-  {
-    id: "tt_training_center",
-    name: "Training Center",
-    type: "TT",
-    description: "Teacher training and development center",
-  },
-  {
-    id: "tt_online_platform",
-    name: "Online Training Platform",
-    type: "TT",
-    description: "Online teacher training platform",
-  },
-];
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -160,9 +99,28 @@ export const useAuthStore = create<AuthState>()(
           const data = await response.json();
 
           if (data.success && data.data) {
-            const { user: authUser, token } = data.data;
+            const { user: backendUser, token } = data.data;
             
-            // Convert AuthUser to User for compatibility
+            // Convert backend user response to frontend AuthUser format
+            const authUser: AuthUser = {
+              id: backendUser.id.toString(),
+              email: backendUser.email,
+              name: `${backendUser.firstName} ${backendUser.lastName}`,
+              role: backendUser.role.startsWith('HQ') ? 'HQ' : 
+                    backendUser.role.startsWith('MF') ? 'MF' :
+                    backendUser.role.startsWith('LC') ? 'LC' : 'TT',
+              password: '', // Never store password
+              isActive: backendUser.status === 'ACTIVE',
+              lastLogin: new Date(backendUser.lastLoginAt),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              scopeId: backendUser.account.hq?.id?.toString() || 
+                       backendUser.account.mf?.id?.toString() ||
+                       backendUser.account.lc?.id?.toString() ||
+                       backendUser.account.tt?.id?.toString(),
+            };
+
+            // Convert to User for compatibility with existing components
             const user: User = {
               id: authUser.id,
               name: authUser.name,
@@ -170,16 +128,14 @@ export const useAuthStore = create<AuthState>()(
               email: authUser.email,
             };
 
-            // Find the appropriate scope
-            const scope = authUser.scopeId 
-              ? mockScopes.find(s => s.id === authUser.scopeId)
-              : mockScopes.find(s => s.type === authUser.role);
+            // Get the appropriate scope based on actual account data
+            const scope = getAccountScopes(backendUser);
 
             set({
               user,
               authUser,
               token,
-              selectedScope: scope || null,
+              selectedScope: scope,
               isAuthenticated: true,
               isLoading: false,
               error: null,
@@ -234,17 +190,6 @@ export const useAuthStore = create<AuthState>()(
         set({ selectedScope: scope });
       },
 
-      mockLogin: (role: Role, scopeId?: string) => {
-        const user = mockUsers[role];
-        const scope = scopeId ? mockScopes.find(s => s.id === scopeId) : mockScopes.find(s => s.type === role);
-        
-        set({
-          user,
-          selectedScope: scope || null,
-          isAuthenticated: true,
-          error: null,
-        });
-      },
 
       setLoading: (loading: boolean) => {
         set({ isLoading: loading });
@@ -279,52 +224,29 @@ export const useSelectedAccount = () => useAuthStore((state) => state.selectedAc
 export const useSelectedScope = () => useAuthStore((state) => state.selectedScope);
 
 // Individual action selectors to avoid object recreation
-export const useLogin = () => useAuthStore((state) => state.login);
 export const useAuthenticate = () => useAuthStore((state) => state.authenticate);
 export const useLogout = () => useAuthStore((state) => state.logout);
 export const useSetSelectedAccount = () => useAuthStore((state) => state.setSelectedAccount);
 export const useSetSelectedScope = () => useAuthStore((state) => state.setSelectedScope);
-export const useMockLogin = () => useAuthStore((state) => state.mockLogin);
 export const useSetLoading = () => useAuthStore((state) => state.setLoading);
 export const useSetError = () => useAuthStore((state) => state.setError);
 
 // Combined actions selector - use individual hooks to avoid object recreation
 export const useAuthActions = () => {
-  const login = useLogin();
   const authenticate = useAuthenticate();
   const logout = useLogout();
   const setSelectedAccount = useSetSelectedAccount();
   const setSelectedScope = useSetSelectedScope();
-  const mockLogin = useMockLogin();
   const setLoading = useSetLoading();
   const setError = useSetError();
   
   return {
-    login,
     authenticate,
     logout,
     setSelectedAccount,
     setSelectedScope,
-    mockLogin,
     setLoading,
     setError,
   };
 };
 
-// Temporary helper mapping LC scopes to their parent MF scope IDs
-// In a real application, this would come from the accounts hierarchy.
-const lcToMfParentMap: Record<string, string> = {
-  lc_center_nyc: "mf_region_1",
-  lc_center_la: "mf_region_2",
-  lc_center_chicago: "mf_region_1",
-};
-
-export function getParentMfIdForLcScope(scopeId: string | undefined | null): string | null {
-  if (!scopeId) return null;
-  return lcToMfParentMap[scopeId] || null;
-}
-
-// Helper function to get available scopes for a role
-export const getScopesForRole = (role: Role): AuthScope[] => {
-  return mockScopes.filter(scope => scope.type === role);
-};
