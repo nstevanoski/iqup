@@ -54,12 +54,14 @@ export interface SubProgram extends BaseEntity {
   learningObjectives: string[];
   createdBy: string; // User ID
   // New fields for enhanced subprogram management
-  pricingModel: "one-time" | "installments" | "subscription" | "program_price";
+  pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
   coursePrice: number; // Base course price
   numberOfPayments?: number; // For installment model
   gap?: number; // Gap between payments in days
   pricePerMonth?: number; // For subscription model
+  pricePerSession?: number; // For per session pricing
   sharedWithLCs: string[]; // Array of LC scope IDs that can see this subprogram
+  sharedWithMFs?: string[]; // Array of MF scope IDs (when created by HQ)
   visibility: "private" | "shared" | "public";
 }
 

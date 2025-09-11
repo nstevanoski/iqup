@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SubProgram, Program } from "@/types";
 import { useUser, useSelectedScope } from "@/store/auth";
 
@@ -22,11 +22,12 @@ interface FormData {
   price: number;
   prerequisites: string[];
   learningObjectives: string[];
-  pricingModel: "subscription" | "program_price" | "one-time" | "installments";
+  pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
   coursePrice: number;
   numberOfPayments?: number;
   gap?: number;
   pricePerMonth?: number;
+  pricePerSession?: number;
   sharedWithLCs: string[];
   visibility: "private" | "shared" | "public";
 }
@@ -41,19 +42,17 @@ const initialFormData: FormData = {
   price: 0,
   prerequisites: [],
   learningObjectives: [],
-  pricingModel: "program_price",
+  pricingModel: "per_course",
   coursePrice: 0,
   numberOfPayments: undefined,
   gap: undefined,
   pricePerMonth: undefined,
+  pricePerSession: undefined,
   sharedWithLCs: [],
   visibility: "private",
 };
 
-const pricingModels = [
-  { value: "program_price", label: "Program Price" },
-  { value: "subscription", label: "Price per Month" },
-];
+// Pricing model selection not needed in UI; all price fields are shown
 
 const availableLCScopes = [
   { id: "lc_center_nyc", name: "New York Learning Center" },
@@ -88,8 +87,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [prerequisiteInput, setPrerequisiteInput] = useState("");
-  const [objectiveInput, setObjectiveInput] = useState("");
+  const [programSearch, setProgramSearch] = useState("");
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -106,11 +104,20 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     if (formData.duration <= 0) {
       newErrors.duration = "Duration must be greater than 0";
     }
-    if (formData.pricingModel === "program_price" && (!formData.coursePrice || formData.coursePrice <= 0)) {
-      newErrors.coursePrice = "Course price is required for Program Price";
+    if (!formData.coursePrice || formData.coursePrice <= 0) {
+      newErrors.coursePrice = "Course price is required";
     }
-    if (formData.pricingModel === "subscription" && (!formData.pricePerMonth || formData.pricePerMonth <= 0)) {
-      newErrors.pricePerMonth = "Price per month is required for subscription model";
+    if (!formData.pricePerMonth || formData.pricePerMonth <= 0) {
+      newErrors.pricePerMonth = "Price per month is required";
+    }
+    if (!formData.pricePerSession || formData.pricePerSession <= 0) {
+      newErrors.pricePerSession = "Price per session is required";
+    }
+    if (!formData.numberOfPayments || formData.numberOfPayments <= 0) {
+      newErrors.numberOfPayments = "Number of payments is required";
+    }
+    if (!formData.gap || formData.gap <= 0) {
+      newErrors.gap = "Gap between payments is required";
     }
 
     setErrors(newErrors);
@@ -132,39 +139,27 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     }
   };
 
-  const addPrerequisite = () => {
-    if (prerequisiteInput.trim() && !formData.prerequisites.includes(prerequisiteInput.trim())) {
+  // Filtered programs for search
+  const filteredPrograms = useMemo(() => {
+    if (!programSearch.trim()) return programs;
+    const term = programSearch.toLowerCase();
+    return programs.filter(p => p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term));
+  }, [programs, programSearch]);
+
+  // Prefill details from selected program
+  const handleSelectProgram = (programId: string) => {
+    handleInputChange("programId", programId);
+    const program = programs.find(p => p.id === programId);
+    if (program) {
       setFormData(prev => ({
         ...prev,
-        prerequisites: [...prev.prerequisites, prerequisiteInput.trim()],
+        duration: program.duration,
+        description: program.description,
       }));
-      setPrerequisiteInput("");
     }
   };
 
-  const removePrerequisite = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      prerequisites: prev.prerequisites.filter((_, i) => i !== index),
-    }));
-  };
-
-  const addObjective = () => {
-    if (objectiveInput.trim() && !formData.learningObjectives.includes(objectiveInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        learningObjectives: [...prev.learningObjectives, objectiveInput.trim()],
-      }));
-      setObjectiveInput("");
-    }
-  };
-
-  const removeObjective = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      learningObjectives: prev.learningObjectives.filter((_, i) => i !== index),
-    }));
-  };
+  // Prerequisites and learning objectives are not used in the form per requirements
 
   const handleScopeChange = (scopeId: string, checked: boolean) => {
     if (checked) {
@@ -190,7 +185,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     onSubmit(formData);
   };
 
-  const canEdit = user?.role === "MF";
+  const canEdit = user?.role === "MF" || user?.role === "HQ";
 
   if (!canEdit) {
     return (
@@ -213,15 +208,27 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Program *
             </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={programSearch}
+                onChange={(e) => setProgramSearch(e.target.value)}
+                placeholder="Search program..."
+                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.817-4.817A6 6 0 012 8z" clipRule="evenodd"/></svg>
+              </div>
+            </div>
             <select
               value={formData.programId}
-              onChange={(e) => handleInputChange("programId", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              onChange={(e) => handleSelectProgram(e.target.value)}
+              className={`mt-2 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.programId ? "border-red-500" : "border-gray-300"
               }`}
             >
               <option value="">Select Program</option>
-              {programs.map(program => (
+              {filteredPrograms.map(program => (
                 <option key={program.id} value={program.id}>
                   {program.name}
                 </option>
@@ -323,177 +330,157 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
         </div>
       </div>
 
-      {/* Pricing Information */}
+      {/* Price Details */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Pricing Information</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Price Details</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Preferred Billing Type *
+              Course Price *
             </label>
-            <select
-              value={formData.pricingModel}
-              onChange={(e) => handleInputChange("pricingModel", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {pricingModels.map(model => (
-                <option key={model.value} value={model.value}>{model.label}</option>
-              ))}
-            </select>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.coursePrice}
+              onChange={(e) => handleInputChange("coursePrice", parseFloat(e.target.value) || 0)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.coursePrice ? "border-red-500" : "border-gray-300"
+              }`}
+              placeholder="0.00"
+            />
+            {errors.coursePrice && <p className="text-red-500 text-sm mt-1">{errors.coursePrice}</p>}
           </div>
-
-          {formData.pricingModel === "program_price" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Course Price *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.coursePrice}
-                onChange={(e) => handleInputChange("coursePrice", parseFloat(e.target.value) || 0)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.coursePrice ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="0.00"
-              />
-              {errors.coursePrice && <p className="text-red-500 text-sm mt-1">{errors.coursePrice}</p>}
-            </div>
-          )}
 
           {/* Installments model removed per requirements */}
 
-          {formData.pricingModel === "subscription" && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price per Month *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.pricePerMonth || ""}
-                onChange={(e) => handleInputChange("pricePerMonth", parseFloat(e.target.value) || undefined)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.pricePerMonth ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="0.00"
-              />
-              {errors.pricePerMonth && <p className="text-red-500 text-sm mt-1">{errors.pricePerMonth}</p>}
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Price per Month *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.pricePerMonth || ""}
+              onChange={(e) => handleInputChange("pricePerMonth", parseFloat(e.target.value) || undefined)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.pricePerMonth ? "border-red-500" : "border-gray-300"
+              }`}
+              placeholder="0.00"
+            />
+            {errors.pricePerMonth && <p className="text-red-500 text-sm mt-1">{errors.pricePerMonth}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Price per Session *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.pricePerSession || ""}
+              onChange={(e) => handleInputChange("pricePerSession", parseFloat(e.target.value) || undefined)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.pricePerSession ? "border-red-500" : "border-gray-300"
+              }`}
+              placeholder="0.00"
+            />
+            {errors.pricePerSession && <p className="text-red-500 text-sm mt-1">{errors.pricePerSession}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Number of payments
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.numberOfPayments || ""}
+              onChange={(e) => handleInputChange("numberOfPayments", parseInt(e.target.value) || undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 12"
+            />
+            {errors.numberOfPayments && <p className="text-red-500 text-sm mt-1">{errors.numberOfPayments}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Gap between payments (months)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.gap || ""}
+              onChange={(e) => handleInputChange("gap", parseInt(e.target.value) || undefined)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="1 = monthly"
+            />
+            {errors.gap && <p className="text-red-500 text-sm mt-1">{errors.gap}</p>}
+          </div>
         </div>
       </div>
 
-      {/* Prerequisites */}
+      {/* Prerequisites and Learning Objectives not required per latest requirements */}
+
+      {/* Visibility Settings */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Prerequisites</h3>
-        
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={prerequisiteInput}
-              onChange={(e) => setPrerequisiteInput(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter prerequisite"
-              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPrerequisite())}
-            />
-            <button
-              type="button"
-              onClick={addPrerequisite}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Add
-            </button>
-          </div>
-          
-          {formData.prerequisites.length > 0 && (
-            <div className="space-y-2">
-              {formData.prerequisites.map((prerequisite, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                  <span className="text-sm">{prerequisite}</span>
-                  <button
-                    type="button"
-                    onClick={() => removePrerequisite(index)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Remove
-                  </button>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Visibility Settings</h3>
+        {user?.role === "HQ" ? (
+          <>
+            <p className="text-sm text-gray-600 mb-4">Share with Regions (MFs)</p>
+            <div className="space-y-3">
+              {[
+                { id: "mf_region_1", name: "Region 1" },
+                { id: "mf_region_2", name: "Region 2" },
+                { id: "mf_region_3", name: "Region 3" },
+              ].map(scope => (
+                <div key={scope.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={scope.id}
+                    checked={(formData as any).sharedWithMFs?.includes(scope.id)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setFormData(prev => ({
+                        ...prev,
+                        // keep also sharedWithLCs in case MF wants to pass further
+                        ...(checked ? { sharedWithMFs: [ ...((prev as any).sharedWithMFs || []), scope.id ] } : { sharedWithMFs: [ ...(((prev as any).sharedWithMFs || []).filter((id: string) => id !== scope.id)) ] }),
+                      }) as any);
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor={scope.id} className="ml-2 text-sm text-gray-700">
+                    {scope.name}
+                  </label>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Learning Objectives */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Learning Objectives</h3>
-        
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={objectiveInput}
-              onChange={(e) => setObjectiveInput(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter learning objective"
-              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addObjective())}
-            />
-            <button
-              type="button"
-              onClick={addObjective}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Add
-            </button>
-          </div>
-          
-          {formData.learningObjectives.length > 0 && (
-            <div className="space-y-2">
-              {formData.learningObjectives.map((objective, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                  <span className="text-sm">{objective}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeObjective(index)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Remove
-                  </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-600 mb-4">Share with Learning Centers</p>
+            <div className="space-y-3">
+              {availableLCScopes.map(scope => (
+                <div key={scope.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={scope.id}
+                    checked={formData.sharedWithLCs.includes(scope.id)}
+                    onChange={(e) => handleScopeChange(scope.id, e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor={scope.id} className="ml-2 text-sm text-gray-700">
+                    {scope.name}
+                  </label>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Sharing with Learning Centers */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Share with Learning Centers</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Select which learning centers can view and use this subprogram.
-        </p>
-        
-        <div className="space-y-3">
-          {availableLCScopes.map(scope => (
-            <div key={scope.id} className="flex items-center">
-              <input
-                type="checkbox"
-                id={scope.id}
-                checked={formData.sharedWithLCs.includes(scope.id)}
-                onChange={(e) => handleScopeChange(scope.id, e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor={scope.id} className="ml-2 text-sm text-gray-700">
-                {scope.name}
-              </label>
-            </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Form Actions */}
