@@ -50,6 +50,10 @@ model User {
   lc        LearningCenter?   @relation(fields: [lcId], references: [id])
   tt        TeacherTrainer?   @relation(fields: [ttId], references: [id])
   
+  // Program relationships
+  createdPrograms   Program[]
+  createdSubPrograms SubProgram[]
+  
   // Authentication fields
   lastLoginAt    DateTime?
   emailVerified  Boolean   @default(false)
@@ -167,4 +171,100 @@ model TeacherTrainer {
   updatedAt DateTime @updatedAt
 
   @@map("teacher_trainers")
+}
+
+// Program model
+model Program {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String   @db.Text
+  status            ProgramStatus @default(DRAFT)
+  category          String
+  duration          Int      // in weeks
+  price             Decimal  @db.Decimal(10, 2)
+  maxStudents       Int
+  currentStudents   Int      @default(0)
+  requirements      Json     // Array of strings
+  learningObjectives Json    // Array of strings
+  createdBy         Int      // User ID
+  hours             Int      // Total program hours
+  lessonLength      Int      // Length of each lesson in minutes
+  kind              ProgramKind
+  sharedWithMFs     Json     // Array of MF IDs
+  visibility        ProgramVisibility @default(PRIVATE)
+  
+  // Relationships
+  creator           User     @relation(fields: [createdBy], references: [id])
+  subPrograms       SubProgram[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("programs")
+}
+
+// SubProgram model
+model SubProgram {
+  id                Int      @id @default(autoincrement())
+  programId         Int
+  name              String
+  description       String   @db.Text
+  status            ProgramStatus @default(DRAFT)
+  order             Int
+  duration          Int      // in weeks
+  price             Decimal  @db.Decimal(10, 2)
+  prerequisites     Json     // Array of strings
+  learningObjectives Json    // Array of strings
+  createdBy         Int      // User ID
+  pricingModel      PricingModel
+  coursePrice       Decimal  @db.Decimal(10, 2)
+  numberOfPayments  Int?
+  gap               Int?     // Gap between payments in days
+  pricePerMonth     Decimal? @db.Decimal(10, 2)
+  pricePerSession   Decimal? @db.Decimal(10, 2)
+  sharedWithLCs     Json     // Array of LC IDs
+  sharedWithMFs     Json?    // Array of MF IDs (when created by HQ)
+  visibility        ProgramVisibility @default(PRIVATE)
+  
+  // Relationships
+  program           Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  creator           User     @relation(fields: [createdBy], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subprograms")
+}
+
+// Enums for Program models
+enum ProgramStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum ProgramKind {
+  ACADEMIC
+  WORKSHEET
+  BIRTHDAY_PARTY
+  STEM_CAMP
+  VOCATIONAL
+  CERTIFICATION
+  WORKSHOP
+}
+
+enum ProgramVisibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+}
+
+enum PricingModel {
+  PER_COURSE
+  PER_MONTH
+  PER_SESSION
+  SUBSCRIPTION
+  PROGRAM_PRICE
+  ONE_TIME
+  INSTALLMENTS
 }
