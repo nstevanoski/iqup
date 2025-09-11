@@ -10,13 +10,161 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Example model - you can modify this according to your needs
+// Enums for user roles and account types
+enum UserRole {
+  HQ_ADMIN
+  HQ_STAFF
+  MF_ADMIN
+  MF_STAFF
+  LC_ADMIN
+  LC_STAFF
+  TT_ADMIN
+  TT_STAFF
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// Main User model for authentication
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
-  name      String?
+  password  String   // Will store hashed password
+  firstName String
+  lastName  String
+  phone     String?
+  role      UserRole
+  status    AccountStatus @default(ACTIVE)
+  
+  // Relationships
+  hqId      Int?
+  mfId      Int?
+  lcId      Int?
+  ttId      Int?
+  
+  hq        HQ?              @relation(fields: [hqId], references: [id])
+  mf        MasterFranchisee? @relation(fields: [mfId], references: [id])
+  lc        LearningCenter?   @relation(fields: [lcId], references: [id])
+  tt        TeacherTrainer?   @relation(fields: [ttId], references: [id])
+  
+  // Authentication fields
+  lastLoginAt    DateTime?
+  emailVerified  Boolean   @default(false)
+  resetToken     String?
+  resetTokenExp  DateTime?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+// Headquarters (Top level)
+model HQ {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique // HQ code for identification
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  postalCode  String?
+  status      AccountStatus @default(ACTIVE)
+  
+  // Relationships
+  users             User[]
+  masterFranchisees MasterFranchisee[]
+  teacherTrainers   TeacherTrainer[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("headquarters")
+}
+
+// Master Franchisee (Under HQ)
+model MasterFranchisee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique // MF code for identification
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  status     AccountStatus @default(ACTIVE)
+  
+  // Relationship to HQ
+  hqId       Int
+  hq         HQ @relation(fields: [hqId], references: [id])
+  
+  // Relationships
+  users          User[]
+  learningCenters LearningCenter[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("master_franchisees")
+}
+
+// Learning Center (Under MF)
+model LearningCenter {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique // LC code for identification
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  status     AccountStatus @default(ACTIVE)
+  
+  // Relationship to MF
+  mfId       Int
+  mf         MasterFranchisee @relation(fields: [mfId], references: [id])
+  
+  // Relationships
+  users      User[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_centers")
+}
+
+// Teacher Trainer (Under HQ)
+model TeacherTrainer {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique // TT code for identification
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+  status     AccountStatus @default(ACTIVE)
+  
+  // Relationship to HQ
+  hqId       Int
+  hq         HQ @relation(fields: [hqId], references: [id])
+  
+  // Relationships
+  users      User[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("teacher_trainers")
 }
