@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Teacher } from "@/types";
-import { Plus, Trash2, GraduationCap, Award, MapPin } from "lucide-react";
+import { Plus, Trash2, MapPin } from "lucide-react";
 
 interface TeacherFormProps {
   teacher?: Teacher;
@@ -19,11 +19,11 @@ interface FormData {
   title: string;
   email: string;
   phone: string;
-  specialization: string[];
+  // specialization removed per requirements
   experience: number;
-  qualifications: string[];
+  // qualifications removed per requirements
   status: "active" | "inactive" | "on_leave";
-  hourlyRate: number;
+  // hourlyRate removed per requirements
   bio: string;
   availability: {
     dayOfWeek: number;
@@ -37,19 +37,7 @@ interface FormData {
     zipCode: string;
     country: string;
   };
-  education: {
-    degree: string;
-    institution: string;
-    graduationYear: number;
-    fieldOfStudy: string;
-  }[];
-  trainings: {
-    trainingId: string;
-    trainingName: string;
-    completedDate: string;
-    status: "completed" | "in_progress" | "scheduled";
-    certification?: string;
-  }[];
+  // education and trainings removed per requirements
   centers: {
     centerId: string;
     centerName: string;
@@ -68,11 +56,11 @@ const initialFormData: FormData = {
   title: "",
   email: "",
   phone: "",
-  specialization: [],
+  // specialization removed per requirements
   experience: 0,
-  qualifications: [],
+  // qualifications removed per requirements
   status: "active",
-  hourlyRate: 0,
+  // hourlyRate removed per requirements
   bio: "",
   availability: [],
   address: {
@@ -82,8 +70,7 @@ const initialFormData: FormData = {
     zipCode: "",
     country: "USA",
   },
-  education: [],
-  trainings: [],
+  // education and trainings removed per requirements
   centers: [],
 };
 
@@ -97,11 +84,11 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
       title: teacher.title,
       email: teacher.email,
       phone: teacher.phone || "",
-      specialization: teacher.specialization,
+      // specialization removed per requirements
       experience: teacher.experience,
-      qualifications: teacher.qualifications,
+      // qualifications removed per requirements
       status: teacher.status,
-      hourlyRate: teacher.hourlyRate,
+      // hourlyRate removed per requirements
       bio: teacher.bio || "",
       availability: teacher.availability,
       address: teacher.address || {
@@ -111,15 +98,13 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
         zipCode: "",
         country: "USA",
       },
-      education: teacher.education,
-      trainings: teacher.trainings,
+      // education and trainings removed per requirements
       centers: teacher.centers,
     } : initialFormData
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [newSpecialization, setNewSpecialization] = useState("");
-  const [newQualification, setNewQualification] = useState("");
+  // removed specialization/qualification local state
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -131,9 +116,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
     if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-    if (formData.specialization.length === 0) newErrors.specialization = "At least one specialization is required";
     if (formData.experience < 0) newErrors.experience = "Experience must be non-negative";
-    if (formData.hourlyRate < 0) newErrors.hourlyRate = "Hourly rate must be non-negative";
     if (!formData.address.street.trim()) newErrors.street = "Street address is required";
     if (!formData.address.city.trim()) newErrors.city = "City is required";
     if (!formData.address.state.trim()) newErrors.state = "State is required";
@@ -149,101 +132,22 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
       const teacherData = {
         ...formData,
         dateOfBirth: new Date(formData.dateOfBirth),
+        // Provide omitted fields to satisfy Teacher type
+        specialization: [],
+        qualifications: [],
+        hourlyRate: 0,
+        education: [],
+        trainings: [],
       };
       onSubmit(teacherData);
     }
   };
 
-  const addSpecialization = () => {
-    if (newSpecialization.trim() && !formData.specialization.includes(newSpecialization.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        specialization: [...prev.specialization, newSpecialization.trim()]
-      }));
-      setNewSpecialization("");
-    }
-  };
+  // removed specialization/qualification handlers
 
-  const removeSpecialization = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      specialization: prev.specialization.filter((_, i) => i !== index)
-    }));
-  };
+  // removed education handlers
 
-  const addQualification = () => {
-    if (newQualification.trim() && !formData.qualifications.includes(newQualification.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        qualifications: [...prev.qualifications, newQualification.trim()]
-      }));
-      setNewQualification("");
-    }
-  };
-
-  const removeQualification = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      qualifications: prev.qualifications.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addEducation = () => {
-    setFormData(prev => ({
-      ...prev,
-      education: [...prev.education, {
-        degree: "",
-        institution: "",
-        graduationYear: new Date().getFullYear(),
-        fieldOfStudy: "",
-      }]
-    }));
-  };
-
-  const updateEducation = (index: number, field: string, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      education: prev.education.map((edu, i) => 
-        i === index ? { ...edu, [field]: value } : edu
-      )
-    }));
-  };
-
-  const removeEducation = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      education: prev.education.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addTraining = () => {
-    setFormData(prev => ({
-      ...prev,
-      trainings: [...prev.trainings, {
-        trainingId: "",
-        trainingName: "",
-        completedDate: new Date().toISOString().split('T')[0],
-        status: "scheduled" as const,
-        certification: "",
-      }]
-    }));
-  };
-
-  const updateTraining = (index: number, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      trainings: prev.trainings.map((training, i) => 
-        i === index ? { ...training, [field]: value } : training
-      )
-    }));
-  };
-
-  const removeTraining = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      trainings: prev.trainings.filter((_, i) => i !== index)
-    }));
-  };
+  // removed trainings handlers
 
   const addCenter = () => {
     setFormData(prev => ({
@@ -426,107 +330,12 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
               {errors.experience && <p className="text-red-500 text-xs mt-1">{errors.experience}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Hourly Rate ($)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.hourlyRate}
-                onChange={(e) => setFormData(prev => ({ ...prev, hourlyRate: parseFloat(e.target.value) || 0 }))}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.hourlyRate ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Enter hourly rate"
-              />
-              {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate}</p>}
-            </div>
+            {/* Hourly Rate removed */}
           </div>
 
-          {/* Specializations */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Specializations *
-            </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={newSpecialization}
-                onChange={(e) => setNewSpecialization(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Add specialization"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecialization())}
-              />
-              <button
-                type="button"
-                onClick={addSpecialization}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.specialization.map((spec, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                >
-                  {spec}
-                  <button
-                    type="button"
-                    onClick={() => removeSpecialization(index)}
-                    className="ml-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            {errors.specialization && <p className="text-red-500 text-xs mt-1">{errors.specialization}</p>}
-          </div>
+          {/* Specializations removed */}
 
-          {/* Qualifications */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Qualifications
-            </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={newQualification}
-                onChange={(e) => setNewQualification(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Add qualification"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addQualification())}
-              />
-              <button
-                type="button"
-                onClick={addQualification}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.qualifications.map((qual, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800"
-                >
-                  {qual}
-                  <button
-                    type="button"
-                    onClick={() => removeQualification(index)}
-                    className="ml-2 text-green-600 hover:text-green-800"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* Qualifications removed */}
 
           {/* Bio */}
           <div>
@@ -640,175 +449,9 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
             </div>
           </div>
 
-          {/* Education */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <GraduationCap className="h-5 w-5 mr-2" />
-                Education
-              </h3>
-              <button
-                type="button"
-                onClick={addEducation}
-                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-              >
-                <Plus className="h-4 w-4 mr-1 inline" />
-                Add Education
-              </button>
-            </div>
-            <div className="space-y-3">
-              {formData.education.map((edu, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-medium text-gray-900">Education #{index + 1}</h4>
-                    <button
-                      type="button"
-                      onClick={() => removeEducation(index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Degree
-                      </label>
-                      <input
-                        type="text"
-                        value={edu.degree}
-                        onChange={(e) => updateEducation(index, "degree", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="e.g., PhD, MSc, BA"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Institution
-                      </label>
-                      <input
-                        type="text"
-                        value={edu.institution}
-                        onChange={(e) => updateEducation(index, "institution", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter institution name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Graduation Year
-                      </label>
-                      <input
-                        type="number"
-                        min="1900"
-                        max={new Date().getFullYear()}
-                        value={edu.graduationYear}
-                        onChange={(e) => updateEducation(index, "graduationYear", parseInt(e.target.value) || new Date().getFullYear())}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Field of Study
-                      </label>
-                      <input
-                        type="text"
-                        value={edu.fieldOfStudy}
-                        onChange={(e) => updateEducation(index, "fieldOfStudy", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter field of study"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Education removed */}
 
-          {/* Trainings */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <Award className="h-5 w-5 mr-2" />
-                Trainings
-              </h3>
-              <button
-                type="button"
-                onClick={addTraining}
-                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-              >
-                <Plus className="h-4 w-4 mr-1 inline" />
-                Add Training
-              </button>
-            </div>
-            <div className="space-y-3">
-              {formData.trainings.map((training, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-medium text-gray-900">Training #{index + 1}</h4>
-                    <button
-                      type="button"
-                      onClick={() => removeTraining(index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Training Name
-                      </label>
-                      <input
-                        type="text"
-                        value={training.trainingName}
-                        onChange={(e) => updateTraining(index, "trainingName", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter training name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Status
-                      </label>
-                      <select
-                        value={training.status}
-                        onChange={(e) => updateTraining(index, "status", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="scheduled">Scheduled</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Completed Date
-                      </label>
-                      <input
-                        type="date"
-                        value={training.completedDate}
-                        onChange={(e) => updateTraining(index, "completedDate", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Certification (optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={training.certification || ""}
-                        onChange={(e) => updateTraining(index, "certification", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter certification name"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Trainings removed */}
 
           {/* Centers */}
           <div>
