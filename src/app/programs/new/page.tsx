@@ -6,11 +6,33 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProgramForm } from "@/components/forms/ProgramForm";
 import { Program } from "@/types";
+import { useUser } from "@/store/auth";
 import { ArrowLeft } from "lucide-react";
 
 export default function NewProgramPage() {
   const router = useRouter();
+  const user = useUser();
   const [saving, setSaving] = useState(false);
+  // HQ-only guard
+  if (user?.role !== "HQ") {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">Only Head Quarters can create programs.</p>
+            <button
+              onClick={() => router.push("/programs")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Programs
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const handleSubmit = async (formData: Partial<Program>) => {
     try {

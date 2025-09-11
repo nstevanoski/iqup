@@ -108,7 +108,7 @@ const getMFScopeNames = (scopeIds: string[]): string[] => {
 };
 
 // Column definitions
-const getColumns = (userRole: string, canEdit: boolean): Column<Program>[] => {
+const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Program) => void): Column<Program>[] => {
   const baseColumns: Column<Program>[] = [
     {
       key: "name",
@@ -118,7 +118,12 @@ const getColumns = (userRole: string, canEdit: boolean): Column<Program>[] => {
       filterable: true,
       render: (value, row) => (
         <div>
-          <div className="font-medium text-gray-900">{value}</div>
+          <button
+            onClick={() => onNameClick(row)}
+            className="font-medium text-blue-600 hover:underline"
+          >
+            {value}
+          </button>
           <div className="text-sm text-gray-500">{row.description}</div>
         </div>
       ),
@@ -129,8 +134,11 @@ const getColumns = (userRole: string, canEdit: boolean): Column<Program>[] => {
       sortable: true,
       filterable: true,
       render: (value) => {
-        const kindColors = {
+        const kindColors: Record<string, string> = {
           academic: "bg-blue-100 text-blue-800",
+          worksheet: "bg-gray-100 text-gray-800",
+          birthday_party: "bg-pink-100 text-pink-800",
+          stem_camp: "bg-indigo-100 text-indigo-800",
           vocational: "bg-green-100 text-green-800",
           certification: "bg-purple-100 text-purple-800",
           workshop: "bg-orange-100 text-orange-800",
@@ -189,16 +197,6 @@ const getColumns = (userRole: string, canEdit: boolean): Column<Program>[] => {
         <div className="flex items-center text-sm">
           <Users className="h-4 w-4 mr-1 text-gray-400" />
           {value}/{row.maxStudents}
-        </div>
-      ),
-    },
-    {
-      key: "price",
-      label: "Price",
-      sortable: true,
-      render: (value) => (
-        <div className="text-sm font-medium">
-          ${value}
         </div>
       ),
     },
@@ -271,7 +269,7 @@ export default function ProgramsPage() {
   }, [user, selectedScope]);
 
   const canEdit = user?.role === "HQ";
-  const columns = getColumns(user?.role || "", canEdit);
+  const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`));
 
   const handleRowAction = (action: string, row: Program) => {
     console.log(`${action} action for program:`, row);

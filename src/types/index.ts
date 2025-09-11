@@ -37,7 +37,7 @@ export interface Program extends BaseEntity {
   // New fields for enhanced program management
   hours: number; // Total program hours
   lessonLength: number; // Length of each lesson in minutes
-  kind: "academic" | "vocational" | "certification" | "workshop" | "birthday_party" | "stem_camp";
+  kind: "academic" | "worksheet" | "birthday_party" | "stem_camp" | "vocational" | "certification" | "workshop";
   sharedWithMFs: string[]; // Array of MF scope IDs that can see this program
   visibility: "private" | "shared" | "public";
 }

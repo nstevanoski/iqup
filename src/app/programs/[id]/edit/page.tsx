@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProgramForm } from "@/components/forms/ProgramForm";
 import { Program } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { useUser } from "@/store/auth";
 
 interface ProgramEditPageProps {
   params: Promise<{
@@ -105,6 +106,7 @@ const samplePrograms: Program[] = [
 export default function ProgramEditPage({ params }: ProgramEditPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const user = useUser();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -163,6 +165,27 @@ export default function ProgramEditPage({ params }: ProgramEditPageProps) {
   const handleBack = () => {
     router.push("/programs");
   };
+
+  // HQ-only guard
+  if (user?.role !== "HQ") {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+            <div className="text-6xl mb-4">🚫</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-gray-600 mb-6">Only Head Quarters can edit programs.</p>
+            <button
+              onClick={() => router.push(`/programs/${resolvedParams.id}`)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Program
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (loading) {
     return (
