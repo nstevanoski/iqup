@@ -6,7 +6,7 @@ import { requireAuth } from '@/backend/middleware/auth'
 // GET /api/programs/[id] - Get single program by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { error, user } = await requireAuth(request)
   if (error) return error
@@ -139,7 +139,7 @@ export async function GET(
 // PUT /api/programs/[id] - Update program (HQ only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { error, user } = await requireAuth(request)
   if (error) return error
@@ -272,7 +272,7 @@ export async function PUT(
 // DELETE /api/programs/[id] - Delete program (HQ only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { error, user } = await requireAuth(request)
   if (error) return error

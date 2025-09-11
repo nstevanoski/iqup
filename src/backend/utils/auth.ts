@@ -1,6 +1,9 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import type { User, UserRole } from '@prisma/client'
+// import type { User, UserRole } from '@prisma/client'
+
+// Define UserRole type locally
+type UserRole = 'HQ_ADMIN' | 'HQ_STAFF' | 'MF_ADMIN' | 'MF_STAFF' | 'LC_ADMIN' | 'LC_STAFF' | 'TT_ADMIN' | 'TT_STAFF'
 
 // JWT secret - should be in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key'
@@ -42,7 +45,7 @@ export function generateToken(user: {
 
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-  })
+  } as jwt.SignOptions)
 }
 
 // Verify JWT token

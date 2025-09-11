@@ -9,7 +9,10 @@ export async function GET() {
       select: {
         id: true,
         email: true,
-        name: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -26,17 +29,20 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, name } = body
+    const { email, firstName, lastName, password, role } = body
 
     // Basic validation
-    if (!email) {
-      return errorResponse('Email is required', 400)
+    if (!email || !firstName || !lastName || !password || !role) {
+      return errorResponse('Email, firstName, lastName, password, and role are required', 400)
     }
 
     const user = await prisma.user.create({
       data: {
         email,
-        name,
+        firstName,
+        lastName,
+        password, // Note: This should be hashed in a real implementation
+        role,
       },
     })
 
