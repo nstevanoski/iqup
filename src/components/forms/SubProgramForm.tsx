@@ -32,6 +32,7 @@ interface FormData {
   pricePerMonth?: number;
   pricePerSession?: number;
   sharedWithLCs: string[];
+  sharedWithMFs?: string[];
   visibility: "private" | "shared" | "public";
 }
 
@@ -52,6 +53,7 @@ const initialFormData: FormData = {
   pricePerMonth: undefined,
   pricePerSession: undefined,
   sharedWithLCs: [],
+  sharedWithMFs: undefined,
   visibility: "shared",
 };
 
@@ -78,7 +80,9 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
       numberOfPayments: subProgram.numberOfPayments,
       gap: subProgram.gap,
       pricePerMonth: subProgram.pricePerMonth,
+      pricePerSession: subProgram.pricePerSession,
       sharedWithLCs: subProgram.sharedWithLCs,
+      sharedWithMFs: subProgram.sharedWithMFs,
       visibility: subProgram.visibility,
     } : initialFormData
   );
