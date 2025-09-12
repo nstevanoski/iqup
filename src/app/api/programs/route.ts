@@ -65,9 +65,9 @@ export async function GET(request: NextRequest) {
     // Apply search filter
     if (search) {
       whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { kind: { contains: search, mode: 'insensitive' } }
+        { name: { startsWith: search } },
+        { description: { startsWith: search } },
+        { category: { startsWith: search } }
       ]
     }
 
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
     // Apply category filter
     if (category) {
-      whereClause.category = { contains: category, mode: 'insensitive' }
+      whereClause.category = category
     }
 
     // Apply kind filter

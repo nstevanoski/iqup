@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { SubProgram, Program } from "@/types";
 import { useUser, useSelectedScope } from "@/store/auth";
+import { getPrograms } from "@/lib/api/programs";
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
 
 interface SubProgramFormProps {
   subProgram?: SubProgram;
@@ -87,7 +89,8 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [programSearch, setProgramSearch] = useState("");
+  const [programOptions, setProgramOptions] = useState<SearchableSelectOption[]>([]);
+  const [isLoadingPrograms, setIsLoadingPrograms] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -139,16 +142,74 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     }
   };
 
-  // Filtered programs for search
-  const filteredPrograms = useMemo(() => {
-    if (!programSearch.trim()) return programs;
-    const term = programSearch.toLowerCase();
-    return programs.filter(p => p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term));
-  }, [programs, programSearch]);
+  // Load initial programs
+  useEffect(() => {
+    const loadInitialPrograms = async () => {
+      if (!user || !selectedScope) return;
+      
+      try {
+        setIsLoadingPrograms(true);
+        
+        const response = await getPrograms({
+          limit: 10,
+          userRole: user.role,
+          userScope: selectedScope.id,
+        });
 
-  // Prefill details from selected program
+        if (response.success) {
+          const options: SearchableSelectOption[] = response.data.data.map(program => ({
+            id: program.id,
+            label: program.name,
+            description: program.description,
+            metadata: `${program.category} • ${program.kind} • ${program.duration} weeks`
+          }));
+          setProgramOptions(options);
+        }
+      } catch (error) {
+        console.error('Error loading programs:', error);
+      } finally {
+        setIsLoadingPrograms(false);
+      }
+    };
+
+    loadInitialPrograms();
+  }, [user, selectedScope]);
+
+  // Search function for SearchableSelect
+  const handleProgramSearch = useCallback(
+    async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+      if (!user || !selectedScope) return [];
+
+      try {
+        const response = await getPrograms({
+          search: searchTerm,
+          limit: 10,
+          userRole: user.role,
+          userScope: selectedScope.id,
+        });
+
+        if (response.success) {
+          return response.data.data.map(program => ({
+            id: program.id,
+            label: program.name,
+            description: program.description,
+            metadata: `${program.category} • ${program.kind} • ${program.duration} weeks`
+          }));
+        }
+        return [];
+      } catch (error) {
+        console.error('Error searching programs:', error);
+        return [];
+      }
+    },
+    [user?.role, selectedScope?.id]
+  );
+
+  // Handle program selection
   const handleSelectProgram = (programId: string) => {
     handleInputChange("programId", programId);
+    
+    // Find the program in the original programs array to get full details
     const program = programs.find(p => p.id === programId);
     if (program) {
       setFormData(prev => ({
@@ -208,33 +269,17 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Program *
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={programSearch}
-                onChange={(e) => setProgramSearch(e.target.value)}
-                placeholder="Search program..."
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.817-4.817A6 6 0 012 8z" clipRule="evenodd"/></svg>
-              </div>
-            </div>
-            <select
+            
+            <SearchableSelect
+              options={programOptions}
               value={formData.programId}
-              onChange={(e) => handleSelectProgram(e.target.value)}
-              className={`mt-2 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.programId ? "border-red-500" : "border-gray-300"
-              }`}
-            >
-              <option value="">Select Program</option>
-              {filteredPrograms.map(program => (
-                <option key={program.id} value={program.id}>
-                  {program.name}
-                </option>
-              ))}
-            </select>
-            {errors.programId && <p className="text-red-500 text-sm mt-1">{errors.programId}</p>}
+              placeholder="Select a program..."
+              onSelect={handleSelectProgram}
+              onSearch={handleProgramSearch}
+              loading={isLoadingPrograms}
+              error={errors.programId}
+              showClearButton={true}
+            />
           </div>
 
           <div>
