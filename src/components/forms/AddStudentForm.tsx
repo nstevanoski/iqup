@@ -39,8 +39,6 @@ const sampleStudents: Student[] = [
     id: "student_1",
     firstName: "John",
     lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1-555-1001",
     dateOfBirth: new Date("1995-05-15"),
     address: {
       street: "123 Main St",
@@ -110,8 +108,6 @@ const sampleStudents: Student[] = [
     id: "student_2",
     firstName: "Alice",
     lastName: "Smith",
-    email: "alice.smith@example.com",
-    phone: "+1-555-1003",
     dateOfBirth: new Date("1998-08-22"),
     address: {
       street: "456 Oak Ave",
@@ -181,8 +177,6 @@ const sampleStudents: Student[] = [
     id: "student_3",
     firstName: "Michael",
     lastName: "Johnson",
-    email: "michael.johnson@example.com",
-    phone: "+1-555-1005",
     dateOfBirth: new Date("1993-12-10"),
     address: {
       street: "789 Pine St",
@@ -460,7 +454,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
               <option value="">Choose a student...</option>
               {sampleStudents.map((student) => (
                 <option key={student.id} value={student.id}>
-                  {student.firstName} {student.lastName} - {student.email}
+                  {student.firstName} {student.lastName}
                 </option>
               ))}
             </select>
@@ -471,9 +465,6 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                 <div className="text-sm">
                   <div className="font-medium text-blue-900">
                     {selectedStudent.firstName} {selectedStudent.lastName}
-                  </div>
-                  <div className="text-blue-700">
-                    {selectedStudent.email} • {selectedStudent.phone}
                   </div>
                   <div className="text-blue-600 text-xs mt-1">
                     Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate ? selectedStudent.enrollmentDate.toLocaleDateString() : "N/A"}

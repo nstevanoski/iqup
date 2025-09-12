@@ -9,100 +9,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Eye, Edit, Trash2, DollarSign, Award } from "lucide-react";
 import { Student } from "@/types";
+import { getStudents, deleteStudent, convertStudentToListItem, StudentListItem } from "@/lib/api/students";
 
-// Student list item type for display
-interface StudentListItem {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  program: string;
-  status: "active" | "inactive" | "graduated" | "suspended";
-  enrollmentDate: string;
-  progress: number;
-  lastActivity: string;
-}
+// Remove duplicate interface - now imported from API client
 
-// Sample data - in a real app, this would come from an API
-const sampleStudents: StudentListItem[] = [
-  {
-    id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1-555-0101",
-    program: "English Language Program",
-    status: "active",
-    enrollmentDate: "2024-01-15",
-    progress: 75,
-    lastActivity: "2024-01-20",
-  },
-  {
-    id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane.smith@example.com",
-    phone: "+1-555-0201",
-    program: "Mathematics Program",
-    status: "active",
-    enrollmentDate: "2024-01-20",
-    progress: 90,
-    lastActivity: "2024-01-21",
-  },
-  {
-    id: "3",
-    firstName: "Bob",
-    lastName: "Johnson",
-    email: "bob.johnson@example.com",
-    phone: "+1-555-0301",
-    program: "Science Program",
-    status: "graduated",
-    enrollmentDate: "2023-09-01",
-    progress: 100,
-    lastActivity: "2024-01-15",
-  },
-  {
-    id: "4",
-    firstName: "Alice",
-    lastName: "Brown",
-    email: "alice.brown@example.com",
-    phone: "+1-555-0401",
-    program: "English Language Program",
-    status: "inactive",
-    enrollmentDate: "2024-02-01",
-    progress: 45,
-    lastActivity: "2024-01-10",
-  },
-  {
-    id: "5",
-    firstName: "Charlie",
-    lastName: "Wilson",
-    email: "charlie.wilson@example.com",
-    phone: "+1-555-0501",
-    program: "Mathematics Program",
-    status: "active",
-    enrollmentDate: "2024-01-10",
-    progress: 60,
-    lastActivity: "2024-01-19",
-  },
-];
+// No more mock data - using real API only
 
-// Helper function to convert Student to StudentListItem
-const convertStudentToListItem = (student: Student): StudentListItem => {
-  return {
-    id: student.id,
-    firstName: student.firstName,
-    lastName: student.lastName,
-    email: student.email,
-    phone: student.phone || "N/A",
-    program: (student.programIds && student.programIds.length > 0) ? student.programIds[0] : "N/A", // Simplified - just show first program
-    status: student.status as "active" | "inactive" | "graduated" | "suspended",
-    enrollmentDate: student.enrollmentDate?.toLocaleDateString() || "N/A",
-    progress: Math.floor(Math.random() * 100), // Placeholder - would come from API
-    lastActivity: student.updatedAt?.toLocaleDateString() || "N/A",
-  };
-};
+// Helper function now imported from API client
 
 // Column definitions
 const columns: Column<StudentListItem>[] = [
@@ -117,7 +30,6 @@ const columns: Column<StudentListItem>[] = [
         <Link href={`/contacts/students/${row.id}`} className="font-medium text-blue-600 hover:underline">
           {row.firstName} {row.lastName}
         </Link>
-        <div className="text-sm text-gray-500">{row.email}</div>
       </div>
     ),
   },
@@ -186,39 +98,47 @@ export default function StudentsPage() {
   const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
-  const [data, setData] = useState<StudentListItem[]>(sampleStudents);
+  const [data, setData] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+
+  const fetchStudents = async (page = 1, search = '', status = '') => {
+    try {
+      setLoading(true);
+      const params: any = {
+        page,
+        limit: 10,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
+
+      if (search) params.search = search;
+      if (status) params.status = status;
+
+      const response = await getStudents(params);
+      setData(response.students.map(convertStudentToListItem));
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      // No fallback - show empty state
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams();
-        if (user?.role) params.set("userRole", user.role);
-        if (selectedScope?.id) params.set("userScope", selectedScope.id);
-        const response = await fetch(`/api/students?${params.toString()}`);
-        if (response.ok) {
-          const result = await response.json();
-          const students: Student[] = result.data || [];
-          // API enforces filtering; just map
-          setData(students.map(convertStudentToListItem));
-        } else {
-          // Fallback to sample data
-          setData(sampleStudents);
-        }
-      } catch (error) {
-        console.error("Error fetching students:", error);
-        // Fallback to sample data
-        setData(sampleStudents);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStudents();
   }, []);
 
-  const handleRowAction = (action: string, row: StudentListItem) => {
+  const handleRowAction = async (action: string, row: StudentListItem) => {
     console.log(`${action} action for student:`, row);
     
     switch (action) {
@@ -236,20 +156,34 @@ export default function StudentsPage() {
         break;
       case "delete":
         if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
-          setData(prev => prev.filter(item => item.id !== row.id));
+          try {
+            await deleteStudent(row.id);
+            // Refresh the data
+            fetchStudents(pagination.page);
+          } catch (error) {
+            console.error("Error deleting student:", error);
+            alert("Failed to delete student. Please try again.");
+          }
         }
         break;
     }
   };
 
-  const handleBulkAction = (action: string, rows: StudentListItem[]) => {
+  const handleBulkAction = async (action: string, rows: StudentListItem[]) => {
     console.log(`${action} action for ${rows.length} students:`, rows);
     
     switch (action) {
       case "delete":
         if (confirm(`Are you sure you want to delete ${rows.length} students?`)) {
-          const idsToDelete = new Set(rows.map(row => row.id));
-          setData(prev => prev.filter(item => !idsToDelete.has(item.id)));
+          try {
+            // Delete all selected students
+            await Promise.all(rows.map(row => deleteStudent(row.id)));
+            // Refresh the data
+            fetchStudents(pagination.page);
+          } catch (error) {
+            console.error("Error deleting students:", error);
+            alert("Failed to delete some students. Please try again.");
+          }
         }
         break;
     }

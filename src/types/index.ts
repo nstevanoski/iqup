@@ -66,7 +66,7 @@ export interface SubProgram extends BaseEntity {
 }
 
 // User types
-export interface Student extends BaseEntity, ContactInfo {
+export interface Student extends BaseEntity {
   firstName: string;
   lastName: string;
   dateOfBirth: Date;
@@ -76,6 +76,7 @@ export interface Student extends BaseEntity, ContactInfo {
   programIds: string[];
   subProgramIds: string[];
   learningGroupIds: string[];
+  address?: Address;
   emergencyContact?: ContactInfo;
   notes?: string;
   avatar?: string;

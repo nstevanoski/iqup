@@ -84,6 +84,7 @@ model HQ {
   users             User[]
   masterFranchisees MasterFranchisee[]
   teacherTrainers   TeacherTrainer[]
+  students          Student[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,6 +113,7 @@ model MasterFranchisee {
   // Relationships
   users          User[]
   learningCenters LearningCenter[]
+  students       Student[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,6 +141,7 @@ model LearningCenter {
   
   // Relationships
   users      User[]
+  students   Student[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -267,4 +270,64 @@ enum PricingModel {
   PROGRAM_PRICE
   ONE_TIME
   INSTALLMENTS
+}
+
+// Student model
+model Student {
+  id                Int      @id @default(autoincrement())
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime
+  gender            Gender
+  enrollmentDate    DateTime?
+  status            StudentStatus @default(ACTIVE)
+  
+  // Address information
+  address           String?
+  city              String?
+  state             String?
+  country           String?
+  postalCode        String?
+  
+  // Parent/Guardian information
+  parentFirstName   String
+  parentLastName    String
+  parentPhone       String
+  parentEmail       String
+  
+  // Emergency contact
+  emergencyContactEmail String?
+  emergencyContactPhone String?
+  
+  // Relationships to accounts
+  lcId              Int
+  mfId              Int
+  hqId              Int
+  
+  lc                LearningCenter @relation(fields: [lcId], references: [id])
+  mf                MasterFranchisee @relation(fields: [mfId], references: [id])
+  hq                HQ @relation(fields: [hqId], references: [id])
+  
+  // Additional fields
+  notes             String?   @db.Text
+  avatar            String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("students")
+}
+
+// Enums for Student model
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  SUSPENDED
 }

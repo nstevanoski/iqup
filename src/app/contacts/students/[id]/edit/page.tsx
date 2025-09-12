@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { StudentForm } from "@/components/forms/StudentForm";
 import { Student, Program, SubProgram, LearningGroup } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { getStudent, updateStudent, UpdateStudentData } from "@/lib/api/students";
 
 interface StudentEditPageProps {
   params: Promise<{
@@ -14,186 +15,7 @@ interface StudentEditPageProps {
   }>;
 }
 
-// Mock data - in a real app, this would come from an API
-const mockStudent: Student = {
-  id: "student_1",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  phone: "+1-555-1001",
-  dateOfBirth: new Date("1995-05-15"),
-  address: {
-    street: "123 Main St",
-    city: "Boston",
-    state: "MA",
-    zipCode: "02101",
-    country: "USA",
-  },
-  emergencyContact: {
-    email: "jane.doe@example.com",
-    phone: "+1-555-1002",
-  },
-  status: "active",
-  enrollmentDate: new Date("2024-01-15"),
-  programIds: ["prog_1"],
-  subProgramIds: [],
-  learningGroupIds: [],
-  gender: "male",
-  notes: "Excellent student, very motivated",
-  parentInfo: {
-    firstName: "Jane",
-    lastName: "Doe",
-    phone: "+1-555-1002",
-    email: "jane.doe@example.com",
-  },
-  lastCurrentLG: {
-    id: "lg_1",
-    name: "English Beginners Group A",
-    programName: "English Language Program",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-05-31"),
-  },
-  product: {
-    id: "prod_1",
-    name: "English Learning Kit",
-    description: "Complete learning materials for English program",
-    materials: ["Textbook", "Workbook", "Audio CD", "Online Access"],
-    purchaseDate: new Date("2024-01-15"),
-  },
-  contactOwner: {
-    id: "user_1",
-    name: "LC Manager",
-    role: "LC",
-  },
-  accountFranchise: {
-    id: "lc_1",
-    name: "Boston Learning Center",
-    type: "LC",
-  },
-  mfName: "North America MF",
-  programHistory: [],
-  payments: [],
-  certificates: [],
-  createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-01-15"),
-};
-
-const mockPrograms: Program[] = [
-  {
-    id: "prog_1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program for all levels",
-    status: "active",
-    category: "Language",
-    duration: 24,
-    price: 299.99,
-    maxStudents: 100,
-    currentStudents: 45,
-    requirements: ["Basic reading skills", "Age 16+"],
-    learningObjectives: ["Fluency in English", "Grammar mastery", "Conversational skills"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "prog_2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum covering algebra, calculus, and statistics",
-    status: "active",
-    category: "STEM",
-    duration: 36,
-    price: 399.99,
-    maxStudents: 80,
-    currentStudents: 32,
-    requirements: ["High school diploma", "Basic math skills"],
-    learningObjectives: ["Advanced problem solving", "Mathematical reasoning", "Statistical analysis"],
-    createdBy: "user_1",
-    hours: 180,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-];
-
-const mockSubPrograms: SubProgram[] = [
-  {
-    id: "sub_1",
-    programId: "prog_1",
-    name: "Beginner English",
-    description: "Introduction to English language basics",
-    status: "active",
-    order: 1,
-    duration: 8,
-    price: 99.99,
-    prerequisites: [],
-    learningObjectives: ["Basic vocabulary", "Simple grammar", "Pronunciation"],
-    createdBy: "user_1",
-    pricingModel: "one-time",
-    coursePrice: 99.99,
-    sharedWithLCs: ["lc_center_nyc", "lc_center_la"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-];
-
-const mockLearningGroups: LearningGroup[] = [
-  {
-    id: "lg_1",
-    name: "English Beginners Group A",
-    description: "Beginner English learning group",
-    programId: "prog_1",
-    subProgramId: "sub_1",
-    teacherId: "teacher_1",
-    studentIds: [],
-    maxStudents: 20,
-    status: "active",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-05-31"),
-    schedule: [],
-    location: "Main Campus",
-    notes: "Morning session",
-    dates: {
-      startDate: "2024-02-01",
-      endDate: "2024-05-31",
-      registrationDeadline: "2024-01-25",
-      lastClassDate: "2024-05-31",
-    },
-    pricingSnapshot: {
-      programPrice: 299.99,
-      subProgramPrice: 99.99,
-      totalPrice: 399.98,
-      finalPrice: 399.98,
-      currency: "USD",
-      coursePrice: 399.98,
-      numberOfPayments: 3,
-      gapBetweenPayments: 30,
-      pricePerMonth: 133.33,
-      paymentMethod: "installments",
-    },
-    owner: {
-      id: "user_1",
-      name: "LC Manager",
-      role: "LC",
-    },
-    franchisee: {
-      id: "lc_1",
-      name: "New York Learning Center",
-      location: "New York",
-    },
-    students: [],
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-];
+// No more mock data - using real API only
 
 export default function StudentEditPage({ params }: StudentEditPageProps) {
   const router = useRouter();
@@ -204,16 +26,18 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call to fetch student
+    // Fetch student from API
     const fetchStudent = async () => {
       try {
         setLoading(true);
         
-        // In a real app, this would be an API call
-        setStudent(mockStudent);
+        const studentData = await getStudent(resolvedParams.id);
+        setStudent(studentData);
       } catch (err) {
         setError("Failed to load student");
         console.error("Error fetching student:", err);
+        // No fallback - show error state
+        setStudent(null);
       } finally {
         setLoading(false);
       }
@@ -226,11 +50,30 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
     try {
       setSaving(true);
       
-      // In a real app, this would be an API call
-      console.log("Updating student:", { id: resolvedParams.id, ...formData });
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Convert the form data to API format
+      const updateData: UpdateStudentData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        dateOfBirth: formData.dateOfBirth?.toISOString().split('T')[0],
+        gender: formData.gender?.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
+        enrollmentDate: formData.enrollmentDate?.toISOString().split('T')[0],
+        status: formData.status?.toUpperCase() as "ACTIVE" | "INACTIVE" | "GRADUATED" | "SUSPENDED",
+        address: formData.address?.street,
+        city: formData.address?.city,
+        state: formData.address?.state,
+        country: formData.address?.country,
+        postalCode: formData.address?.zipCode,
+        parentFirstName: formData.parentInfo?.firstName,
+        parentLastName: formData.parentInfo?.lastName,
+        parentPhone: formData.parentInfo?.phone,
+        parentEmail: formData.parentInfo?.email,
+        emergencyContactEmail: formData.emergencyContact?.email,
+        emergencyContactPhone: formData.emergencyContact?.phone,
+        notes: formData.notes,
+        avatar: formData.avatar,
+      };
+
+      await updateStudent(resolvedParams.id, updateData);
       
       // Navigate back to student detail
       router.push(`/contacts/students/${resolvedParams.id}`);
@@ -314,9 +157,9 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
         {/* Form */}
         <StudentForm
           student={student}
-          programs={mockPrograms}
-          subPrograms={mockSubPrograms}
-          learningGroups={mockLearningGroups}
+          programs={[]}
+          subPrograms={[]}
+          learningGroups={[]}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           loading={saving}

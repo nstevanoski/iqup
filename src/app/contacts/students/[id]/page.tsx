@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { useUser } from "@/store/auth";
 import { Student } from "@/types";
 import { ArrowLeft, Edit, DollarSign, Award, User, Phone, Mail, MapPin, Calendar, GraduationCap } from "lucide-react";
+import { getStudent } from "@/lib/api/students";
 
 interface StudentDetailPageProps {
   params: Promise<{
@@ -14,98 +15,7 @@ interface StudentDetailPageProps {
   }>;
 }
 
-// Mock data - in a real app, this would come from an API
-const mockStudent: Student = {
-  id: "student_1",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  phone: "+1-555-1001",
-  dateOfBirth: new Date("1995-05-15"),
-  address: {
-    street: "123 Main St",
-    city: "Boston",
-    state: "MA",
-    zipCode: "02101",
-    country: "USA",
-  },
-  // emergencyContact removed per requirements
-  status: "active",
-  enrollmentDate: new Date("2024-01-15"),
-  programIds: ["prog_1"],
-  subProgramIds: [],
-  learningGroupIds: [],
-  gender: "male",
-  notes: "Excellent student, very motivated",
-  parentInfo: {
-    firstName: "Jane",
-    lastName: "Doe",
-    phone: "+1-555-1002",
-    email: "jane.doe@example.com",
-  },
-  lastCurrentLG: {
-    id: "lg_1",
-    name: "English Beginners Group A",
-    programName: "English Language Program",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-05-31"),
-  },
-  product: {
-    id: "prod_1",
-    name: "English Learning Kit",
-    description: "Complete learning materials for English program",
-    materials: ["Textbook", "Workbook", "Audio CD", "Online Access"],
-    purchaseDate: new Date("2024-01-15"),
-  },
-  contactOwner: {
-    id: "user_1",
-    name: "LC Manager",
-    role: "LC",
-  },
-  accountFranchise: {
-    id: "lc_1",
-    name: "Boston Learning Center",
-    type: "LC",
-  },
-  mfName: "North America MF",
-  programHistory: [
-    {
-      id: "hist_1",
-      programId: "prog_1",
-      programName: "English Language Program",
-      subProgramId: "sub_1",
-      subProgramName: "Beginner English",
-      learningGroupId: "lg_1",
-      learningGroupName: "English Beginners Group A",
-      startDate: new Date("2024-02-01"),
-      endDate: new Date("2024-05-31"),
-      status: "completed",
-      completionDate: new Date("2024-05-31"),
-      grade: 85,
-      certificateId: "cert_1",
-    },
-  ],
-  payments: [],
-  certificates: [
-    {
-      id: "cert_1",
-      studentId: "student_1",
-      programId: "prog_1",
-      programName: "English Language Program",
-      subProgramId: "sub_1",
-      subProgramName: "Beginner English",
-      certificateCode: "CERT-2024-001234",
-      issuedDate: new Date("2024-06-01"),
-      validUntil: new Date("2026-06-01"),
-      status: "active",
-      downloadUrl: "/certificates/cert_1.pdf",
-      issuedBy: "LC Manager",
-      createdAt: new Date("2024-06-01"),
-    },
-  ],
-  createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-06-01"),
-};
+// No more mock data - using real API only
 
 export default function StudentDetailPage({ params }: StudentDetailPageProps) {
   const router = useRouter();
@@ -122,19 +32,13 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
         setError(null);
         
         // Fetch student data from API
-        const response = await fetch(`/api/students/${resolvedParams.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setStudent(data.data);
-        } else {
-          // Fallback to mock data
-          setStudent(mockStudent);
-        }
+        const studentData = await getStudent(resolvedParams.id);
+        setStudent(studentData);
       } catch (err) {
         setError("Failed to load student");
         console.error("Error fetching student:", err);
-        // Fallback to mock data
-        setStudent(mockStudent);
+        // No fallback - show error state
+        setStudent(null);
       } finally {
         setLoading(false);
       }
@@ -331,21 +235,6 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                   <p className="mt-1 text-sm text-gray-900 capitalize">{student.gender}</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <div className="mt-1 flex items-center">
-                    <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.email}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <div className="mt-1 flex items-center">
-                    <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.phone}</span>
-                  </div>
-                </div>
               </div>
             </div>
 
