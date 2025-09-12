@@ -7,9 +7,10 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProgramDetail } from "@/components/views/ProgramDetail";
 import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program } from "@/types";
-import { ArrowLeft, Edit } from "lucide-react";
-import { getProgram, programsAPI } from "@/lib/api/programs";
+import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { getProgram, deleteProgram, programsAPI } from "@/lib/api/programs";
 import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
+import { DeleteConfirmationModal } from "@/components/ui";
 
 interface ProgramDetailPageProps {
   params: Promise<{
@@ -28,6 +29,10 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchProgram = async () => {
@@ -82,6 +87,35 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
 
   const handleEdit = () => {
     router.push(`/programs/${resolvedParams.id}/edit`);
+  };
+
+  const handleDelete = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!program) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await deleteProgram(program.id);
+      if (response.success) {
+        router.push("/programs");
+      } else {
+        alert("Failed to delete program. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error deleting program:", err);
+      alert("Failed to delete program. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!isDeleting) {
+      setDeleteModalOpen(false);
+    }
   };
 
   const handleBack = () => {
@@ -155,6 +189,13 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
                 <Edit className="h-4 w-4" />
                 Edit Program
               </button>
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Program
+              </button>
             </div>
           )}
         </div>
@@ -162,6 +203,16 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         {/* Program Detail */}
         <ProgramDetail program={program} onEdit={undefined} mfAccounts={mfAccounts} />
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemName={program?.name}
+        isLoading={isDeleting}
+        title="Delete Program"
+      />
     </DashboardLayout>
   );
 }

@@ -7,8 +7,9 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SubProgramDetail } from "@/components/views/SubProgramDetail";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { SubProgram, Program } from "@/types";
-import { ArrowLeft, Edit } from "lucide-react";
-import { getSubProgram } from "@/lib/api/subprograms";
+import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { getSubProgram, deleteSubProgram } from "@/lib/api/subprograms";
+import { DeleteConfirmationModal } from "@/components/ui";
 
 interface SubProgramDetailPageProps {
   params: Promise<{
@@ -26,6 +27,10 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchSubProgram = async () => {
@@ -59,6 +64,35 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
 
   const handleEdit = () => {
     router.push(`/subprograms/${resolvedParams.id}/edit`);
+  };
+
+  const handleDelete = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!subProgram) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await deleteSubProgram(subProgram.id);
+      if (response.success) {
+        router.push("/subprograms");
+      } else {
+        alert("Failed to delete subprogram. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error deleting subprogram:", err);
+      alert("Failed to delete subprogram. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!isDeleting) {
+      setDeleteModalOpen(false);
+    }
   };
 
   const handleBack = () => {
@@ -132,6 +166,13 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
                 <Edit className="h-4 w-4" />
                 Edit SubProgram
               </button>
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete SubProgram
+              </button>
             </div>
           )}
         </div>
@@ -139,6 +180,16 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
         {/* SubProgram Detail */}
         <SubProgramDetail subProgram={subProgram} program={program || undefined} onEdit={undefined} />
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemName={subProgram?.name}
+        isLoading={isDeleting}
+        title="Delete SubProgram"
+      />
     </DashboardLayout>
   );
 }

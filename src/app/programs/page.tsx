@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen } from "lucide-react";
 import { getPrograms, deleteProgram, programsAPI } from "@/lib/api/programs";
 import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
+import { DeleteConfirmationModal } from "@/components/ui";
 
 
 // Helper function to get MF scope names
@@ -164,6 +165,11 @@ export default function ProgramsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [programToDelete, setProgramToDelete] = useState<Program | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Function to fetch programs with current parameters
   const fetchPrograms = useCallback(async (params: {
@@ -416,22 +422,8 @@ export default function ProgramsPage() {
         break;
       case "delete":
         if (canEdit) {
-          if (confirm(`Are you sure you want to delete ${row.name}?`)) {
-            try {
-              setLoading(true);
-              const response = await deleteProgram(row.id);
-              if (response.success) {
-                setData(prev => prev.filter(item => item.id !== row.id));
-              } else {
-                alert("Failed to delete program. Please try again.");
-              }
-            } catch (err) {
-              console.error("Error deleting program:", err);
-              alert("Failed to delete program. Please try again.");
-            } finally {
-              setLoading(false);
-            }
-          }
+          setProgramToDelete(row);
+          setDeleteModalOpen(true);
         } else {
           alert("You don't have permission to delete programs");
         }
@@ -449,11 +441,52 @@ export default function ProgramsPage() {
     
     switch (action) {
       case "delete":
-        if (confirm(`Are you sure you want to delete ${rows.length} programs?`)) {
-          const idsToDelete = new Set(rows.map(row => row.id));
-          setData(prev => prev.filter(item => !idsToDelete.has(item.id)));
-        }
+        // For bulk delete, we'll use a single program object to represent the bulk operation
+        const bulkDeleteProgram: Program = {
+          id: 'bulk',
+          name: `${rows.length} programs`,
+          description: `This will delete ${rows.length} selected programs`,
+        } as Program;
+        setProgramToDelete(bulkDeleteProgram);
+        setDeleteModalOpen(true);
         break;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!programToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      if (programToDelete.id === 'bulk') {
+        // Handle bulk delete - this is a simplified version
+        // In a real implementation, you'd want to call a bulk delete API
+        alert("Bulk delete functionality would be implemented here");
+        setDeleteModalOpen(false);
+        setProgramToDelete(null);
+      } else {
+        // Handle single program delete
+        const response = await deleteProgram(programToDelete.id);
+        if (response.success) {
+          setData(prev => prev.filter(item => item.id !== programToDelete.id));
+          setDeleteModalOpen(false);
+          setProgramToDelete(null);
+        } else {
+          alert("Failed to delete program. Please try again.");
+        }
+      }
+    } catch (err) {
+      console.error("Error deleting program:", err);
+      alert("Failed to delete program. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!isDeleting) {
+      setDeleteModalOpen(false);
+      setProgramToDelete(null);
     }
   };
 
@@ -560,7 +593,7 @@ export default function ProgramsPage() {
             pagination={true}
             pageSize={10}
             bulkActions={canEdit}
-            rowActions={true}
+            rowActions={canEdit}
             onRowAction={handleRowAction}
             onBulkAction={handleBulkAction}
             onExport={handleExport}
@@ -580,6 +613,21 @@ export default function ProgramsPage() {
           />
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemName={programToDelete?.name}
+        isLoading={isDeleting}
+        title="Delete Program"
+        description={
+          programToDelete?.id === 'bulk' 
+            ? `Are you sure you want to delete ${programToDelete.name}? This action cannot be undone.`
+            : undefined
+        }
+      />
     </DashboardLayout>
   );
 }
