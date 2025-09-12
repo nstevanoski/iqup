@@ -676,8 +676,8 @@ export default function EditLearningGroupPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.programPrice}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.programPrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -690,8 +690,8 @@ export default function EditLearningGroupPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.subProgramPrice}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.subProgramPrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -704,8 +704,8 @@ export default function EditLearningGroupPage() {
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.discount || 0}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.discount || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

@@ -26,7 +26,7 @@ interface FormData {
   prerequisites: string[];
   learningObjectives: string[];
   pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
-  coursePrice: number;
+  coursePrice: number | string;
   numberOfPayments?: number;
   gap?: number;
   pricePerMonth?: number;
@@ -111,7 +111,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     if (formData.duration <= 0) {
       newErrors.duration = "Duration must be greater than 0";
     }
-    if (!formData.coursePrice || formData.coursePrice <= 0) {
+    if (!formData.coursePrice || (typeof formData.coursePrice === 'number' && formData.coursePrice <= 0) || (typeof formData.coursePrice === 'string' && (!formData.coursePrice.trim() || parseFloat(formData.coursePrice) <= 0))) {
       newErrors.coursePrice = "Course price is required";
     }
     if (formData.pricingModel === "per_month" && (!formData.pricePerMonth || formData.pricePerMonth <= 0)) {
@@ -326,7 +326,13 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
       return;
     }
 
-    onSubmit(formData);
+    // Convert string values back to numbers for submission
+    const submitData = {
+      ...formData,
+      coursePrice: typeof formData.coursePrice === 'string' ? parseFloat(formData.coursePrice) : formData.coursePrice,
+    };
+
+    onSubmit(submitData);
   };
 
   const canEdit = user?.role === "MF" || user?.role === "HQ";
@@ -472,8 +478,8 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
               type="number"
               step="0.01"
               min="0"
-              value={formData.coursePrice}
-              onChange={(e) => handleInputChange("coursePrice", parseFloat(e.target.value) || 0)}
+              value={formData.coursePrice || ""}
+              onChange={(e) => handleInputChange("coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.coursePrice ? "border-red-500" : "border-gray-300"
               }`}

@@ -16,10 +16,10 @@ interface FormData {
   name: string;
   description: string;
   status: "active" | "inactive" | "draft";
-  duration: number;
-  maxStudents: number;
-  hours: number;
-  lessonLength: number;
+  duration: number | string;
+  maxStudents: number | string;
+  hours: number | string;
+  lessonLength: number | string;
   kind: "academic" | "worksheet" | "birthday_party" | "stem_camp";
   sharedWithMFs: string[];
   visibility: "private" | "shared" | "public";
@@ -169,19 +169,19 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       newErrors.description = "Description is required";
     }
 
-    if (formData.duration <= 0) {
+    if (!formData.duration || (typeof formData.duration === 'number' && formData.duration <= 0) || (typeof formData.duration === 'string' && (!formData.duration.trim() || parseInt(formData.duration) <= 0))) {
       newErrors.duration = "Duration must be greater than 0";
     }
 
-    if (formData.maxStudents <= 0) {
+    if (!formData.maxStudents || (typeof formData.maxStudents === 'number' && formData.maxStudents <= 0) || (typeof formData.maxStudents === 'string' && (!formData.maxStudents.trim() || parseInt(formData.maxStudents) <= 0))) {
       newErrors.maxStudents = "Max students must be greater than 0";
     }
 
-    if (formData.hours <= 0) {
+    if (!formData.hours || (typeof formData.hours === 'number' && formData.hours <= 0) || (typeof formData.hours === 'string' && (!formData.hours.trim() || parseInt(formData.hours) <= 0))) {
       newErrors.hours = "Total hours must be greater than 0";
     }
 
-    if (formData.lessonLength <= 0) {
+    if (!formData.lessonLength || (typeof formData.lessonLength === 'number' && formData.lessonLength <= 0) || (typeof formData.lessonLength === 'string' && (!formData.lessonLength.trim() || parseInt(formData.lessonLength) <= 0))) {
       newErrors.lessonLength = "Lesson length must be greater than 0";
     }
 
@@ -231,7 +231,16 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       return;
     }
 
-    onSubmit(formData);
+    // Convert string values back to numbers for submission
+    const submitData = {
+      ...formData,
+      duration: typeof formData.duration === 'string' ? parseInt(formData.duration) : formData.duration,
+      maxStudents: typeof formData.maxStudents === 'string' ? parseInt(formData.maxStudents) : formData.maxStudents,
+      hours: typeof formData.hours === 'string' ? parseInt(formData.hours) : formData.hours,
+      lessonLength: typeof formData.lessonLength === 'string' ? parseInt(formData.lessonLength) : formData.lessonLength,
+    };
+
+    onSubmit(submitData);
   };
 
   const canEdit = user?.role === "HQ";
@@ -329,8 +338,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.duration}
-              onChange={(e) => handleInputChange("duration", parseInt(e.target.value) || 0)}
+              value={formData.duration || ""}
+              onChange={(e) => handleInputChange("duration", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.duration ? "border-red-500" : "border-gray-300"
               }`}
@@ -345,8 +354,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.hours}
-              onChange={(e) => handleInputChange("hours", parseInt(e.target.value) || 0)}
+              value={formData.hours || ""}
+              onChange={(e) => handleInputChange("hours", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.hours ? "border-red-500" : "border-gray-300"
               }`}
@@ -361,8 +370,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.lessonLength}
-              onChange={(e) => handleInputChange("lessonLength", parseInt(e.target.value) || 0)}
+              value={formData.lessonLength || ""}
+              onChange={(e) => handleInputChange("lessonLength", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.lessonLength ? "border-red-500" : "border-gray-300"
               }`}
@@ -377,8 +386,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.maxStudents}
-              onChange={(e) => handleInputChange("maxStudents", parseInt(e.target.value) || 0)}
+              value={formData.maxStudents || ""}
+              onChange={(e) => handleInputChange("maxStudents", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.maxStudents ? "border-red-500" : "border-gray-300"
               }`}
