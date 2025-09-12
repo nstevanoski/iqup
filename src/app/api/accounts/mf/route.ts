@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const hqId = searchParams.get('hqId')
+    const search = searchParams.get('search')
 
     let whereClause: any = {}
     
@@ -20,6 +21,16 @@ export async function GET(request: NextRequest) {
     } else if (hqId) {
       // HQ users can filter by HQ
       whereClause.hqId = parseInt(hqId)
+    }
+
+    // Add search functionality
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search } },
+        { code: { contains: search } },
+        { city: { contains: search } },
+        { state: { contains: search } }
+      ]
     }
 
     const mfs = await prisma.masterFranchisee.findMany({

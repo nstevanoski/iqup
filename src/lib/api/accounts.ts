@@ -67,10 +67,13 @@ class AccountsAPI {
     this.token = token;
   }
 
-  async getMFAccounts(hqId?: number): Promise<MFAccountsResponse> {
+  async getMFAccounts(hqId?: number, search?: string): Promise<MFAccountsResponse> {
     const url = new URL(`${this.baseUrl}/mf`, window.location.origin);
     if (hqId) {
       url.searchParams.set('hqId', hqId.toString());
+    }
+    if (search) {
+      url.searchParams.set('search', search);
     }
 
     const response = await fetch(url.toString(), {
@@ -90,4 +93,4 @@ class AccountsAPI {
 export const accountsAPI = new AccountsAPI();
 
 // Export individual functions for convenience
-export const getMFAccounts = (hqId?: number) => accountsAPI.getMFAccounts(hqId);
+export const getMFAccounts = (hqId?: number, search?: string) => accountsAPI.getMFAccounts(hqId, search);

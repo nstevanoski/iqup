@@ -75,43 +75,56 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
   const [loadingMFs, setLoadingMFs] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAllSelected, setShowAllSelected] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Fetch MF accounts with search functionality
+  const fetchMFAccounts = async (search?: string) => {
+    if (user?.role !== "HQ") return;
+    
+    try {
+      setLoadingMFs(true);
+      const response = await getMFAccounts(undefined, search);
+      if (response.success) {
+        setMfAccounts(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching MF accounts:', error);
+    } finally {
+      setLoadingMFs(false);
+    }
+  };
 
   // Fetch MF accounts when component mounts
   useEffect(() => {
-    const fetchMFAccounts = async () => {
-      if (user?.role !== "HQ") return;
-      
-      try {
-        setLoadingMFs(true);
-        const response = await getMFAccounts();
-        if (response.success) {
-          setMfAccounts(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching MF accounts:', error);
-      } finally {
-        setLoadingMFs(false);
-      }
-    };
-
     fetchMFAccounts();
   }, [user?.role]);
 
-  // Filter MF accounts based on search term
-  const filteredMFAccounts = mfAccounts.filter(mf => 
-    mf.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    mf.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    mf.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    mf.state?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
 
-  // Get selected and unselected accounts
+    const timeout = setTimeout(() => {
+      fetchMFAccounts(searchTerm || undefined);
+    }, 300); // 300ms debounce
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [searchTerm, user?.role]);
+
+  // Get selected and unselected accounts (no frontend filtering needed since backend handles search)
   const selectedMFs = mfAccounts.filter(mf => formData.sharedWithMFs.includes(mf.id.toString()));
-  const unselectedMFs = filteredMFAccounts.filter(mf => !formData.sharedWithMFs.includes(mf.id.toString()));
+  const unselectedMFs = mfAccounts.filter(mf => !formData.sharedWithMFs.includes(mf.id.toString()));
 
   // Bulk selection handlers
   const handleSelectAll = () => {
-    const allFilteredIds = filteredMFAccounts.map(mf => mf.id.toString());
+    const allFilteredIds = mfAccounts.map(mf => mf.id.toString());
     setFormData(prev => {
       const combinedIds = [...prev.sharedWithMFs, ...allFilteredIds];
       const uniqueIds = Array.from(new Set(combinedIds));
@@ -123,7 +136,7 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
   };
 
   const handleSelectNone = () => {
-    const filteredIds = filteredMFAccounts.map(mf => mf.id.toString());
+    const filteredIds = mfAccounts.map(mf => mf.id.toString());
     setFormData(prev => ({
       ...prev,
       sharedWithMFs: prev.sharedWithMFs.filter(id => !filteredIds.includes(id))
@@ -402,102 +415,139 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
                 Share with Master Franchisees *
               </label>
               
-              {loadingMFs ? (
-                <div className="text-sm text-gray-500">Loading MF accounts...</div>
-              ) : mfAccounts.length === 0 ? (
-                <div className="text-sm text-gray-500">No MF accounts available</div>
-              ) : (
-                <div className="border border-gray-200 rounded-lg">
-                  {/* Summary and Bulk Actions */}
-                  <div className="p-4 border-b border-gray-200 bg-gray-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">{selectedMFs.length}</span> of <span className="font-medium">{mfAccounts.length}</span> MF accounts selected
-                        {searchTerm && (
-                          <span className="ml-2 text-blue-600">
-                            ({filteredMFAccounts.length} match search)
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={handleSelectAllMFs}
-                          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                        >
-                          Select All
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleClearAll}
-                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                        >
-                          Clear All
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Search */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search by name, code, city, or state..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </div>
+              <div className="border border-gray-200 rounded-lg">
+                {loadingMFs ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="flex items-center space-x-2 text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm">
+                        {searchTerm ? 'Searching MF accounts...' : 'Loading MF accounts...'}
+                      </span>
                     </div>
                   </div>
-
-                  {/* Filter Actions */}
-                  {searchTerm && (
-                    <div className="p-3 border-b border-gray-200 bg-blue-50">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-blue-700">
-                          Filtered results: {filteredMFAccounts.length} accounts
-                        </span>
-                        <div className="flex space-x-2">
-                          <button
-                            type="button"
-                            onClick={handleSelectAll}
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                          >
-                            Select Filtered
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSelectNone}
-                            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                          >
-                            Deselect Filtered
-                          </button>
+                ) : (
+                  <>
+                    {/* Summary and Bulk Actions */}
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{selectedMFs.length}</span> of <span className="font-medium">{mfAccounts.length}</span> MF accounts selected
+                          {searchTerm && (
+                            <span className="ml-2 text-blue-600">
+                              ({mfAccounts.length} match search)
+                            </span>
+                          )}
                         </div>
+                        {mfAccounts.length > 0 && (
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={handleSelectAllMFs}
+                              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleClearAll}
+                              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Search */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search by name, code, city, or state..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 pl-8 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          disabled={loadingMFs}
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          {loadingMFs ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          ) : (
+                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          )}
+                        </div>
+                        {searchTerm && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchTerm("")}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            disabled={loadingMFs}
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
-                  )}
 
-                  {/* Selected Accounts Summary */}
-                  {selectedMFs.length > 0 && (
-                    <div className="p-3 border-b border-gray-200 bg-green-50">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-green-700 font-medium">
-                          Selected: {selectedMFs.length} accounts
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowAllSelected(!showAllSelected)}
-                          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                        >
-                          {showAllSelected ? 'Hide' : 'Show'} Selected
-                        </button>
+                    {/* Filter Actions */}
+                    {searchTerm && (
+                      <div className="p-3 border-b border-gray-200 bg-blue-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-blue-700">
+                              Search results: {mfAccounts.length} accounts
+                            </span>
+                            {mfAccounts.length === 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSearchTerm("")}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                              >
+                                Clear search
+                              </button>
+                            )}
+                          </div>
+                          {mfAccounts.length > 0 && (
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={handleSelectAll}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                              >
+                                Select All Results
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSelectNone}
+                                className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                              >
+                                Deselect All Results
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      {showAllSelected && (
-                        <div className="mt-2 max-h-32 overflow-y-auto">
+                    )}
+
+                    {/* Selected Accounts Summary */}
+                    {selectedMFs.length > 0 && (
+                      <div className="p-3 border-b border-gray-200 bg-green-50">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-green-700">
+                            {selectedMFs.length} account{selectedMFs.length !== 1 ? 's' : ''} selected
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleClearAll}
+                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                          >
+                            Clear Selection
+                          </button>
+                        </div>
+                        <div className="mt-2">
                           <div className="flex flex-wrap gap-1">
                             {selectedMFs.map(mf => (
                               <span
@@ -516,68 +566,88 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
                             ))}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* MF Accounts List */}
-                  <div className="max-h-64 overflow-y-auto">
-                    {filteredMFAccounts.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500 text-sm">
-                        {searchTerm ? 'No accounts match your search' : 'No MF accounts available'}
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-200">
-                        {filteredMFAccounts.map(mf => (
-                          <label key={mf.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.sharedWithMFs.includes(mf.id.toString())}
-                              onChange={(e) => handleScopeChange(mf.id.toString(), e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <div className="ml-3 flex-1">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">{mf.name}</div>
-                                  <div className="text-xs text-gray-500">
-                                    Code: {mf.code}
-                                    {mf.city && mf.state && ` • ${mf.city}, ${mf.state}`}
-                                  </div>
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {mf._count.learningCenters} LCs
-                                </div>
-                              </div>
-                            </div>
-                          </label>
-                        ))}
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
+
+                    {/* MF Accounts List or Empty State */}
+                    {mfAccounts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <div className="text-gray-400 mb-2">
+                          <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                          {searchTerm ? (
+                            <>
+                              <p className="font-medium mb-1">No MF accounts found</p>
+                              <p className="text-xs">Try adjusting your search terms or clear the search to see all accounts</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-medium mb-1">No MF accounts available</p>
+                              <p className="text-xs">Contact your administrator to add MF accounts</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto">
+                        <div className="divide-y divide-gray-200">
+                          {mfAccounts.map(mf => (
+                            <label key={mf.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.sharedWithMFs.includes(mf.id.toString())}
+                                onChange={(e) => handleScopeChange(mf.id.toString(), e.target.checked)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="ml-3 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">{mf.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {mf.code} • {mf.city}, {mf.state}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-xs text-gray-400">
+                                      {mf._count.users} users
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                      {mf._count.learningCenters} LCs
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
               
               {errors.sharedWithMFs && <p className="text-red-500 text-sm mt-1">{errors.sharedWithMFs}</p>}
             </div>
           )}
         </div>
       </div>
-
+      
       {/* Form Actions */}
-      <div className="flex justify-end space-x-4 pt-6">
+      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Saving..." : program ? "Update Program" : "Create Program"}
         </button>
