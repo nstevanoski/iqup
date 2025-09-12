@@ -9,6 +9,7 @@ import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program } from "@/types";
 import { ArrowLeft, Edit } from "lucide-react";
 import { getProgram, programsAPI } from "@/lib/api/programs";
+import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
 
 interface ProgramDetailPageProps {
   params: Promise<{
@@ -26,6 +27,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
 
   useEffect(() => {
     const fetchProgram = async () => {
@@ -59,6 +61,24 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
 
     fetchProgram();
   }, [resolvedParams.id, user, selectedScope, token]);
+
+  // Fetch MF accounts for HQ users
+  useEffect(() => {
+    const fetchMFAccounts = async () => {
+      if (user?.role !== "HQ" || !token) return;
+      
+      try {
+        const response = await getMFAccounts();
+        if (response.success) {
+          setMfAccounts(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching MF accounts:', error);
+      }
+    };
+
+    fetchMFAccounts();
+  }, [user?.role, token]);
 
   const handleEdit = () => {
     router.push(`/programs/${resolvedParams.id}/edit`);
@@ -140,7 +160,7 @@ export default function ProgramDetailPage({ params }: ProgramDetailPageProps) {
         </div>
 
         {/* Program Detail */}
-        <ProgramDetail program={program} onEdit={undefined} />
+        <ProgramDetail program={program} onEdit={undefined} mfAccounts={mfAccounts} />
       </div>
     </DashboardLayout>
   );

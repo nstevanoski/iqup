@@ -9,19 +9,20 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen } from "lucide-react";
 import { getPrograms, deleteProgram, programsAPI } from "@/lib/api/programs";
+import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
 
 
 // Helper function to get MF scope names
-const getMFScopeNames = (scopeIds: string[]): string[] => {
-  const scopeMap: Record<string, string> = {
-    "mf_region_1": "Region 1",
-    "mf_region_2": "Region 2",
-  };
-  return scopeIds.map(id => scopeMap[id] || id);
+const getMFScopeNames = (scopeIds: string[], mfAccounts: MFAccount[]): string[] => {
+  const mfMap: Record<string, string> = {};
+  mfAccounts.forEach(mf => {
+    mfMap[mf.id.toString()] = mf.name;
+  });
+  return scopeIds.map(id => mfMap[id] || `MF-${id}`);
 };
 
 // Column definitions
-const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Program) => void): Column<Program>[] => {
+const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Program) => void, mfAccounts: MFAccount[]): Column<Program>[] => {
   const baseColumns: Column<Program>[] = [
     {
       key: "name",
@@ -133,7 +134,7 @@ const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Progr
           </span>
           {value === "shared" && row.sharedWithMFs.length > 0 && (
             <div className="text-xs text-gray-500">
-              Shared with: {getMFScopeNames(row.sharedWithMFs).join(", ")}
+              Shared with: {getMFScopeNames(row.sharedWithMFs, mfAccounts).join(", ")}
             </div>
           )}
         </div>
@@ -152,6 +153,7 @@ export default function ProgramsPage() {
   const [data, setData] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
 
   // Fetch programs from API
   useEffect(() => {
@@ -188,8 +190,26 @@ export default function ProgramsPage() {
     fetchPrograms();
   }, [user, selectedScope, token]);
 
+  // Fetch MF accounts for HQ users
+  useEffect(() => {
+    const fetchMFAccounts = async () => {
+      if (user?.role !== "HQ" || !token) return;
+      
+      try {
+        const response = await getMFAccounts();
+        if (response.success) {
+          setMfAccounts(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching MF accounts:', error);
+      }
+    };
+
+    fetchMFAccounts();
+  }, [user?.role, token]);
+
   const canEdit = user?.role === "HQ";
-  const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`));
+  const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`), mfAccounts);
 
   const handleRowAction = async (action: string, row: Program) => {
     console.log(`${action} action for program:`, row);

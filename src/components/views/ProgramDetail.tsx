@@ -3,13 +3,15 @@
 import { Program } from "@/types";
 import { useUser } from "@/store/auth";
 import { Clock, Users, DollarSign, Globe, Share2, Lock, Calendar, Timer } from "lucide-react";
+import { MFAccount } from "@/lib/api/accounts";
 
 interface ProgramDetailProps {
   program: Program;
   onEdit?: () => void;
+  mfAccounts?: MFAccount[];
 }
 
-export function ProgramDetail({ program, onEdit }: ProgramDetailProps) {
+export function ProgramDetail({ program, onEdit, mfAccounts = [] }: ProgramDetailProps) {
   const user = useUser();
   const canEdit = user?.role === "HQ";
 
@@ -38,12 +40,11 @@ export function ProgramDetail({ program, onEdit }: ProgramDetailProps) {
   const VisibilityIcon = visibilityIcons[program.visibility];
 
   const getMFScopeNames = (scopeIds: string[]): string[] => {
-    const scopeMap: Record<string, string> = {
-      "mf_region_1": "Region 1",
-      "mf_region_2": "Region 2",
-      "mf_region_3": "Region 3",
-    };
-    return scopeIds.map(id => scopeMap[id] || id);
+    const mfMap: Record<string, string> = {};
+    mfAccounts.forEach(mf => {
+      mfMap[mf.id.toString()] = mf.name;
+    });
+    return scopeIds.map(id => mfMap[id] || `MF-${id}`);
   };
 
   return (

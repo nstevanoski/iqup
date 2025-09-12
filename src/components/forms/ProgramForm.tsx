@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Program } from "@/types";
 import { useUser, useSelectedScope } from "@/store/auth";
+import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
 
 interface ProgramFormProps {
   program?: Program;
@@ -46,11 +47,7 @@ const programKinds = [
   { value: "stem_camp", label: "STEM Camp" }
 ];
 
-const availableScopes = [
-  { id: "mf_region_1", name: "Region 1" },
-  { id: "mf_region_2", name: "Region 2" },
-  { id: "mf_region_3", name: "Region 3" },
-];
+// This will be populated from the API
 
 export function ProgramForm({ program, onSubmit, onCancel, loading = false }: ProgramFormProps) {
   const user = useUser();
@@ -74,6 +71,79 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
+  const [loadingMFs, setLoadingMFs] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAllSelected, setShowAllSelected] = useState(false);
+
+  // Fetch MF accounts when component mounts
+  useEffect(() => {
+    const fetchMFAccounts = async () => {
+      if (user?.role !== "HQ") return;
+      
+      try {
+        setLoadingMFs(true);
+        const response = await getMFAccounts();
+        if (response.success) {
+          setMfAccounts(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching MF accounts:', error);
+      } finally {
+        setLoadingMFs(false);
+      }
+    };
+
+    fetchMFAccounts();
+  }, [user?.role]);
+
+  // Filter MF accounts based on search term
+  const filteredMFAccounts = mfAccounts.filter(mf => 
+    mf.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    mf.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    mf.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    mf.state?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get selected and unselected accounts
+  const selectedMFs = mfAccounts.filter(mf => formData.sharedWithMFs.includes(mf.id.toString()));
+  const unselectedMFs = filteredMFAccounts.filter(mf => !formData.sharedWithMFs.includes(mf.id.toString()));
+
+  // Bulk selection handlers
+  const handleSelectAll = () => {
+    const allFilteredIds = filteredMFAccounts.map(mf => mf.id.toString());
+    setFormData(prev => {
+      const combinedIds = [...prev.sharedWithMFs, ...allFilteredIds];
+      const uniqueIds = Array.from(new Set(combinedIds));
+      return {
+        ...prev,
+        sharedWithMFs: uniqueIds
+      };
+    });
+  };
+
+  const handleSelectNone = () => {
+    const filteredIds = filteredMFAccounts.map(mf => mf.id.toString());
+    setFormData(prev => ({
+      ...prev,
+      sharedWithMFs: prev.sharedWithMFs.filter(id => !filteredIds.includes(id))
+    }));
+  };
+
+  const handleSelectAllMFs = () => {
+    const allIds = mfAccounts.map(mf => mf.id.toString());
+    setFormData(prev => ({
+      ...prev,
+      sharedWithMFs: allIds
+    }));
+  };
+
+  const handleClearAll = () => {
+    setFormData(prev => ({
+      ...prev,
+      sharedWithMFs: []
+    }));
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -329,21 +399,165 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
           {formData.visibility === "shared" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Share with scopes *
+                Share with Master Franchisees *
               </label>
-              <div className="space-y-2">
-                {availableScopes.map(scope => (
-                  <label key={scope.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.sharedWithMFs.includes(scope.id)}
-                      onChange={(e) => handleScopeChange(scope.id, e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">{scope.name}</span>
-                  </label>
-                ))}
-              </div>
+              
+              {loadingMFs ? (
+                <div className="text-sm text-gray-500">Loading MF accounts...</div>
+              ) : mfAccounts.length === 0 ? (
+                <div className="text-sm text-gray-500">No MF accounts available</div>
+              ) : (
+                <div className="border border-gray-200 rounded-lg">
+                  {/* Summary and Bulk Actions */}
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{selectedMFs.length}</span> of <span className="font-medium">{mfAccounts.length}</span> MF accounts selected
+                        {searchTerm && (
+                          <span className="ml-2 text-blue-600">
+                            ({filteredMFAccounts.length} match search)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllMFs}
+                          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAll}
+                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Search */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search by name, code, city, or state..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter Actions */}
+                  {searchTerm && (
+                    <div className="p-3 border-b border-gray-200 bg-blue-50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-blue-700">
+                          Filtered results: {filteredMFAccounts.length} accounts
+                        </span>
+                        <div className="flex space-x-2">
+                          <button
+                            type="button"
+                            onClick={handleSelectAll}
+                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            Select Filtered
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSelectNone}
+                            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                          >
+                            Deselect Filtered
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Accounts Summary */}
+                  {selectedMFs.length > 0 && (
+                    <div className="p-3 border-b border-gray-200 bg-green-50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-green-700 font-medium">
+                          Selected: {selectedMFs.length} accounts
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAllSelected(!showAllSelected)}
+                          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                        >
+                          {showAllSelected ? 'Hide' : 'Show'} Selected
+                        </button>
+                      </div>
+                      {showAllSelected && (
+                        <div className="mt-2 max-h-32 overflow-y-auto">
+                          <div className="flex flex-wrap gap-1">
+                            {selectedMFs.map(mf => (
+                              <span
+                                key={mf.id}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                              >
+                                {mf.name}
+                                <button
+                                  type="button"
+                                  onClick={() => handleScopeChange(mf.id.toString(), false)}
+                                  className="ml-1 text-green-600 hover:text-green-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* MF Accounts List */}
+                  <div className="max-h-64 overflow-y-auto">
+                    {filteredMFAccounts.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 text-sm">
+                        {searchTerm ? 'No accounts match your search' : 'No MF accounts available'}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-200">
+                        {filteredMFAccounts.map(mf => (
+                          <label key={mf.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.sharedWithMFs.includes(mf.id.toString())}
+                              onChange={(e) => handleScopeChange(mf.id.toString(), e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <div className="ml-3 flex-1">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{mf.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    Code: {mf.code}
+                                    {mf.city && mf.state && ` • ${mf.city}, ${mf.state}`}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {mf._count.learningCenters} LCs
+                                </div>
+                              </div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {errors.sharedWithMFs && <p className="text-red-500 text-sm mt-1">{errors.sharedWithMFs}</p>}
             </div>
           )}
