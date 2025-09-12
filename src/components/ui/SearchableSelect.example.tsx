@@ -1,5 +1,6 @@
 // Example usage of SearchableSelect component
 
+import React, { useState } from 'react';
 import { SearchableSelect, SearchableSelectOption } from './SearchableSelect';
 
 // Example 1: Simple static options

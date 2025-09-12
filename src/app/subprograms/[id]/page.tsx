@@ -35,11 +35,7 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
         setLoading(true);
         setError(null);
         
-        const response = await getSubProgram(
-          resolvedParams.id,
-          user.role,
-          selectedScope.id
-        );
+        const response = await getSubProgram(resolvedParams.id);
         
         if (response.success) {
           setSubProgram(response.data);

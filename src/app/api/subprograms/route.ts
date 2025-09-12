@@ -127,40 +127,66 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply search filter
-    if (search) {
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        {
-          OR: [
-            { name: { startsWith: search } },
-            { description: { startsWith: search } }
-          ]
-        }
-      ]
+    if (search && search.trim() !== '') {
+      const searchFilter = {
+        OR: [
+          { name: { contains: search } },
+          { description: { contains: search } }
+        ]
+      };
+      
+      if (whereClause.AND) {
+        whereClause.AND.push(searchFilter);
+      } else if (whereClause.OR) {
+        whereClause.AND = [whereClause, searchFilter];
+        delete whereClause.OR;
+      } else {
+        Object.assign(whereClause, searchFilter);
+      }
     }
 
     // Apply status filter
-    if (status) {
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        { status: status.toUpperCase() }
-      ]
+    if (status && status.trim() !== '') {
+      const validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT']
+      const upperStatus = status.toUpperCase()
+      if (validStatuses.includes(upperStatus)) {
+        if (whereClause.AND) {
+          whereClause.AND.push({ status: upperStatus });
+        } else if (whereClause.OR) {
+          whereClause.AND = [whereClause, { status: upperStatus }];
+          delete whereClause.OR;
+        } else {
+          whereClause.status = upperStatus;
+        }
+      }
     }
 
     // Apply program filter
-    if (programId) {
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        { programId: parseInt(programId) }
-      ]
+    if (programId && programId.trim() !== '') {
+      if (whereClause.AND) {
+        whereClause.AND.push({ programId: parseInt(programId) });
+      } else if (whereClause.OR) {
+        whereClause.AND = [whereClause, { programId: parseInt(programId) }];
+        delete whereClause.OR;
+      } else {
+        whereClause.programId = parseInt(programId);
+      }
     }
 
     // Apply pricing model filter
-    if (pricingModel) {
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        { pricingModel: pricingModel.toUpperCase() }
-      ]
+    if (pricingModel && pricingModel.trim() !== '') {
+      const validPricingModels = ['PER_COURSE', 'PER_MONTH', 'PER_SESSION', 'SUBSCRIPTION', 'PROGRAM_PRICE', 'ONE_TIME', 'INSTALLMENTS']
+      const upperPricingModel = pricingModel.toUpperCase()
+      if (validPricingModels.includes(upperPricingModel)) {
+        if (whereClause.AND) {
+          whereClause.AND.push({ pricingModel: upperPricingModel });
+        } else if (whereClause.OR) {
+          whereClause.AND = [whereClause, { pricingModel: upperPricingModel }];
+          delete whereClause.OR;
+        } else {
+          whereClause.pricingModel = upperPricingModel;
+        }
+      }
     }
 
     // Calculate pagination

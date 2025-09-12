@@ -5,7 +5,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { SubProgram } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, CreditCard, Calendar } from "lucide-react";
 import { getSubPrograms, deleteSubProgram } from "@/lib/api/subprograms";
@@ -168,38 +168,213 @@ export default function SubProgramsPage() {
   const [data, setData] = useState<SubProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Backend search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  // Fetch data from API
-  useEffect(() => {
-    const fetchSubPrograms = async () => {
-      if (!user || !selectedScope) return;
+  // Function to fetch subprograms with current parameters
+  const fetchSubPrograms = useCallback(async (params: {
+    page?: number;
+    search?: string;
+    status?: string;
+    programId?: string;
+    pricingModel?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    isSearch?: boolean;
+  } = {}) => {
+    if (!user || !selectedScope) return;
 
-      try {
+    try {
+      if (params.isSearch) {
+        setSearchLoading(true);
+      } else {
         setLoading(true);
-        setError(null);
+      }
+      setError(null);
 
-        const response = await getSubPrograms({
-          userRole: user.role,
-          userScope: selectedScope.id,
-          page: 1,
-          limit: 100, // Get all for now, can implement pagination later
-        });
+      const response = await getSubPrograms({
+        page: params.page || currentPage,
+        limit: 10, // Use pageSize from DataTable
+        search: params.search || searchTerm,
+        status: params.status || filters.status || '',
+        programId: params.programId || filters.programId || '',
+        pricingModel: params.pricingModel || filters.pricingModel || '',
+        sortBy: params.sortBy || sortBy,
+        sortOrder: params.sortOrder || sortOrder,
+      });
 
-        if (response.success) {
-          setData(response.data.data);
-        } else {
-          setError('Failed to fetch subprograms');
-        }
-      } catch (err) {
-        console.error('Error fetching subprograms:', err);
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
         setError('Failed to fetch subprograms');
-      } finally {
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      if (params.isSearch) {
+        setSearchLoading(false);
+      } else {
         setLoading(false);
       }
-    };
-
-    fetchSubPrograms();
+    }
   }, [user, selectedScope]);
+
+  // Initial fetch - only when user or selectedScope changes
+  useEffect(() => {
+    fetchSubPrograms();
+  }, [user, selectedScope, fetchSubPrograms]);
+
+  // Backend search handlers
+  const handleSearch = useCallback(async (term: string) => {
+    if (!user || !selectedScope) return;
+    
+    setSearchTerm(term);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      const response = await getSubPrograms({
+        page: 1,
+        limit: 10,
+        search: term,
+        status: filters.status || '',
+        programId: filters.programId || '',
+        pricingModel: filters.pricingModel || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, filters, sortBy, sortOrder]);
+
+  const handleFilter = useCallback(async (newFilters: Record<string, string>) => {
+    if (!user || !selectedScope) return;
+    
+    setFilters(newFilters);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      const response = await getSubPrograms({
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: newFilters.status || '',
+        programId: newFilters.programId || '',
+        pricingModel: newFilters.pricingModel || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, searchTerm, sortBy, sortOrder]);
+
+  const handleSort = useCallback(async (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    if (!user || !selectedScope) return;
+    
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      const response = await getSubPrograms({
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        programId: filters.programId || '',
+        pricingModel: filters.pricingModel || '',
+        sortBy: newSortBy,
+        sortOrder: newSortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, searchTerm, filters]);
+
+  const handlePageChange = useCallback(async (page: number) => {
+    if (!user || !selectedScope) return;
+    
+    setCurrentPage(page);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      const response = await getSubPrograms({
+        page,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        programId: filters.programId || '',
+        pricingModel: filters.pricingModel || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, searchTerm, filters, sortBy, sortOrder]);
 
   const canEdit = user?.role === "MF";
   const canView = user?.role === "MF" || user?.role === "LC" || user?.role === "HQ";
@@ -392,6 +567,17 @@ export default function SubProgramsPage() {
             onExport={handleExport}
             loading={loading}
             emptyMessage="No subprograms found"
+            // Backend search props
+            backendSearch={true}
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            onSort={handleSort}
+            onPageChange={handlePageChange}
+            searchLoading={searchLoading}
+            // Backend pagination info
+            totalItems={totalItems}
+            totalPages={totalPages}
+            currentPage={currentPage}
           />
         </div>
       </div>
