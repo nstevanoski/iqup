@@ -9,8 +9,6 @@ export interface SubProgramsListParams {
   pricingModel?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
-  userRole?: 'HQ' | 'MF' | 'LC' | 'TT';
-  userScope?: string;
 }
 
 export interface SubProgramsListResponse {
@@ -137,12 +135,8 @@ class SubProgramsAPI {
     return this.handleResponse<SubProgramsListResponse>(response);
   }
 
-  async getSubProgram(id: string, userRole?: string, userScope?: string): Promise<SubProgramResponse> {
-    const searchParams = new URLSearchParams();
-    if (userRole) searchParams.append('userRole', userRole);
-    if (userScope) searchParams.append('userScope', userScope);
-
-    const url = `${this.baseUrl}/${id}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  async getSubProgram(id: string): Promise<SubProgramResponse> {
+    const url = `${this.baseUrl}/${id}`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -192,7 +186,7 @@ export const subProgramsAPI = new SubProgramsAPI();
 
 // Export individual functions for convenience
 export const getSubPrograms = (params?: SubProgramsListParams) => subProgramsAPI.getSubPrograms(params);
-export const getSubProgram = (id: string, userRole?: string, userScope?: string) => subProgramsAPI.getSubProgram(id, userRole, userScope);
+export const getSubProgram = (id: string) => subProgramsAPI.getSubProgram(id);
 export const createSubProgram = (data: CreateSubProgramData) => subProgramsAPI.createSubProgram(data);
 export const updateSubProgram = (id: string, data: UpdateSubProgramData) => subProgramsAPI.updateSubProgram(id, data);
 export const deleteSubProgram = (id: string) => subProgramsAPI.deleteSubProgram(id);

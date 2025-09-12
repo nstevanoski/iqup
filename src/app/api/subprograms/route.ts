@@ -20,41 +20,42 @@ export async function GET(request: NextRequest) {
     const pricingModel = searchParams.get('pricingModel') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
-    const userRole = searchParams.get('userRole') as 'HQ' | 'MF' | 'LC' | 'TT' | null
-    const userScope = searchParams.get('userScope') || ''
-
     // Build where clause
     let whereClause: any = {}
 
-    // Apply role-based filtering
-    if (userRole === 'MF' || userRole === 'LC') {
-      // MF can see shared subprograms for their MF scope
-      // LC inherits visibility from its parent MF
+    // Apply role-based filtering based on authenticated user
+    if (!user) {
+      return errorResponse('Authentication required', 401)
+    }
+
+    // Extract role prefix (HQ, MF, LC, TT)
+    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC' | 'TT'
+    
+    // HQ can see all subprograms (no filtering)
+    if (userRolePrefix === 'HQ') {
+      // No additional filtering needed - HQ has full access
+    }
+    // MF users can see subprograms they created or that are shared with them
+    else if (userRolePrefix === 'MF') {
       const allowedMfIds: number[] = []
       const allowedLcIds: number[] = []
       
-      if (userRole === 'MF' && userScope) {
-        allowedMfIds.push(parseInt(userScope))
+      if (user.mfId) {
+        allowedMfIds.push(user.mfId)
         // Get all LCs under this MF
         const lcs = await prisma.learningCenter.findMany({
-          where: { mfId: parseInt(userScope) },
+          where: { mfId: user.mfId },
           select: { id: true }
         })
         allowedLcIds.push(...lcs.map((lc: any) => lc.id))
-      } else if (userRole === 'LC' && userScope) {
-        // Get parent MF ID for LC scope
-        const lc = await prisma.learningCenter.findUnique({
-          where: { id: parseInt(userScope) },
-          select: { mfId: true }
-        })
-        if (lc) {
-          allowedMfIds.push(lc.mfId)
-          allowedLcIds.push(parseInt(userScope))
-        }
       }
 
       whereClause.OR = [
+        // Subprograms created by this user
+        { createdBy: user.id },
+        // Public subprograms
         { visibility: 'PUBLIC' },
+        // Shared subprograms
         {
           AND: [
             { visibility: 'SHARED' },
@@ -77,11 +78,53 @@ export async function GET(request: NextRequest) {
           ]
         }
       ]
-    } else if (userRole === 'TT') {
-      // TT can only see public subprograms
+    }
+    // LC users can see subprograms shared with their LC or their parent MF
+    else if (userRolePrefix === 'LC') {
+      const allowedMfIds: number[] = []
+      const allowedLcIds: number[] = []
+      
+      if (user.mfId) {
+        allowedMfIds.push(user.mfId)
+      }
+      if (user.lcId) {
+        allowedLcIds.push(user.lcId)
+      }
+
+      whereClause.OR = [
+        // Public subprograms
+        { visibility: 'PUBLIC' },
+        // Shared subprograms
+        {
+          AND: [
+            { visibility: 'SHARED' },
+            {
+              OR: [
+                {
+                  sharedWithMFs: {
+                    path: '$',
+                    array_contains: allowedMfIds
+                  }
+                },
+                {
+                  sharedWithLCs: {
+                    path: '$',
+                    array_contains: allowedLcIds
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+    // TT users can only see public subprograms
+    else if (userRolePrefix === 'TT') {
       whereClause.visibility = 'PUBLIC'
     }
-    // HQ can see all subprograms (no filtering)
+    else {
+      return errorResponse('Invalid user role', 403)
+    }
 
     // Apply search filter
     if (search) {

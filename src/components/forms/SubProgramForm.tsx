@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { SubProgram, Program } from "@/types";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { getPrograms } from "@/lib/api/programs";
+import { getLearningCenters, LearningCenter } from "@/lib/api/learning-centers";
 import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
 
 interface SubProgramFormProps {
@@ -51,18 +52,12 @@ const initialFormData: FormData = {
   pricePerMonth: undefined,
   pricePerSession: undefined,
   sharedWithLCs: [],
-  visibility: "private",
+  visibility: "shared",
 };
 
 // Pricing model selection not needed in UI; all price fields are shown
 
-const availableLCScopes = [
-  { id: "lc_center_nyc", name: "New York Learning Center" },
-  { id: "lc_center_la", name: "Los Angeles Learning Center" },
-  { id: "lc_center_chicago", name: "Chicago Learning Center" },
-  { id: "lc_center_boston", name: "Boston Learning Center" },
-  { id: "lc_center_miami", name: "Miami Learning Center" },
-];
+// Learning centers will be loaded dynamically based on user role and scope
 
 export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loading = false }: SubProgramFormProps) {
   const user = useUser();
@@ -91,6 +86,10 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [programOptions, setProgramOptions] = useState<SearchableSelectOption[]>([]);
   const [isLoadingPrograms, setIsLoadingPrograms] = useState(false);
+  const [learningCenters, setLearningCenters] = useState<LearningCenter[]>([]);
+  const [isLoadingLCs, setIsLoadingLCs] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAllSelected, setShowAllSelected] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -110,10 +109,10 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     if (!formData.coursePrice || formData.coursePrice <= 0) {
       newErrors.coursePrice = "Course price is required";
     }
-    if (!formData.pricePerMonth || formData.pricePerMonth <= 0) {
+    if (formData.pricingModel === "per_month" && (!formData.pricePerMonth || formData.pricePerMonth <= 0)) {
       newErrors.pricePerMonth = "Price per month is required";
     }
-    if (!formData.pricePerSession || formData.pricePerSession <= 0) {
+    if (formData.pricingModel === "per_session" && (!formData.pricePerSession || formData.pricePerSession <= 0)) {
       newErrors.pricePerSession = "Price per session is required";
     }
     if (!formData.numberOfPayments || formData.numberOfPayments <= 0) {
@@ -175,6 +174,33 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     loadInitialPrograms();
   }, [user, selectedScope]);
 
+  // Load learning centers for MF users
+  useEffect(() => {
+    const loadLearningCenters = async () => {
+      if (!user || !selectedScope || user.role !== 'MF') return;
+      
+      try {
+        setIsLoadingLCs(true);
+        
+        const response = await getLearningCenters({
+          userRole: user.role,
+          userScope: selectedScope.id,
+          limit: 100
+        });
+
+        if (response.success) {
+          setLearningCenters(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error loading learning centers:', error);
+      } finally {
+        setIsLoadingLCs(false);
+      }
+    };
+
+    loadLearningCenters();
+  }, [user, selectedScope]);
+
   // Search function for SearchableSelect
   const handleProgramSearch = useCallback(
     async (searchTerm: string): Promise<SearchableSelectOption[]> => {
@@ -234,6 +260,44 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
         sharedWithLCs: prev.sharedWithLCs.filter(id => id !== scopeId),
       }));
     }
+  };
+
+  // Helper functions for advanced UI
+  const selectedLCs = learningCenters.filter(lc => formData.sharedWithLCs.includes(lc.id));
+  const filteredLCs = learningCenters.filter(lc => 
+    !searchTerm || 
+    lc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lc.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lc.state.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lc.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelectAllLCs = () => {
+    setFormData(prev => ({
+      ...prev,
+      sharedWithLCs: learningCenters.map(lc => lc.id),
+    }));
+  };
+
+  const handleClearAll = () => {
+    setFormData(prev => ({
+      ...prev,
+      sharedWithLCs: [],
+    }));
+  };
+
+  const handleSelectAll = () => {
+    setFormData(prev => ({
+      ...prev,
+      sharedWithLCs: Array.from(new Set([...prev.sharedWithLCs, ...filteredLCs.map(lc => lc.id)])),
+    }));
+  };
+
+  const handleSelectNone = () => {
+    setFormData(prev => ({
+      ...prev,
+      sharedWithLCs: prev.sharedWithLCs.filter(id => !filteredLCs.some(lc => lc.id === id)),
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -403,7 +467,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price per Month *
+              Price per Month {formData.pricingModel === "per_month" ? "*" : ""}
             </label>
             <input
               type="number"
@@ -421,7 +485,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price per Session *
+              Price per Session {formData.pricingModel === "per_session" ? "*" : ""}
             </label>
             <input
               type="number"
@@ -471,61 +535,183 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
 
       {/* Prerequisites and Learning Objectives not required per latest requirements */}
 
-      {/* Visibility Settings */}
+      {/* Sharing Settings */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Visibility Settings</h3>
-        {user?.role === "HQ" ? (
-          <>
-            <p className="text-sm text-gray-600 mb-4">Share with Regions (MFs)</p>
-            <div className="space-y-3">
-              {[
-                { id: "mf_region_1", name: "Region 1" },
-                { id: "mf_region_2", name: "Region 2" },
-                { id: "mf_region_3", name: "Region 3" },
-              ].map(scope => (
-                <div key={scope.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={scope.id}
-                    checked={(formData as any).sharedWithMFs?.includes(scope.id)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setFormData(prev => ({
-                        ...prev,
-                        // keep also sharedWithLCs in case MF wants to pass further
-                        ...(checked ? { sharedWithMFs: [ ...((prev as any).sharedWithMFs || []), scope.id ] } : { sharedWithMFs: [ ...(((prev as any).sharedWithMFs || []).filter((id: string) => id !== scope.id)) ] }),
-                      }) as any);
-                    }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor={scope.id} className="ml-2 text-sm text-gray-700">
-                    {scope.name}
-                  </label>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sharing Settings</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {user?.role === "HQ" ? "Share with Master Franchisees *" : "Share with Learning Centers *"}
+            </label>
+              
+              {user?.role === "HQ" ? (
+                <div className="text-sm text-gray-500">
+                  HQ can share with MF accounts (implementation needed)
                 </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-gray-600 mb-4">Share with Learning Centers</p>
-            <div className="space-y-3">
-              {availableLCScopes.map(scope => (
-                <div key={scope.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={scope.id}
-                    checked={formData.sharedWithLCs.includes(scope.id)}
-                    onChange={(e) => handleScopeChange(scope.id, e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor={scope.id} className="ml-2 text-sm text-gray-700">
-                    {scope.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+              ) : (
+                <>
+                  {isLoadingLCs ? (
+                    <div className="text-sm text-gray-500">Loading learning centers...</div>
+                  ) : learningCenters.length === 0 ? (
+                    <div className="text-sm text-gray-500">No learning centers available</div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg">
+                      {/* Summary and Bulk Actions */}
+                      <div className="p-4 border-b border-gray-200 bg-gray-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">{selectedLCs.length}</span> of <span className="font-medium">{learningCenters.length}</span> learning centers selected
+                            {searchTerm && (
+                              <span className="ml-2 text-blue-600">
+                                ({filteredLCs.length} match search)
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={handleSelectAllLCs}
+                              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleClearAll}
+                              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Search */}
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search by name, code, city, or state..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filter Actions */}
+                      {searchTerm && (
+                        <div className="p-3 border-b border-gray-200 bg-blue-50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-blue-700">
+                              Filtered results: {filteredLCs.length} centers
+                            </span>
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={handleSelectAll}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                              >
+                                Select Filtered
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSelectNone}
+                                className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                              >
+                                Deselect Filtered
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Selected Centers Summary */}
+                      {selectedLCs.length > 0 && (
+                        <div className="p-3 border-b border-gray-200 bg-green-50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-green-700 font-medium">
+                              Selected: {selectedLCs.length} centers
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowAllSelected(!showAllSelected)}
+                              className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                            >
+                              {showAllSelected ? 'Hide' : 'Show'} Selected
+                            </button>
+                          </div>
+                          {showAllSelected && (
+                            <div className="mt-2 max-h-32 overflow-y-auto">
+                              <div className="flex flex-wrap gap-1">
+                                {selectedLCs.map(lc => (
+                                  <span
+                                    key={lc.id}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                                  >
+                                    {lc.name}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleScopeChange(lc.id, false)}
+                                      className="ml-1 text-green-600 hover:text-green-800"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Learning Centers List */}
+                      <div className="max-h-64 overflow-y-auto">
+                        {filteredLCs.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500 text-sm">
+                            {searchTerm ? 'No centers match your search' : 'No learning centers available'}
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-200">
+                            {filteredLCs.map(lc => (
+                              <label key={lc.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.sharedWithLCs.includes(lc.id)}
+                                  onChange={(e) => handleScopeChange(lc.id, e.target.checked)}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <div className="ml-3 flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">{lc.name}</div>
+                                      <div className="text-xs text-gray-500">
+                                        Code: {lc.code}
+                                        {lc.city && lc.state && ` • ${lc.city}, ${lc.state}`}
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                      {lc.userCount} users
+                                    </div>
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {errors.sharedWithLCs && <p className="text-red-500 text-sm mt-1">{errors.sharedWithLCs}</p>}
+                </>
+              )}
+          </div>
+        </div>
       </div>
 
       {/* Form Actions */}

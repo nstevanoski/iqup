@@ -56,40 +56,75 @@ export async function GET(
       return errorResponse('SubProgram not found', 404)
     }
 
-    // Check access permissions based on user role
-    const userRole = request.nextUrl.searchParams.get('userRole') as 'HQ' | 'MF' | 'LC' | 'TT' | null
-    const userScope = request.nextUrl.searchParams.get('userScope') || ''
+    // Check access permissions based on authenticated user
+    if (!user) {
+      return errorResponse('Authentication required', 401)
+    }
 
-    if (userRole === 'MF' || userRole === 'LC') {
-      let allowed = subProgram.visibility === 'PUBLIC'
-      if (!allowed && subProgram.visibility === 'SHARED') {
-        const allowedMfIds = subProgram.sharedWithMFs as number[] || []
-        const allowedLcIds = subProgram.sharedWithLCs as number[]
-        
-        if (userRole === 'MF' && userScope) {
-          allowed = allowedMfIds.includes(parseInt(userScope))
-        } else if (userRole === 'LC' && userScope) {
-          // Check if LC is in shared list or if parent MF is in shared list
-          allowed = allowedLcIds.includes(parseInt(userScope))
-          if (!allowed) {
-            // Get parent MF ID for LC scope
-            const lc = await prisma.learningCenter.findUnique({
-              where: { id: parseInt(userScope) },
-              select: { mfId: true }
-            })
-            if (lc) {
-              allowed = allowedMfIds.includes(lc.mfId)
-            }
-          }
-        }
+    // Extract role prefix (HQ, MF, LC, TT)
+    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC' | 'TT'
+    
+    // HQ can view all subprograms
+    if (userRolePrefix === 'HQ') {
+      // No additional checks needed - HQ has full access
+    }
+    // MF users can view subprograms they created or that are shared with them
+    else if (userRolePrefix === 'MF') {
+      let allowed = false
+      
+      // Check if MF created this subprogram
+      if (subProgram.createdBy === user.id) {
+        allowed = true
       }
+      // Check if subprogram is public
+      else if (subProgram.visibility === 'PUBLIC') {
+        allowed = true
+      }
+      // Check if subprogram is shared with this MF
+      else if (subProgram.visibility === 'SHARED' && user.mfId) {
+        const allowedMfIds = subProgram.sharedWithMFs as number[] || []
+        allowed = allowedMfIds.includes(user.mfId)
+      }
+      
       if (!allowed) {
         return errorResponse('Access denied', 403)
       }
-    } else if (userRole === 'TT') {
+    }
+    // LC users can view subprograms shared with their LC or their parent MF
+    else if (userRolePrefix === 'LC') {
+      let allowed = false
+      
+      // Check if subprogram is public
+      if (subProgram.visibility === 'PUBLIC') {
+        allowed = true
+      }
+      // Check if subprogram is shared with this LC or its parent MF
+      else if (subProgram.visibility === 'SHARED') {
+        const allowedMfIds = subProgram.sharedWithMFs as number[] || []
+        const allowedLcIds = subProgram.sharedWithLCs as number[] || []
+        
+        // Check if LC is directly shared
+        if (user.lcId && allowedLcIds.includes(user.lcId)) {
+          allowed = true
+        }
+        // Check if parent MF is shared
+        else if (user.mfId && allowedMfIds.includes(user.mfId)) {
+          allowed = true
+        }
+      }
+      
+      if (!allowed) {
+        return errorResponse('Access denied', 403)
+      }
+    }
+    // TT users can only view public subprograms
+    else if (userRolePrefix === 'TT') {
       if (subProgram.visibility !== 'PUBLIC') {
         return errorResponse('Access denied', 403)
       }
+    }
+    else {
+      return errorResponse('Invalid user role', 403)
     }
 
     // Transform the response
@@ -316,15 +351,7 @@ export async function DELETE(
 
     // Check if subprogram exists
     const existingSubProgram = await prisma.subProgram.findUnique({
-      where: { id: subProgramId },
-      include: {
-        _count: {
-          select: {
-            // Add any related models that might prevent deletion
-            // For example, if there are learning groups or enrollments
-          }
-        }
-      }
+      where: { id: subProgramId }
     })
 
     if (!existingSubProgram) {
