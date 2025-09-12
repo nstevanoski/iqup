@@ -90,6 +90,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
   const [isLoadingLCs, setIsLoadingLCs] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAllSelected, setShowAllSelected] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -174,32 +175,53 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     loadInitialPrograms();
   }, [user, selectedScope]);
 
-  // Load learning centers for MF users
-  useEffect(() => {
-    const loadLearningCenters = async () => {
-      if (!user || !selectedScope || user.role !== 'MF') return;
+  // Load learning centers with search functionality
+  const loadLearningCenters = async (search?: string) => {
+    if (!user || !selectedScope || user.role !== 'MF') return;
+    
+    try {
+      setIsLoadingLCs(true);
       
-      try {
-        setIsLoadingLCs(true);
-        
-        const response = await getLearningCenters({
-          userRole: user.role,
-          userScope: selectedScope.id,
-          limit: 100
-        });
+      const response = await getLearningCenters({
+        userRole: user.role,
+        userScope: selectedScope.id,
+        search: search,
+        limit: 100
+      });
 
-        if (response.success) {
-          setLearningCenters(response.data.data);
-        }
-      } catch (error) {
-        console.error('Error loading learning centers:', error);
-      } finally {
-        setIsLoadingLCs(false);
+      if (response.success) {
+        setLearningCenters(response.data.data);
       }
-    };
+    } catch (error) {
+      console.error('Error loading learning centers:', error);
+    } finally {
+      setIsLoadingLCs(false);
+    }
+  };
 
+  // Load learning centers when component mounts
+  useEffect(() => {
     loadLearningCenters();
   }, [user, selectedScope]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      loadLearningCenters(searchTerm || undefined);
+    }, 300); // 300ms debounce
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [searchTerm, user, selectedScope]);
 
   // Search function for SearchableSelect
   const handleProgramSearch = useCallback(
@@ -262,15 +284,8 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
     }
   };
 
-  // Helper functions for advanced UI
+  // Helper functions for advanced UI (no frontend filtering needed since backend handles search)
   const selectedLCs = learningCenters.filter(lc => formData.sharedWithLCs.includes(lc.id));
-  const filteredLCs = learningCenters.filter(lc => 
-    !searchTerm || 
-    lc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lc.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lc.state.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lc.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleSelectAllLCs = () => {
     setFormData(prev => ({
@@ -289,14 +304,14 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
   const handleSelectAll = () => {
     setFormData(prev => ({
       ...prev,
-      sharedWithLCs: Array.from(new Set([...prev.sharedWithLCs, ...filteredLCs.map(lc => lc.id)])),
+      sharedWithLCs: Array.from(new Set([...prev.sharedWithLCs, ...learningCenters.map(lc => lc.id)])),
     }));
   };
 
   const handleSelectNone = () => {
     setFormData(prev => ({
       ...prev,
-      sharedWithLCs: prev.sharedWithLCs.filter(id => !filteredLCs.some(lc => lc.id === id)),
+      sharedWithLCs: prev.sharedWithLCs.filter(id => !learningCenters.some(lc => lc.id === id)),
     }));
   };
 
@@ -551,102 +566,139 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
                 </div>
               ) : (
                 <>
-                  {isLoadingLCs ? (
-                    <div className="text-sm text-gray-500">Loading learning centers...</div>
-                  ) : learningCenters.length === 0 ? (
-                    <div className="text-sm text-gray-500">No learning centers available</div>
-                  ) : (
-                    <div className="border border-gray-200 rounded-lg">
-                      {/* Summary and Bulk Actions */}
-                      <div className="p-4 border-b border-gray-200 bg-gray-50">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">{selectedLCs.length}</span> of <span className="font-medium">{learningCenters.length}</span> learning centers selected
-                            {searchTerm && (
-                              <span className="ml-2 text-blue-600">
-                                ({filteredLCs.length} match search)
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              type="button"
-                              onClick={handleSelectAllLCs}
-                              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                            >
-                              Select All
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleClearAll}
-                              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                            >
-                              Clear All
-                            </button>
-                          </div>
-                        </div>
-                        
-                        {/* Search */}
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Search by name, code, city, or state..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          />
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                          </div>
+                  <div className="border border-gray-200 rounded-lg">
+                    {isLoadingLCs ? (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="flex items-center space-x-2 text-gray-500">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          <span className="text-sm">
+                            {searchTerm ? 'Searching learning centers...' : 'Loading learning centers...'}
+                          </span>
                         </div>
                       </div>
-
-                      {/* Filter Actions */}
-                      {searchTerm && (
-                        <div className="p-3 border-b border-gray-200 bg-blue-50">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-blue-700">
-                              Filtered results: {filteredLCs.length} centers
-                            </span>
-                            <div className="flex space-x-2">
-                              <button
-                                type="button"
-                                onClick={handleSelectAll}
-                                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                              >
-                                Select Filtered
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleSelectNone}
-                                className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                              >
-                                Deselect Filtered
-                              </button>
+                    ) : (
+                      <>
+                        {/* Summary and Bulk Actions */}
+                        <div className="p-4 border-b border-gray-200 bg-gray-50">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">{selectedLCs.length}</span> of <span className="font-medium">{learningCenters.length}</span> learning centers selected
+                              {searchTerm && (
+                                <span className="ml-2 text-blue-600">
+                                  ({learningCenters.length} match search)
+                                </span>
+                              )}
                             </div>
+                            {learningCenters.length > 0 && (
+                              <div className="flex space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={handleSelectAllLCs}
+                                  className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                >
+                                  Select All
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleClearAll}
+                                  className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                >
+                                  Clear All
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Search */}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search by name, code, city, or state..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="w-full px-3 py-2 pl-8 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              disabled={isLoadingLCs}
+                            />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              {isLoadingLCs ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              ) : (
+                                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              )}
+                            </div>
+                            {searchTerm && (
+                              <button
+                                type="button"
+                                onClick={() => setSearchTerm("")}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                disabled={isLoadingLCs}
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </div>
-                      )}
 
-                      {/* Selected Centers Summary */}
-                      {selectedLCs.length > 0 && (
-                        <div className="p-3 border-b border-gray-200 bg-green-50">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-700 font-medium">
-                              Selected: {selectedLCs.length} centers
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setShowAllSelected(!showAllSelected)}
-                              className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                            >
-                              {showAllSelected ? 'Hide' : 'Show'} Selected
-                            </button>
+                        {/* Filter Actions */}
+                        {searchTerm && (
+                          <div className="p-3 border-b border-gray-200 bg-blue-50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-blue-700">
+                                  Search results: {learningCenters.length} centers
+                                </span>
+                                {learningCenters.length === 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSearchTerm("")}
+                                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                  >
+                                    Clear search
+                                  </button>
+                                )}
+                              </div>
+                              {learningCenters.length > 0 && (
+                                <div className="flex space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={handleSelectAll}
+                                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                  >
+                                    Select All Results
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleSelectNone}
+                                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                  >
+                                    Deselect All Results
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          {showAllSelected && (
-                            <div className="mt-2 max-h-32 overflow-y-auto">
+                        )}
+
+                        {/* Selected Centers Summary */}
+                        {selectedLCs.length > 0 && (
+                          <div className="p-3 border-b border-gray-200 bg-green-50">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-green-700">
+                                {selectedLCs.length} center{selectedLCs.length !== 1 ? 's' : ''} selected
+                              </span>
+                              <button
+                                type="button"
+                                onClick={handleClearAll}
+                                className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                              >
+                                Clear Selection
+                              </button>
+                            </div>
+                            <div className="mt-2">
                               <div className="flex flex-wrap gap-1">
                                 {selectedLCs.map(lc => (
                                   <span
@@ -665,47 +717,65 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
                                 ))}
                               </div>
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Learning Centers List */}
-                      <div className="max-h-64 overflow-y-auto">
-                        {filteredLCs.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500 text-sm">
-                            {searchTerm ? 'No centers match your search' : 'No learning centers available'}
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-gray-200">
-                            {filteredLCs.map(lc => (
-                              <label key={lc.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={formData.sharedWithLCs.includes(lc.id)}
-                                  onChange={(e) => handleScopeChange(lc.id, e.target.checked)}
-                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <div className="ml-3 flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="text-sm font-medium text-gray-900">{lc.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        Code: {lc.code}
-                                        {lc.city && lc.state && ` • ${lc.city}, ${lc.state}`}
-                                      </div>
-                                    </div>
-                                    <div className="text-xs text-gray-400">
-                                      {lc.userCount} users
-                                    </div>
-                                  </div>
-                                </div>
-                              </label>
-                            ))}
                           </div>
                         )}
-                      </div>
-                    </div>
-                  )}
+
+                        {/* Learning Centers List or Empty State */}
+                        {learningCenters.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center p-8 text-center">
+                            <div className="text-gray-400 mb-2">
+                              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                            </div>
+                            <div className="text-gray-500 text-sm">
+                              {searchTerm ? (
+                                <>
+                                  <p className="font-medium mb-1">No learning centers found</p>
+                                  <p className="text-xs">Try adjusting your search terms or clear the search to see all centers</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="font-medium mb-1">No learning centers available</p>
+                                  <p className="text-xs">Contact your administrator to add learning centers</p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="max-h-64 overflow-y-auto">
+                            <div className="divide-y divide-gray-200">
+                              {learningCenters.map(lc => (
+                                <label key={lc.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.sharedWithLCs.includes(lc.id)}
+                                    onChange={(e) => handleScopeChange(lc.id, e.target.checked)}
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  />
+                                  <div className="ml-3 flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900">{lc.name}</div>
+                                        <div className="text-xs text-gray-500">
+                                          {lc.code} • {lc.city}, {lc.state}
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-xs text-gray-400">
+                                          {lc.userCount} users
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                   
                   {errors.sharedWithLCs && <p className="text-red-500 text-sm mt-1">{errors.sharedWithLCs}</p>}
                 </>
@@ -713,21 +783,20 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
           </div>
         </div>
       </div>
-
+      
       {/* Form Actions */}
-      <div className="flex justify-end space-x-4">
+      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
           disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Saving..." : subProgram ? "Update SubProgram" : "Create SubProgram"}
         </button>
