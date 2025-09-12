@@ -38,8 +38,8 @@ export default function NewStudentPage() {
         parentLastName: data.parentInfo!.lastName,
         parentPhone: data.parentInfo!.phone,
         parentEmail: data.parentInfo!.email,
-        emergencyContactEmail: data.emergencyContact?.email,
-        emergencyContactPhone: data.emergencyContact?.phone,
+        emergencyContactEmail: undefined,
+        emergencyContactPhone: undefined,
         notes: data.notes,
         avatar: data.avatar,
         // The API will use the user's LC, MF, and HQ IDs automatically

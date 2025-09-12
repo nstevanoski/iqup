@@ -29,6 +29,16 @@ export async function GET(request: NextRequest) {
       return errorResponse('Authentication required', 401)
     }
 
+    // Debug logging
+    console.log('Student listing request:', {
+      userRole: user.role,
+      userHqId: user.hqId,
+      userMfId: user.mfId,
+      userLcId: user.lcId,
+      requestedLcId: lcId,
+      requestedMfId: mfId
+    })
+
     // Extract role prefix (HQ, MF, LC)
     const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC'
     
@@ -38,20 +48,69 @@ export async function GET(request: NextRequest) {
     }
     // MF users can see students from their LCs
     else if (userRolePrefix === 'MF') {
-      whereClause.mfId = user.mfId
+      if (user.mfId) {
+        whereClause.mfId = user.mfId
+      } else {
+        return errorResponse('MF user missing organizational information', 400)
+      }
     }
     // LC users can only see students from their own LC
     else if (userRolePrefix === 'LC') {
-      whereClause.lcId = user.lcId
+      if (user.lcId) {
+        whereClause.lcId = user.lcId
+      } else {
+        return errorResponse('LC user missing organizational information', 400)
+      }
     }
 
-    // Apply additional filters
+    // Apply additional filters (but respect organizational hierarchy)
     if (lcId) {
-      whereClause.lcId = parseInt(lcId)
+      const requestedLcId = parseInt(lcId)
+      // Only allow if user has access to this LC
+      if (userRolePrefix === 'HQ') {
+        // HQ can access any LC
+        whereClause.lcId = requestedLcId
+      } else if (userRolePrefix === 'MF') {
+        // MF can only access LCs under their MF
+        const lc = await prisma.learningCenter.findFirst({
+          where: { id: requestedLcId, mfId: user.mfId }
+        })
+        if (lc) {
+          whereClause.lcId = requestedLcId
+        } else {
+          return errorResponse('Access denied to requested LC', 403)
+        }
+      } else if (userRolePrefix === 'LC') {
+        // LC can only access their own LC
+        if (requestedLcId === user.lcId) {
+          whereClause.lcId = requestedLcId
+        } else {
+          return errorResponse('Access denied to requested LC', 403)
+        }
+      }
     }
     
     if (mfId) {
-      whereClause.mfId = parseInt(mfId)
+      const requestedMfId = parseInt(mfId)
+      // Only allow if user has access to this MF
+      if (userRolePrefix === 'HQ') {
+        // HQ can access any MF
+        whereClause.mfId = requestedMfId
+      } else if (userRolePrefix === 'MF') {
+        // MF can only access their own MF
+        if (requestedMfId === user.mfId) {
+          whereClause.mfId = requestedMfId
+        } else {
+          return errorResponse('Access denied to requested MF', 403)
+        }
+      } else if (userRolePrefix === 'LC') {
+        // LC can only access their parent MF
+        if (requestedMfId === user.mfId) {
+          whereClause.mfId = requestedMfId
+        } else {
+          return errorResponse('Access denied to requested MF', 403)
+        }
+      }
     }
 
     if (status) {
@@ -68,6 +127,9 @@ export async function GET(request: NextRequest) {
         { parentEmail: { contains: search } }
       ]
     }
+
+    // Debug logging for final where clause
+    console.log('Final where clause:', whereClause)
 
     // Calculate pagination
     const skip = (page - 1) * limit
@@ -160,9 +222,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Use user's LC, MF, and HQ IDs if not provided
-    const finalLcId = lcId || user.lcId
-    const finalMfId = mfId || user.mfId
-    const finalHqId = hqId || user.hqId
+    let finalLcId = lcId || user.lcId
+    let finalMfId = mfId || user.mfId
+    let finalHqId = hqId || user.hqId
+
+    // For LC users, derive MF and HQ from LC relationship if not already set
+    if (finalLcId && (!finalMfId || !finalHqId)) {
+      const lcWithRelations = await prisma.learningCenter.findUnique({
+        where: { id: finalLcId },
+        include: {
+          mf: {
+            include: {
+              hq: true
+            }
+          }
+        }
+      })
+
+      if (lcWithRelations) {
+        finalMfId = finalMfId || lcWithRelations.mfId
+        finalHqId = finalHqId || lcWithRelations.mf.hqId
+      }
+    }
+
+    // For MF users, derive HQ from MF relationship if not already set
+    if (finalMfId && !finalHqId) {
+      const mfWithRelations = await prisma.masterFranchisee.findUnique({
+        where: { id: finalMfId },
+        include: {
+          hq: true
+        }
+      })
+
+      if (mfWithRelations) {
+        finalHqId = finalHqId || mfWithRelations.hqId
+      }
+    }
 
     if (!finalLcId || !finalMfId || !finalHqId) {
       return errorResponse('Learning Center, Master Franchisee, and HQ information is required', 400)

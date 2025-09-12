@@ -58,9 +58,9 @@ export const convertStudentToListItem = (student: Student): StudentListItem => {
     lastName: student.lastName,
     program: "N/A", // This would need to be populated from program relationships
     status: student.status.toLowerCase() as "active" | "inactive" | "graduated" | "suspended",
-    enrollmentDate: student.enrollmentDate?.toLocaleDateString() || "N/A",
+    enrollmentDate: student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString() : "N/A",
     progress: Math.floor(Math.random() * 100), // Placeholder - would come from API
-    lastActivity: student.updatedAt?.toLocaleDateString() || "N/A",
+    lastActivity: student.updatedAt ? new Date(student.updatedAt).toLocaleDateString() : "N/A",
   }
 }
 
@@ -136,7 +136,14 @@ class StudentsAPI {
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    
+    // Handle the wrapped API response structure
+    if (result.success && result.data) {
+      return result.data;
+    }
+    
+    return result;
   }
 
   async getStudents(params: {
@@ -172,8 +179,7 @@ class StudentsAPI {
       headers: this.getHeaders(),
     });
 
-    const result = await this.handleResponse<{ data: Student }>(response);
-    return result.data;
+    return this.handleResponse<Student>(response);
   }
 
   async createStudent(data: CreateStudentData): Promise<Student> {
@@ -183,8 +189,7 @@ class StudentsAPI {
       body: JSON.stringify(data),
     });
 
-    const result = await this.handleResponse<{ data: Student }>(response);
-    return result.data;
+    return this.handleResponse<Student>(response);
   }
 
   async updateStudent(id: string, data: UpdateStudentData): Promise<Student> {
@@ -194,8 +199,7 @@ class StudentsAPI {
       body: JSON.stringify(data),
     });
 
-    const result = await this.handleResponse<{ data: Student }>(response);
-    return result.data;
+    return this.handleResponse<Student>(response);
   }
 
   async deleteStudent(id: string): Promise<void> {

@@ -159,7 +159,7 @@ export function StudentForm({
       // Auto-fill organizational info for LC users based on current session
       contactOwner: user ? { id: user.id, name: user.name, role: (user.role === "HQ" || user.role === "MF" || user.role === "LC") ? user.role : "LC" } : initialFormData.contactOwner,
       accountFranchise: selectedScope ? { id: selectedScope.id, name: selectedScope.name, type: selectedScope.type === "MF" ? "MF" : "LC" } : initialFormData.accountFranchise,
-      mfName: selectedScope?.type === "LC" ? "" : initialFormData.mfName,
+      mfName: selectedScope?.type === "LC" && selectedScope.parentMF ? selectedScope.parentMF.name : initialFormData.mfName,
     }
   );
 
@@ -553,7 +553,7 @@ export function StudentForm({
               className={`w-full px-3 py-2 border rounded-md ${user?.role === "LC" ? "bg-gray-50 text-gray-700" : "focus:outline-none focus:ring-2 focus:ring-blue-500"} ${
                 errors.mfName ? "border-red-500" : "border-gray-300"
               }`}
-              placeholder="Enter Master Franchisor name"
+              placeholder={user?.role === "LC" ? "Auto-filled from your parent MF" : "Enter Master Franchisor name"}
             />
             {errors.mfName && <p className="text-red-500 text-sm mt-1">{errors.mfName}</p>}
           </div>

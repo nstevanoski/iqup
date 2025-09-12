@@ -24,7 +24,11 @@ export async function POST(request: NextRequest) {
           select: { id: true, name: true, code: true, hqId: true }
         },
         lc: {
-          select: { id: true, name: true, code: true, mfId: true }
+          include: {
+            mf: {
+              select: { id: true, name: true, code: true }
+            }
+          }
         },
         tt: {
           select: { id: true, name: true, code: true, hqId: true }
@@ -47,21 +51,66 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid email or password', 401)
     }
 
+    // For LC users, ensure they have the correct organizational IDs
+    let finalHqId = user.hqId
+    let finalMfId = user.mfId
+    let finalLcId = user.lcId
+
+    if (user.lcId && (!user.mfId || !user.hqId)) {
+      const lcWithRelations = await prisma.learningCenter.findUnique({
+        where: { id: user.lcId },
+        include: {
+          mf: {
+            include: {
+              hq: true
+            }
+          }
+        }
+      })
+
+      if (lcWithRelations) {
+        finalMfId = user.mfId || lcWithRelations.mfId
+        finalHqId = user.hqId || lcWithRelations.mf.hqId
+      }
+    }
+
+    // For MF users, ensure they have the correct HQ ID
+    if (user.mfId && !user.hqId) {
+      const mfWithRelations = await prisma.masterFranchisee.findUnique({
+        where: { id: user.mfId },
+        include: {
+          hq: true
+        }
+      })
+
+      if (mfWithRelations) {
+        finalHqId = user.hqId || mfWithRelations.hqId
+      }
+    }
+
     // Generate JWT token
     const token = generateToken({
       id: user.id,
       email: user.email,
       role: user.role,
-      hqId: user.hqId,
-      mfId: user.mfId,
-      lcId: user.lcId,
+      hqId: finalHqId,
+      mfId: finalMfId,
+      lcId: finalLcId,
       ttId: user.ttId,
     })
 
-    // Update last login
+    // Update last login and organizational IDs if they were derived
+    const updateData: any = { lastLoginAt: new Date() }
+    
+    if (finalHqId !== user.hqId || finalMfId !== user.mfId || finalLcId !== user.lcId) {
+      updateData.hqId = finalHqId
+      updateData.mfId = finalMfId
+      updateData.lcId = finalLcId
+    }
+
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() }
+      data: updateData
     })
 
     // Prepare response data (exclude password)
