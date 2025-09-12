@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     let whereClause: any = {}
 
     // Apply role-based filtering
+    let roleFilter: any = {}
     if (userRole === 'MF' || userRole === 'LC') {
       // MF can see shared programs for their MF scope
       // LC inherits visibility from its parent MF
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
         if (lc) allowedMfIds.push(lc.mfId)
       }
 
-      whereClause.OR = [
+      roleFilter.OR = [
         { visibility: 'PUBLIC' },
         {
           AND: [
@@ -58,32 +59,50 @@ export async function GET(request: NextRequest) {
       ]
     } else if (userRole === 'TT') {
       // TT can only see public programs
-      whereClause.visibility = 'PUBLIC'
+      roleFilter.visibility = 'PUBLIC'
     }
     // HQ can see all programs (no filtering)
 
     // Apply search filter
+    let searchFilter: any = {}
     if (search) {
-      whereClause.OR = [
-        { name: { startsWith: search } },
-        { description: { startsWith: search } },
-        { category: { startsWith: search } }
+      searchFilter.OR = [
+        { name: { contains: search } },
+        { description: { contains: search } },
+        { category: { contains: search } }
       ]
     }
 
+    // Combine role and search filters
+    if (Object.keys(roleFilter).length > 0 && Object.keys(searchFilter).length > 0) {
+      whereClause.AND = [roleFilter, searchFilter]
+    } else if (Object.keys(roleFilter).length > 0) {
+      Object.assign(whereClause, roleFilter)
+    } else if (Object.keys(searchFilter).length > 0) {
+      Object.assign(whereClause, searchFilter)
+    }
+
     // Apply status filter
-    if (status) {
-      whereClause.status = status.toUpperCase()
+    if (status && status.trim() !== '') {
+      const validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT']
+      const upperStatus = status.toUpperCase()
+      if (validStatuses.includes(upperStatus)) {
+        whereClause.status = upperStatus
+      }
     }
 
     // Apply category filter
-    if (category) {
+    if (category && category.trim() !== '') {
       whereClause.category = category
     }
 
     // Apply kind filter
-    if (kind) {
-      whereClause.kind = kind.toUpperCase()
+    if (kind && kind.trim() !== '') {
+      const validKinds = ['ACADEMIC', 'WORKSHEET', 'BIRTHDAY_PARTY', 'STEM_CAMP', 'VOCATIONAL', 'CERTIFICATION', 'WORKSHOP']
+      const upperKind = kind.toUpperCase()
+      if (validKinds.includes(upperKind)) {
+        whereClause.kind = upperKind
+      }
     }
 
     // Calculate pagination

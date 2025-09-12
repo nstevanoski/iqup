@@ -5,7 +5,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen } from "lucide-react";
 import { getPrograms, deleteProgram, programsAPI } from "@/lib/api/programs";
@@ -154,41 +154,77 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
+  
+  // Backend search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  // Fetch programs from API
-  useEffect(() => {
-    const fetchPrograms = async () => {
-      if (!user || !selectedScope || !token) return;
+  // Function to fetch programs with current parameters
+  const fetchPrograms = useCallback(async (params: {
+    page?: number;
+    search?: string;
+    status?: string;
+    category?: string;
+    kind?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    isSearch?: boolean;
+  } = {}) => {
+    if (!user || !selectedScope || !token) return;
 
-      try {
+    try {
+      if (params.isSearch) {
+        setSearchLoading(true);
+      } else {
         setLoading(true);
-        setError(null);
+      }
+      setError(null);
 
-        // Update API token
-        programsAPI.updateToken(token);
+      // Update API token
+      programsAPI.updateToken(token);
 
-        const response = await getPrograms({
-          userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
-          userScope: selectedScope.id,
-          page: 1,
-          limit: 100, // Get all programs for now
-        });
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: params.page || currentPage,
+        limit: 10, // Use pageSize from DataTable
+        search: params.search || searchTerm,
+        status: params.status || filters.status || '',
+        category: params.category || filters.category || '',
+        kind: params.kind || filters.kind || '',
+        sortBy: params.sortBy || sortBy,
+        sortOrder: params.sortOrder || sortOrder,
+      });
 
-        if (response.success) {
-          setData(response.data.data);
-        } else {
-          setError("Failed to fetch programs");
-        }
-      } catch (err) {
-        console.error("Error fetching programs:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch programs");
-      } finally {
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      if (params.isSearch) {
+        setSearchLoading(false);
+      } else {
         setLoading(false);
       }
-    };
-
-    fetchPrograms();
+    }
   }, [user, selectedScope, token]);
+
+  // Initial fetch - only when user, selectedScope, or token changes
+  useEffect(() => {
+    fetchPrograms();
+  }, [user, selectedScope, token, fetchPrograms]);
 
   // Fetch MF accounts for HQ users
   useEffect(() => {
@@ -207,6 +243,159 @@ export default function ProgramsPage() {
 
     fetchMFAccounts();
   }, [user?.role, token]);
+
+  // Backend search handlers
+  const handleSearch = useCallback(async (term: string) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setSearchTerm(term);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: 1,
+        limit: 10,
+        search: term,
+        status: filters.status || '',
+        category: filters.category || '',
+        kind: filters.kind || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
+
+  const handleFilter = useCallback(async (newFilters: Record<string, string>) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setFilters(newFilters);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: newFilters.status || '',
+        category: newFilters.category || '',
+        kind: newFilters.kind || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
+
+  const handleSort = useCallback(async (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    if (!user || !selectedScope || !token) return;
+    
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        category: filters.category || '',
+        kind: filters.kind || '',
+        sortBy: newSortBy,
+        sortOrder: newSortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
+
+  const handlePageChange = useCallback(async (page: number) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setCurrentPage(page);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        category: filters.category || '',
+        kind: filters.kind || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
 
   const canEdit = user?.role === "HQ";
   const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`), mfAccounts);
@@ -377,6 +566,17 @@ export default function ProgramsPage() {
             onExport={handleExport}
             loading={loading}
             emptyMessage="No programs found"
+            // Backend search props
+            backendSearch={true}
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            onSort={handleSort}
+            onPageChange={handlePageChange}
+            searchLoading={searchLoading}
+            // Backend pagination info
+            totalItems={totalItems}
+            totalPages={totalPages}
+            currentPage={currentPage}
           />
         </div>
       </div>
