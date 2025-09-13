@@ -41,12 +41,6 @@ const columns: Column<StudentListItem>[] = [
     filterable: true,
   },
   {
-    key: "program",
-    label: "Program",
-    sortable: true,
-    filterable: true,
-  },
-  {
     key: "status",
     label: "Status",
     sortable: true,
@@ -64,34 +58,6 @@ const columns: Column<StudentListItem>[] = [
         </span>
       );
     },
-  },
-  {
-    key: "enrollmentDate",
-    label: "Enrolled",
-    sortable: true,
-    render: (value) => new Date(value).toLocaleDateString(),
-  },
-  {
-    key: "progress",
-    label: "Progress",
-    sortable: true,
-    render: (value) => (
-      <div className="flex items-center">
-        <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-          <div
-            className="bg-blue-600 h-2 rounded-full"
-            style={{ width: `${value}%` }}
-          ></div>
-        </div>
-        <span className="text-sm text-gray-600">{value}%</span>
-      </div>
-    ),
-  },
-  {
-    key: "lastActivity",
-    label: "Last Activity",
-    sortable: true,
-    render: (value) => new Date(value).toLocaleDateString(),
   },
 ];
 

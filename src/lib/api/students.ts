@@ -5,11 +5,7 @@ export interface StudentListItem {
   firstName: string
   lastName: string
   phone: string // Parent phone
-  program: string
   status: "active" | "inactive" | "graduated" | "suspended"
-  enrollmentDate: string
-  progress: number
-  lastActivity: string
 }
 
 export interface StudentsListResponse {
@@ -68,11 +64,7 @@ export const convertStudentToListItem = (student: Student): StudentListItem => {
     firstName: student.firstName,
     lastName: student.lastName,
     phone: student.parentPhone, // Use parent phone instead of student phone
-    program: "N/A", // This would need to be populated from program relationships
     status: student.status.toLowerCase() as "active" | "inactive" | "graduated" | "suspended",
-    enrollmentDate: student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString() : "N/A",
-    progress: Math.floor(Math.random() * 100), // Placeholder - would come from API
-    lastActivity: student.updatedAt ? new Date(student.updatedAt).toLocaleDateString() : "N/A",
   }
 }
 
