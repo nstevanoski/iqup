@@ -26,18 +26,24 @@ export async function GET(request: NextRequest) {
     // Build where clause
     let whereClause: any = {}
 
-    // Apply role-based filtering
+    // Apply role-based filtering using authenticated user's role
     let roleFilter: any = {}
-    if (userRole === 'MF' || userRole === 'LC') {
+    const isMFUser = user.role === 'MF_ADMIN' || user.role === 'MF_STAFF'
+    const isLCUser = user.role === 'LC_ADMIN' || user.role === 'LC_STAFF'
+    const isTTUser = user.role === 'TT_ADMIN' || user.role === 'TT_STAFF'
+    const isHQUser = user.role === 'HQ_ADMIN' || user.role === 'HQ_STAFF'
+    
+    if (isMFUser || isLCUser) {
       // MF can see shared programs for their MF scope
       // LC inherits visibility from its parent MF
       const allowedMfIds: number[] = []
-      if (userRole === 'MF' && userScope) {
-        allowedMfIds.push(parseInt(userScope))
-      } else if (userRole === 'LC' && userScope) {
-        // Get parent MF ID for LC scope
+      if (isMFUser && user.mfId) {
+        // Use authenticated user's MF ID directly for security
+        allowedMfIds.push(user.mfId)
+      } else if (isLCUser && user.lcId) {
+        // Get parent MF ID for LC scope using authenticated user's LC ID
         const lc = await prisma.learningCenter.findUnique({
-          where: { id: parseInt(userScope) },
+          where: { id: user.lcId },
           select: { mfId: true }
         })
         if (lc) allowedMfIds.push(lc.mfId)
@@ -51,13 +57,13 @@ export async function GET(request: NextRequest) {
             {
               sharedWithMFs: {
                 path: '$',
-                array_contains: allowedMfIds
+                array_contains: [user.mfId]
               }
             }
           ]
         }
       ]
-    } else if (userRole === 'TT') {
+    } else if (isTTUser) {
       // TT can only see public programs
       roleFilter.visibility = 'PUBLIC'
     }

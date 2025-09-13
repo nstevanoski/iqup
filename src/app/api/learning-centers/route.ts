@@ -19,19 +19,24 @@ export async function GET(request: NextRequest) {
     // Build where clause
     let whereClause: any = {}
 
-    // Apply role-based filtering
-    if (userRole === 'MF' && userScope) {
+    // Apply role-based filtering using authenticated user's role
+    const isMFUser = user.role === 'MF_ADMIN' || user.role === 'MF_STAFF'
+    const isLCUser = user.role === 'LC_ADMIN' || user.role === 'LC_STAFF'
+    const isTTUser = user.role === 'TT_ADMIN' || user.role === 'TT_STAFF'
+    const isHQUser = user.role === 'HQ_ADMIN' || user.role === 'HQ_STAFF'
+    
+    if (isMFUser && user.mfId) {
       // MF can only see LCs under their account
-      whereClause.mfId = parseInt(userScope)
-    } else if (userRole === 'LC' && userScope) {
+      whereClause.mfId = user.mfId
+    } else if (isLCUser && user.lcId) {
       // LC can only see their own center
-      whereClause.id = parseInt(userScope)
-    } else if (userRole === 'HQ') {
+      whereClause.id = user.lcId
+    } else if (isHQUser) {
       // HQ can see all LCs, optionally filtered by MF
       if (mfId) {
         whereClause.mfId = parseInt(mfId)
       }
-    } else if (userRole === 'TT') {
+    } else if (isTTUser) {
       // TT cannot see LCs (return empty)
       return successResponse({ data: [], total: 0 }, 'Learning Centers retrieved successfully')
     }

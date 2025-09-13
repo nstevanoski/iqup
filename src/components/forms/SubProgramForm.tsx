@@ -156,8 +156,7 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
         
         const response = await getPrograms({
           limit: 10,
-          userRole: user.role,
-          userScope: selectedScope.id,
+          // userRole and userScope parameters are deprecated - API now uses authenticated user's role and scope
         });
 
         if (response.success) {
@@ -187,10 +186,9 @@ export function SubProgramForm({ subProgram, programs, onSubmit, onCancel, loadi
       setIsLoadingLCs(true);
       
       const response = await getLearningCenters({
-        userRole: user.role,
-        userScope: selectedScope.id,
         search: search,
         limit: 100
+        // userRole and userScope parameters are deprecated - API now uses authenticated user's role and scope
       });
 
       if (response.success) {

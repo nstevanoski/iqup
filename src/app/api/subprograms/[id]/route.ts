@@ -46,6 +46,7 @@ export async function GET(
             hours: true,
             lessonLength: true,
             kind: true,
+            sharedWithMFs: true,
             visibility: true
           }
         }
@@ -70,28 +71,32 @@ export async function GET(
     }
     // MF users can view subprograms based on parent program sharing
     else if (userRolePrefix === 'MF') {
-      let allowed = false
-      
-      // Check if parent program is public
-      if (subProgram.program.visibility === 'PUBLIC') {
-        allowed = true
+      if (!user.mfId) {
+        return errorResponse('Access denied', 403)
       }
-      // Check if parent program is shared with this MF
-      else if (subProgram.program.visibility === 'SHARED' && user.mfId) {
-        const programSharedWithMFs = subProgram.program.sharedWithMFs as number[] || []
-        allowed = programSharedWithMFs.includes(user.mfId)
-      }
-      // Check if subprogram is directly public
-      else if (subProgram.visibility === 'PUBLIC') {
-        allowed = true
-      }
-      // Check if subprogram is directly shared with this MF
-      else if (subProgram.visibility === 'SHARED' && user.mfId) {
-        const allowedMfIds = subProgram.sharedWithMFs as number[] || []
-        allowed = allowedMfIds.includes(user.mfId)
-      }
-      
-      if (!allowed) {
+
+      // Check if the parent program is accessible to this MF
+      const program = await prisma.program.findFirst({
+        where: {
+          id: subProgram.programId,
+          OR: [
+            { visibility: 'PUBLIC' },
+            {
+              AND: [
+                { visibility: 'SHARED' },
+                {
+                  sharedWithMFs: {
+                    path: '$',
+                    array_contains: [user.mfId]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      })
+
+      if (!program) {
         return errorResponse('Access denied', 403)
       }
     }
@@ -212,6 +217,46 @@ export async function PUT(
     
     if (isNaN(subProgramId)) {
       return errorResponse('Invalid subprogram ID', 400)
+    }
+
+    // First, verify the subprogram exists and user has access to it
+    const existingSubProgram = await prisma.subProgram.findUnique({
+      where: { id: subProgramId },
+      include: {
+        program: {
+          select: {
+            id: true,
+            name: true,
+            visibility: true,
+            sharedWithMFs: true
+          }
+        }
+      }
+    })
+
+    if (!existingSubProgram) {
+      return errorResponse('SubProgram not found', 404)
+    }
+
+    // Check if user has access to this subprogram
+    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC' | 'TT'
+    let hasAccess = false
+
+    if (userRolePrefix === 'HQ') {
+      // HQ can update any subprogram
+      hasAccess = true
+    } else if (userRolePrefix === 'MF' && user.mfId) {
+      // MF can only update subprograms for programs shared with their MF
+      if (existingSubProgram.program.visibility === 'PUBLIC') {
+        hasAccess = true
+      } else if (existingSubProgram.program.visibility === 'SHARED') {
+        const programSharedWithMFs = existingSubProgram.program.sharedWithMFs as number[] || []
+        hasAccess = programSharedWithMFs.includes(user.mfId)
+      }
+    }
+
+    if (!hasAccess) {
+      return errorResponse('Access denied. You can only update subprograms for programs shared with your account.', 403)
     }
 
     const body = await request.json()

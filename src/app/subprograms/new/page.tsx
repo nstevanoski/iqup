@@ -5,31 +5,35 @@ import { useRouter } from "next/navigation";
 import { SubProgramForm } from "@/components/forms/SubProgramForm";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { useUser, useSelectedScope } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program, SubProgram } from "@/types";
 import { ArrowLeft } from "lucide-react";
 import { createSubProgram } from "@/lib/api/subprograms";
-import { getPrograms } from "@/lib/api/programs";
+import { getPrograms, programsAPI } from "@/lib/api/programs";
 
 
 export default function NewSubProgramPage() {
   const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
+  const token = useToken();
   const [loading, setLoading] = useState(false);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [programsLoading, setProgramsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPrograms = async () => {
-      if (!user || !selectedScope) return;
+      if (!user || !selectedScope || !token) return;
       
       try {
         setProgramsLoading(true);
+        
+        // Update API token
+        programsAPI.updateToken(token);
+        
         const response = await getPrograms({ 
-          limit: 100,
-          userRole: user.role,
-          userScope: selectedScope.id
+          limit: 100
+          // userRole and userScope parameters are deprecated - API now uses authenticated user's role and scope
         });
         if (response.success) {
           setPrograms(response.data.data);
@@ -42,7 +46,7 @@ export default function NewSubProgramPage() {
     };
 
     fetchPrograms();
-  }, [user, selectedScope]);
+  }, [user, selectedScope, token]);
 
   const handleSubmit = async (data: Partial<SubProgram>) => {
     setLoading(true);

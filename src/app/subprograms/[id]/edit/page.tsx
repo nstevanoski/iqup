@@ -7,9 +7,9 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SubProgramForm } from "@/components/forms/SubProgramForm";
 import { SubProgram, Program } from "@/types";
 import { ArrowLeft } from "lucide-react";
-import { getSubProgram, updateSubProgram } from "@/lib/api/subprograms";
-import { getPrograms } from "@/lib/api/programs";
-import { useUser, useSelectedScope } from "@/store/auth";
+import { getSubProgram, updateSubProgram, subProgramsAPI } from "@/lib/api/subprograms";
+import { getPrograms, programsAPI } from "@/lib/api/programs";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 
 interface SubProgramEditPageProps {
   params: Promise<{
@@ -23,6 +23,7 @@ export default function SubProgramEditPage({ params }: SubProgramEditPageProps) 
   const resolvedParams = use(params);
   const user = useUser();
   const selectedScope = useSelectedScope();
+  const token = useToken();
   const [subProgram, setSubProgram] = useState<SubProgram | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,17 +32,22 @@ export default function SubProgramEditPage({ params }: SubProgramEditPageProps) 
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user || !selectedScope || !token) return;
+
       try {
         setLoading(true);
         setError(null);
+
+        // Update API tokens
+        subProgramsAPI.updateToken(token);
+        programsAPI.updateToken(token);
         
         // Fetch subprogram and programs in parallel
         const [subProgramResponse, programsResponse] = await Promise.all([
           getSubProgram(resolvedParams.id),
           getPrograms({ 
-            limit: 100,
-            userRole: user?.role,
-            userScope: selectedScope?.id
+            limit: 100
+            // userRole and userScope parameters are deprecated - API now uses authenticated user's role and scope
           }) // Get filtered programs for the dropdown
         ]);
         
@@ -64,7 +70,7 @@ export default function SubProgramEditPage({ params }: SubProgramEditPageProps) 
     };
 
     fetchData();
-  }, [resolvedParams.id, user, selectedScope]);
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleSubmit = async (formData: Partial<SubProgram>) => {
     try {

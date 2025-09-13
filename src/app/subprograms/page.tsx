@@ -3,12 +3,12 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { useUser, useSelectedScope } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { SubProgram } from "@/types";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, CreditCard, Calendar } from "lucide-react";
-import { getSubPrograms, deleteSubProgram } from "@/lib/api/subprograms";
+import { getSubPrograms, deleteSubProgram, subProgramsAPI } from "@/lib/api/subprograms";
 import { DeleteConfirmationModal } from "@/components/ui";
 
 
@@ -166,6 +166,7 @@ export default function SubProgramsPage() {
   const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
+  const token = useToken();
   const [data, setData] = useState<SubProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -196,7 +197,7 @@ export default function SubProgramsPage() {
     sortOrder?: 'asc' | 'desc';
     isSearch?: boolean;
   } = {}) => {
-    if (!user || !selectedScope) return;
+    if (!user || !selectedScope || !token) return;
 
     try {
       if (params.isSearch) {
@@ -205,6 +206,9 @@ export default function SubProgramsPage() {
         setLoading(true);
       }
       setError(null);
+
+      // Update API token
+      subProgramsAPI.updateToken(token);
 
       const response = await getSubPrograms({
         page: params.page || currentPage,
@@ -234,16 +238,16 @@ export default function SubProgramsPage() {
         setLoading(false);
       }
     }
-  }, [user, selectedScope]);
+  }, [user, selectedScope, token]);
 
-  // Initial fetch - only when user or selectedScope changes
+  // Initial fetch - only when user, selectedScope, or token changes
   useEffect(() => {
     fetchSubPrograms();
-  }, [user, selectedScope, fetchSubPrograms]);
+  }, [user, selectedScope, token, fetchSubPrograms]);
 
   // Backend search handlers
   const handleSearch = useCallback(async (term: string) => {
-    if (!user || !selectedScope) return;
+    if (!user || !selectedScope || !token) return;
     
     setSearchTerm(term);
     setCurrentPage(1);
@@ -275,10 +279,10 @@ export default function SubProgramsPage() {
     } finally {
       setSearchLoading(false);
     }
-  }, [user, selectedScope, filters, sortBy, sortOrder]);
+  }, [user, selectedScope, token, filters, sortBy, sortOrder]);
 
   const handleFilter = useCallback(async (newFilters: Record<string, string>) => {
-    if (!user || !selectedScope) return;
+    if (!user || !selectedScope || !token) return;
     
     setFilters(newFilters);
     setCurrentPage(1);
@@ -286,6 +290,7 @@ export default function SubProgramsPage() {
     setError(null);
 
     try {
+      subProgramsAPI.updateToken(token);
       const response = await getSubPrograms({
         page: 1,
         limit: 10,
@@ -310,10 +315,10 @@ export default function SubProgramsPage() {
     } finally {
       setSearchLoading(false);
     }
-  }, [user, selectedScope, searchTerm, sortBy, sortOrder]);
+  }, [user, selectedScope, token, searchTerm, sortBy, sortOrder]);
 
   const handleSort = useCallback(async (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
-    if (!user || !selectedScope) return;
+    if (!user || !selectedScope || !token) return;
     
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
@@ -322,6 +327,7 @@ export default function SubProgramsPage() {
     setError(null);
 
     try {
+      subProgramsAPI.updateToken(token);
       const response = await getSubPrograms({
         page: 1,
         limit: 10,
@@ -346,16 +352,17 @@ export default function SubProgramsPage() {
     } finally {
       setSearchLoading(false);
     }
-  }, [user, selectedScope, searchTerm, filters]);
+  }, [user, selectedScope, token, searchTerm, filters]);
 
   const handlePageChange = useCallback(async (page: number) => {
-    if (!user || !selectedScope) return;
+    if (!user || !selectedScope || !token) return;
     
     setCurrentPage(page);
     setSearchLoading(true);
     setError(null);
 
     try {
+      subProgramsAPI.updateToken(token);
       const response = await getSubPrograms({
         page,
         limit: 10,
@@ -380,7 +387,7 @@ export default function SubProgramsPage() {
     } finally {
       setSearchLoading(false);
     }
-  }, [user, selectedScope, searchTerm, filters, sortBy, sortOrder]);
+  }, [user, selectedScope, token, searchTerm, filters, sortBy, sortOrder]);
 
   const canEdit = user?.role === "MF";
   const canView = user?.role === "MF" || user?.role === "LC" || user?.role === "HQ";

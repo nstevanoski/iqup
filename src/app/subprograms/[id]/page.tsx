@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SubProgramDetail } from "@/components/views/SubProgramDetail";
-import { useUser, useSelectedScope } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { SubProgram, Program } from "@/types";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
-import { getSubProgram, deleteSubProgram } from "@/lib/api/subprograms";
+import { getSubProgram, deleteSubProgram, subProgramsAPI } from "@/lib/api/subprograms";
 import { DeleteConfirmationModal } from "@/components/ui";
 
 interface SubProgramDetailPageProps {
@@ -22,6 +22,7 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
   const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
+  const token = useToken();
   const resolvedParams = use(params);
   const [subProgram, setSubProgram] = useState<SubProgram | null>(null);
   const [program, setProgram] = useState<Program | null>(null);
@@ -34,11 +35,14 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
 
   useEffect(() => {
     const fetchSubProgram = async () => {
-      if (!user || !selectedScope) return;
+      if (!user || !selectedScope || !token) return;
 
       try {
         setLoading(true);
         setError(null);
+
+        // Update API token
+        subProgramsAPI.updateToken(token);
         
         const response = await getSubProgram(resolvedParams.id);
         
@@ -60,7 +64,7 @@ export default function SubProgramDetailPage({ params }: SubProgramDetailPagePro
     };
 
     fetchSubProgram();
-  }, [resolvedParams.id, user, selectedScope]);
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleEdit = () => {
     router.push(`/subprograms/${resolvedParams.id}/edit`);

@@ -37,65 +37,38 @@ export async function GET(request: NextRequest) {
     }
     // MF users can see subprograms based on parent program sharing
     else if (userRolePrefix === 'MF') {
-      const allowedMfIds: number[] = []
-      const allowedLcIds: number[] = []
-      
       if (user.mfId) {
-        allowedMfIds.push(user.mfId)
-        // Get all LCs under this MF
-        const lcs = await prisma.learningCenter.findMany({
-          where: { mfId: user.mfId },
-          select: { id: true }
-        })
-        allowedLcIds.push(...lcs.map((lc: any) => lc.id))
-      }
-
-      whereClause.OR = [
-        // Subprograms where parent program is public
-        {
-          program: {
-            visibility: 'PUBLIC'
-          }
-        },
-        // Subprograms where parent program is shared with this MF
-        {
-          program: {
-            AND: [
-              { visibility: 'SHARED' },
+        // First, get all programs that this MF has access to
+        const accessiblePrograms = await prisma.program.findMany({
+          where: {
+            OR: [
+              { visibility: 'PUBLIC' },
               {
-                sharedWithMFs: {
-                  path: '$',
-                  array_contains: allowedMfIds
-                }
+                AND: [
+                  { visibility: 'SHARED' },
+                  {
+                    sharedWithMFs: {
+                      path: '$',
+                      array_contains: [user.mfId]
+                    }
+                  }
+                ]
               }
             ]
-          }
-        },
-        // Subprograms that are directly public
-        { visibility: 'PUBLIC' },
-        // Subprograms that are directly shared with this MF
-        {
-          AND: [
-            { visibility: 'SHARED' },
-            {
-              OR: [
-                {
-                  sharedWithMFs: {
-                    path: '$',
-                    array_contains: allowedMfIds
-                  }
-                },
-                {
-                  sharedWithLCs: {
-                    path: '$',
-                    array_contains: allowedLcIds
-                  }
-                }
-              ]
-            }
-          ]
+          },
+          select: { id: true }
+        })
+
+        const accessibleProgramIds = accessiblePrograms.map(p => p.id)
+
+        // Now filter subprograms to only those belonging to accessible programs
+        whereClause.programId = {
+          in: accessibleProgramIds
         }
-      ]
+      } else {
+        // If no MF ID, return empty result
+        whereClause.id = -1 // This will return no results
+      }
     }
     // LC users can see subprograms based on parent program sharing
     else if (userRolePrefix === 'LC') {
@@ -364,13 +337,34 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid visibility value', 400)
     }
 
-    // Verify program exists
+    // Verify program exists and user has access to it
     const program = await prisma.program.findUnique({
       where: { id: parseInt(programId) }
     })
 
     if (!program) {
       return errorResponse('Program not found', 404)
+    }
+
+    // Check if user has access to this program
+    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC' | 'TT'
+    let hasAccess = false
+
+    if (userRolePrefix === 'HQ') {
+      // HQ can create subprograms for any program
+      hasAccess = true
+    } else if (userRolePrefix === 'MF' && user.mfId) {
+      // MF can only create subprograms for programs shared with their MF
+      if (program.visibility === 'PUBLIC') {
+        hasAccess = true
+      } else if (program.visibility === 'SHARED') {
+        const programSharedWithMFs = program.sharedWithMFs as number[] || []
+        hasAccess = programSharedWithMFs.includes(user.mfId)
+      }
+    }
+
+    if (!hasAccess) {
+      return errorResponse('Access denied. You can only create subprograms for programs shared with your account.', 403)
     }
 
     // Create subprogram

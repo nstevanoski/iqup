@@ -29,8 +29,8 @@ Retrieves a paginated list of programs with filtering and sorting options.
 - `kind` (optional): Filter by kind (academic, worksheet, birthday_party, stem_camp, vocational, certification, workshop)
 - `sortBy` (optional): Sort field (default: createdAt)
 - `sortOrder` (optional): Sort order (asc, desc) (default: desc)
-- `userRole` (optional): User role for access control (HQ, MF, LC, TT)
-- `userScope` (optional): User scope ID for role-based filtering
+- `userRole` (optional): User role for access control (HQ, MF, LC, TT) - **Note: This parameter is deprecated and ignored. The API now uses the authenticated user's role from the JWT token for security.**
+- `userScope` (optional): User scope ID for role-based filtering - **Note: This parameter is deprecated and ignored. The API now uses the authenticated user's MF/LC ID from the JWT token for security.**
 
 #### Response
 ```json
@@ -88,8 +88,8 @@ Retrieves a single program by ID.
 - `id`: Program ID
 
 #### Query Parameters
-- `userRole` (optional): User role for access control
-- `userScope` (optional): User scope ID for role-based filtering
+- `userRole` (optional): User role for access control - **Note: This parameter is deprecated and ignored. The API now uses the authenticated user's role from the JWT token for security.**
+- `userScope` (optional): User scope ID for role-based filtering - **Note: This parameter is deprecated and ignored. The API now uses the authenticated user's MF/LC ID from the JWT token for security.**
 
 #### Response
 ```json
