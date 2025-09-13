@@ -9,7 +9,7 @@ interface StudentFormProps {
   programs: Program[];
   subPrograms: SubProgram[];
   learningGroups: LearningGroup[];
-  onSubmit: (data: Partial<Student>) => void;
+  onSubmit: (data: any) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -134,25 +134,44 @@ export function StudentForm({
     student ? {
       firstName: student.firstName,
       lastName: student.lastName,
-      dateOfBirth: student.dateOfBirth.toISOString().split('T')[0],
-      gender: student.gender,
-      address: student.address || initialFormData.address,
-      parentInfo: student.parentInfo,
+      dateOfBirth: typeof student.dateOfBirth === 'string' ? student.dateOfBirth.split('T')[0] : student.dateOfBirth.toISOString().split('T')[0],
+      gender: student.gender.toLowerCase() as "male" | "female" | "other",
+      address: {
+        street: student.address || '',
+        city: student.city || '',
+        state: student.state || '',
+        zipCode: student.postalCode || '',
+        country: student.country || '',
+      },
+      parentInfo: {
+        firstName: student.parentFirstName,
+        lastName: student.parentLastName,
+        phone: student.parentPhone,
+        email: student.parentEmail,
+      },
       // emergencyContact removed per requirements
-      status: student.status,
-      enrollmentDate: student.enrollmentDate ? student.enrollmentDate.toISOString().split('T')[0] : undefined,
+      status: student.status.toLowerCase() as "active" | "inactive" | "graduated" | "suspended",
+      enrollmentDate: student.enrollmentDate ? (typeof student.enrollmentDate === 'string' ? student.enrollmentDate.split('T')[0] : student.enrollmentDate.toISOString().split('T')[0]) : undefined,
       lastCurrentLG: student.lastCurrentLG ? {
         ...student.lastCurrentLG,
-        startDate: student.lastCurrentLG.startDate.toISOString().split('T')[0],
-        endDate: student.lastCurrentLG.endDate?.toISOString().split('T')[0],
+        startDate: new Date(student.lastCurrentLG.startDate as any).toISOString().split('T')[0],
+        endDate: student.lastCurrentLG.endDate ? new Date(student.lastCurrentLG.endDate as any).toISOString().split('T')[0] : undefined,
       } : undefined,
       product: student.product ? {
         ...student.product,
-        purchaseDate: student.product.purchaseDate.toISOString().split('T')[0],
+        purchaseDate: new Date(student.product.purchaseDate as any).toISOString().split('T')[0],
       } : undefined,
-      contactOwner: student.contactOwner,
-      accountFranchise: student.accountFranchise,
-      mfName: student.mfName,
+      contactOwner: {
+        id: user?.id || '',
+        name: user?.name || '',
+        role: (user?.role === "HQ" || user?.role === "MF" || user?.role === "LC") ? user.role : "LC"
+      },
+      accountFranchise: {
+        id: student.lc.id.toString(),
+        name: student.lc.name,
+        type: "LC" as const
+      },
+      mfName: student.mf.name,
       notes: student.notes || "",
     } : {
       ...initialFormData,

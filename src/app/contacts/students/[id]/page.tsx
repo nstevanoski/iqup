@@ -32,8 +32,12 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
         setError(null);
         
         // Fetch student data from API
-        const studentData = await getStudent(resolvedParams.id);
-        setStudent(studentData);
+        const response = await getStudent(resolvedParams.id);
+        if (response.success) {
+          setStudent(response.data);
+        } else {
+          setError("Student not found");
+        }
       } catch (err) {
         setError("Failed to load student");
         console.error("Error fetching student:", err);
@@ -70,12 +74,15 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return "";
+    const d = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(d.getTime())) return "";
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }).format(date);
+    }).format(d);
   };
 
   if (loading) {
@@ -191,7 +198,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Programs</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {student.programHistory.length}
+                  {(student.programHistory?.length || 0)}
                 </p>
               </div>
             </div>
@@ -205,7 +212,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Certificates</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {student.certificates.length}
+                  {(student.certificates?.length || 0)}
                 </p>
               </div>
             </div>
@@ -245,11 +252,11 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                 <div className="flex items-start">
                   <MapPin className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-900">{student.address.street}</p>
+                    <p className="text-sm text-gray-900">{student.address}</p>
                     <p className="text-sm text-gray-900">
-                      {student.address.city}, {student.address.state} {student.address.zipCode}
+                      {student.city}, {student.state} {student.postalCode}
                     </p>
-                    <p className="text-sm text-gray-900">{student.address.country}</p>
+                    <p className="text-sm text-gray-900">{student.country}</p>
                   </div>
                 </div>
               </div>
@@ -262,7 +269,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Parent Name</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {student.parentInfo.firstName} {student.parentInfo.lastName}
+                    {student.parentFirstName || ''} {student.parentLastName || ''}
                   </p>
                 </div>
                 
@@ -270,7 +277,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                   <label className="block text-sm font-medium text-gray-700">Parent Phone</label>
                   <div className="mt-1 flex items-center">
                     <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.parentInfo.phone}</span>
+                    <span className="text-sm text-gray-900">{student.parentPhone || ''}</span>
                   </div>
                 </div>
 
@@ -278,14 +285,14 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                   <label className="block text-sm font-medium text-gray-700">Parent Email</label>
                   <div className="mt-1 flex items-center">
                     <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.parentInfo.email}</span>
+                    <span className="text-sm text-gray-900">{student.parentEmail || ''}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Program History */}
-            {student.programHistory.length > 0 && (
+            {student.programHistory && student.programHistory.length > 0 && (
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Program History</h3>
                 <div className="space-y-4">
@@ -347,18 +354,18 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Organizational Info</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Contact Owner</label>
-                  <p className="mt-1 text-sm text-gray-900">{student.contactOwner.name}</p>
+                  <label className="block text-sm font-medium text-gray-700">Learning Center</label>
+                  <p className="mt-1 text-sm text-gray-900">{student.lc?.name || 'N/A'} ({student.lc?.code || 'N/A'})</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Account/Franchise</label>
-                  <p className="mt-1 text-sm text-gray-900">{student.accountFranchise.name}</p>
+                  <label className="block text-sm font-medium text-gray-700">Master Franchisee</label>
+                  <p className="mt-1 text-sm text-gray-900">{student.mf?.name || 'N/A'} ({student.mf?.code || 'N/A'})</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">MF Name</label>
-                  <p className="mt-1 text-sm text-gray-900">{student.mfName}</p>
+                  <label className="block text-sm font-medium text-gray-700">Headquarters</label>
+                  <p className="mt-1 text-sm text-gray-900">{student.hq?.name || 'N/A'} ({student.hq?.code || 'N/A'})</p>
                 </div>
               </div>
             </div>

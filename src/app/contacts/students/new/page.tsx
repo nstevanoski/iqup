@@ -17,17 +17,18 @@ export default function NewStudentPage() {
   const user = useUser();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (data: Partial<Student>) => {
+  const handleSubmit = async (data: any) => {
     setLoading(true);
     
     try {
       // Convert the form data to API format
+      // Note: Form still uses nested structure internally, so we access it that way
       const studentData: CreateStudentData = {
         firstName: data.firstName!,
         lastName: data.lastName!,
-        dateOfBirth: data.dateOfBirth!.toISOString().split('T')[0],
+        dateOfBirth: data.dateOfBirth!, // Already in string format from form
         gender: data.gender!.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
-        enrollmentDate: data.enrollmentDate?.toISOString().split('T')[0],
+        enrollmentDate: data.enrollmentDate,
         status: data.status?.toUpperCase() as "ACTIVE" | "INACTIVE" | "GRADUATED" | "SUSPENDED",
         address: data.address?.street,
         city: data.address?.city,
@@ -45,10 +46,14 @@ export default function NewStudentPage() {
         // The API will use the user's LC, MF, and HQ IDs automatically
       };
 
-      await createStudent(studentData);
+      const response = await createStudent(studentData);
       
-      // Redirect back to students list
-      router.push("/contacts/students");
+      if (response.success) {
+        // Redirect back to students list
+        router.push("/contacts/students");
+      } else {
+        alert("Failed to create student. Please try again.");
+      }
     } catch (error) {
       console.error("Error creating student:", error);
       alert("Failed to create student. Please try again.");

@@ -4,6 +4,7 @@ export interface StudentListItem {
   id: string
   firstName: string
   lastName: string
+  phone: string // Parent phone
   program: string
   status: "active" | "inactive" | "graduated" | "suspended"
   enrollmentDate: string
@@ -11,16 +12,26 @@ export interface StudentListItem {
   lastActivity: string
 }
 
-export interface StudentsResponse {
-  students: Student[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-    hasNext: boolean
-    hasPrev: boolean
-  }
+export interface StudentsListResponse {
+  success: boolean;
+  data: {
+    students: Student[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+  message: string;
+}
+
+export interface StudentResponse {
+  success: boolean;
+  data: Student;
+  message: string;
 }
 
 export interface CreateStudentData {
@@ -56,6 +67,7 @@ export const convertStudentToListItem = (student: Student): StudentListItem => {
     id: student.id.toString(),
     firstName: student.firstName,
     lastName: student.lastName,
+    phone: student.parentPhone, // Use parent phone instead of student phone
     program: "N/A", // This would need to be populated from program relationships
     status: student.status.toLowerCase() as "active" | "inactive" | "graduated" | "suspended",
     enrollmentDate: student.enrollmentDate ? new Date(student.enrollmentDate).toLocaleDateString() : "N/A",
@@ -95,7 +107,7 @@ class StudentsAPI {
     return headers;
   }
 
-  updateToken(token: string) {
+  updateToken(token: string | null) {
     this.token = token;
   }
 
@@ -133,17 +145,32 @@ class StudentsAPI {
         errorData,
         url: response.url
       });
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
 
-    const result = await response.json();
+    const data = await response.json();
     
-    // Handle the wrapped API response structure
-    if (result.success && result.data) {
-      return result.data;
+    // Transform enum values from uppercase to lowercase and convert date strings to Date objects
+    if (data.data) {
+      if (Array.isArray(data.data)) {
+        data.data = data.data.map(this.transformStudentFromAPI);
+      } else if (data.data.id) {
+        data.data = this.transformStudentFromAPI(data.data);
+      }
     }
-    
-    return result;
+
+    return data;
+  }
+
+  private transformStudentFromAPI(student: any): any {
+    return {
+      ...student,
+      status: student.status?.toLowerCase(),
+      gender: student.gender?.toLowerCase(),
+      createdAt: student.createdAt ? new Date(student.createdAt) : undefined,
+      updatedAt: student.updatedAt ? new Date(student.updatedAt) : undefined,
+      enrollmentDate: student.enrollmentDate ? new Date(student.enrollmentDate) : undefined,
+    };
   }
 
   async getStudents(params: {
@@ -155,7 +182,7 @@ class StudentsAPI {
     mfId?: string
     sortBy?: string
     sortOrder?: string
-  } = {}): Promise<StudentsResponse> {
+  } = {}): Promise<StudentsListResponse> {
     const searchParams = new URLSearchParams()
     
     Object.entries(params).forEach(([key, value]) => {
@@ -170,45 +197,45 @@ class StudentsAPI {
       headers: this.getHeaders(),
     });
 
-    return this.handleResponse<StudentsResponse>(response);
+    return this.handleResponse<StudentsListResponse>(response);
   }
 
-  async getStudent(id: string): Promise<Student> {
+  async getStudent(id: string): Promise<StudentResponse> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
 
-    return this.handleResponse<Student>(response);
+    return this.handleResponse<StudentResponse>(response);
   }
 
-  async createStudent(data: CreateStudentData): Promise<Student> {
+  async createStudent(data: CreateStudentData): Promise<StudentResponse> {
     const response = await fetch(this.baseUrl, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
 
-    return this.handleResponse<Student>(response);
+    return this.handleResponse<StudentResponse>(response);
   }
 
-  async updateStudent(id: string, data: UpdateStudentData): Promise<Student> {
+  async updateStudent(id: string, data: UpdateStudentData): Promise<StudentResponse> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
 
-    return this.handleResponse<Student>(response);
+    return this.handleResponse<StudentResponse>(response);
   }
 
-  async deleteStudent(id: string): Promise<void> {
+  async deleteStudent(id: string): Promise<{ success: boolean; message: string }> {
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
 
-    await this.handleResponse(response);
+    return this.handleResponse<{ success: boolean; message: string }>(response);
   }
 }
 

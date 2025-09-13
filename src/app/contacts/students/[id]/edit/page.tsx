@@ -31,8 +31,13 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
       try {
         setLoading(true);
         
-        const studentData = await getStudent(resolvedParams.id);
-        setStudent(studentData);
+        const response = await getStudent(resolvedParams.id);
+        if (response.success) {
+          setStudent(response.data);
+        } else {
+          setError("Student not found");
+          return;
+        }
       } catch (err) {
         setError("Failed to load student");
         console.error("Error fetching student:", err);
@@ -46,17 +51,18 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
     fetchStudent();
   }, [resolvedParams.id]);
 
-  const handleSubmit = async (formData: Partial<Student>) => {
+  const handleSubmit = async (formData: any) => {
     try {
       setSaving(true);
       
       // Convert the form data to API format
+      // Note: Form uses nested structure internally, so we access it that way
       const updateData: UpdateStudentData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        dateOfBirth: formData.dateOfBirth?.toISOString().split('T')[0],
+        dateOfBirth: formData.dateOfBirth, // Already in string format from form
         gender: formData.gender?.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
-        enrollmentDate: formData.enrollmentDate?.toISOString().split('T')[0],
+        enrollmentDate: formData.enrollmentDate,
         status: formData.status?.toUpperCase() as "ACTIVE" | "INACTIVE" | "GRADUATED" | "SUSPENDED",
         address: formData.address?.street,
         city: formData.address?.city,
@@ -67,16 +73,20 @@ export default function StudentEditPage({ params }: StudentEditPageProps) {
         parentLastName: formData.parentInfo?.lastName,
         parentPhone: formData.parentInfo?.phone,
         parentEmail: formData.parentInfo?.email,
-        emergencyContactEmail: formData.emergencyContact?.email,
-        emergencyContactPhone: formData.emergencyContact?.phone,
+        emergencyContactEmail: undefined, // Form doesn't have emergency contact anymore
+        emergencyContactPhone: undefined,
         notes: formData.notes,
         avatar: formData.avatar,
       };
 
-      await updateStudent(resolvedParams.id, updateData);
+      const response = await updateStudent(resolvedParams.id, updateData);
       
-      // Navigate back to student detail
-      router.push(`/contacts/students/${resolvedParams.id}`);
+      if (response.success) {
+        // Navigate back to student detail
+        router.push(`/contacts/students/${resolvedParams.id}`);
+      } else {
+        alert("Failed to update student. Please try again.");
+      }
     } catch (err) {
       console.error("Error updating student:", err);
       alert("Failed to update student. Please try again.");
