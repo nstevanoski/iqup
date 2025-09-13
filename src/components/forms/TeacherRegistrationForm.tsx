@@ -25,19 +25,11 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
         id: "teacher_1",
         firstName: "John",
         lastName: "Smith",
-        title: "Mr.",
         email: "john.smith@example.com",
         phone: "+1-555-0123",
         dateOfBirth: new Date("1985-03-15"),
         gender: "male",
         status: "active",
-        centers: [{
-          centerId: "center_1",
-          centerName: "Boston Learning Center",
-          role: "Teacher",
-          startDate: "2023-01-01",
-          isActive: true,
-        }],
         education: [{
           degree: "Bachelor of Education",
           institution: "University of Education",
@@ -67,25 +59,11 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
         id: "teacher_2",
         firstName: "Sarah",
         lastName: "Johnson",
-        title: "Ms.",
         email: "sarah.johnson@example.com",
         phone: "+1-555-0124",
         dateOfBirth: new Date("1988-07-22"),
         gender: "female",
         status: "active",
-        centers: [{
-          centerId: "center_1",
-          centerName: "Boston Learning Center",
-          role: "Teacher",
-          startDate: "2023-01-01",
-          isActive: true,
-        }, {
-          centerId: "center_2",
-          centerName: "Cambridge Learning Center",
-          role: "Senior Teacher",
-          startDate: "2023-06-01",
-          isActive: true,
-        }],
         education: [{
           degree: "Master of Education",
           institution: "Education University",
@@ -115,19 +93,11 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
         id: "teacher_3",
         firstName: "Michael",
         lastName: "Brown",
-        title: "Dr.",
         email: "michael.brown@example.com",
         phone: "+1-555-0125",
         dateOfBirth: new Date("1982-11-08"),
         gender: "male",
         status: "active",
-        centers: [{
-          centerId: "center_2",
-          centerName: "Cambridge Learning Center",
-          role: "Teacher",
-          startDate: "2023-01-01",
-          isActive: true,
-        }],
         education: [{
           degree: "Bachelor of Science",
           institution: "Science University",
@@ -152,18 +122,6 @@ export function TeacherRegistrationForm({ training, onSubmit, onCancel, loading 
     // Filter teachers based on user role and scope
     let filteredTeachers = sampleTeachers;
     
-    if (user?.role === "MF") {
-      // MF users can register teachers from their region
-      filteredTeachers = sampleTeachers.filter(teacher => 
-        teacher.centers.some(center => center.centerId === selectedScope?.id)
-      );
-    } else if (user?.role === "LC") {
-      // LC users can register teachers from their specific center
-      filteredTeachers = sampleTeachers.filter(teacher => 
-        teacher.centers.some(center => center.centerId === selectedScope?.id)
-      );
-    }
-
     setAvailableTeachers(filteredTeachers);
   }, [user, selectedScope]);
 

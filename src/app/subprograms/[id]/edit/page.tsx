@@ -7,6 +7,9 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { SubProgramForm } from "@/components/forms/SubProgramForm";
 import { SubProgram, Program } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { getSubProgram, updateSubProgram, subProgramsAPI } from "@/lib/api/subprograms";
+import { getPrograms, programsAPI } from "@/lib/api/programs";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 
 interface SubProgramEditPageProps {
   params: Promise<{
@@ -14,222 +17,73 @@ interface SubProgramEditPageProps {
   }>;
 }
 
-// Sample data - in a real app, this would come from an API
-const sampleSubPrograms: SubProgram[] = [
-  {
-    id: "1",
-    programId: "prog_1",
-    name: "Beginner English",
-    description: "Introduction to English language basics",
-    status: "active",
-    order: 1,
-    duration: 8,
-    price: 99.99,
-    prerequisites: [],
-    learningObjectives: ["Basic vocabulary", "Simple grammar", "Pronunciation"],
-    createdBy: "user_1",
-    pricingModel: "one-time",
-    coursePrice: 99.99,
-    sharedWithLCs: ["lc_center_nyc", "lc_center_la"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    programId: "prog_1",
-    name: "Intermediate English",
-    description: "Intermediate English language skills",
-    status: "active",
-    order: 2,
-    duration: 8,
-    price: 99.99,
-    prerequisites: ["Beginner English completion"],
-    learningObjectives: ["Complex grammar", "Reading comprehension", "Writing skills"],
-    createdBy: "user_1",
-    pricingModel: "installments",
-    coursePrice: 99.99,
-    numberOfPayments: 3,
-    gap: 30,
-    sharedWithLCs: ["lc_center_nyc"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "3",
-    programId: "prog_2",
-    name: "Algebra Fundamentals",
-    description: "Core algebraic concepts and problem solving",
-    status: "active",
-    order: 1,
-    duration: 12,
-    price: 149.99,
-    prerequisites: ["Basic arithmetic"],
-    learningObjectives: ["Equation solving", "Graphing", "Word problems"],
-    createdBy: "user_1",
-    pricingModel: "subscription",
-    coursePrice: 149.99,
-    pricePerMonth: 49.99,
-    sharedWithLCs: ["lc_center_la"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-05"),
-  },
-  {
-    id: "4",
-    programId: "prog_2",
-    name: "Calculus Advanced",
-    description: "Advanced calculus concepts and applications",
-    status: "draft",
-    order: 2,
-    duration: 16,
-    price: 199.99,
-    prerequisites: ["Algebra Fundamentals"],
-    learningObjectives: ["Derivatives", "Integrals", "Applications"],
-    createdBy: "user_1",
-    pricingModel: "program_price",
-    coursePrice: 199.99,
-    sharedWithLCs: [],
-    visibility: "private",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-25"),
-  },
-];
-
-const mockPrograms: Program[] = [
-  {
-    id: "prog_1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program for all levels",
-    status: "active",
-    category: "Language",
-    duration: 24,
-    price: 299.99,
-    maxStudents: 100,
-    currentStudents: 45,
-    requirements: ["Basic reading skills", "Age 16+"],
-    learningObjectives: ["Fluency in English", "Grammar mastery", "Conversational skills"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "prog_2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum covering algebra, calculus, and statistics",
-    status: "active",
-    category: "STEM",
-    duration: 36,
-    price: 399.99,
-    maxStudents: 80,
-    currentStudents: 32,
-    requirements: ["High school diploma", "Basic math skills"],
-    learningObjectives: ["Advanced problem solving", "Mathematical reasoning", "Statistical analysis"],
-    createdBy: "user_1",
-    hours: 180,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "prog_3",
-    name: "STEM Camp",
-    description: "Science, Technology, Engineering, and Mathematics camp",
-    status: "active",
-    category: "STEM",
-    duration: 8,
-    price: 199.99,
-    maxStudents: 30,
-    currentStudents: 25,
-    requirements: ["Age 8-14"],
-    learningObjectives: ["STEM exploration", "Hands-on learning"],
-    createdBy: "user_1",
-    hours: 80,
-    lessonLength: 120,
-    kind: "stem_camp",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-05"),
-  },
-  {
-    id: "prog_4",
-    name: "Birthday Party Program",
-    description: "Educational birthday party activities",
-    status: "active",
-    category: "Entertainment",
-    duration: 2,
-    price: 99.99,
-    maxStudents: 15,
-    currentStudents: 8,
-    requirements: ["Age 5-12"],
-    learningObjectives: ["Fun learning", "Social interaction"],
-    createdBy: "user_1",
-    hours: 4,
-    lessonLength: 120,
-    kind: "birthday_party",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-20"),
-  },
-];
 
 export default function SubProgramEditPage({ params }: SubProgramEditPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const [subProgram, setSubProgram] = useState<SubProgram | null>(null);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call to fetch subprogram
-    const fetchSubProgram = async () => {
+    const fetchData = async () => {
+      if (!user || !selectedScope || !token) return;
+
       try {
         setLoading(true);
+        setError(null);
+
+        // Update API tokens
+        subProgramsAPI.updateToken(token);
+        programsAPI.updateToken(token);
         
-        // In a real app, this would be an API call
-        const foundSubProgram = sampleSubPrograms.find(sp => sp.id === resolvedParams.id);
+        // Fetch subprogram and programs in parallel
+        const [subProgramResponse, programsResponse] = await Promise.all([
+          getSubProgram(resolvedParams.id),
+          getPrograms({ 
+            limit: 100
+            // userRole and userScope parameters are deprecated - API now uses authenticated user's role and scope
+          }) // Get filtered programs for the dropdown
+        ]);
         
-        if (!foundSubProgram) {
+        if (subProgramResponse.success) {
+          setSubProgram(subProgramResponse.data);
+        } else {
           setError("SubProgram not found");
           return;
         }
         
-        setSubProgram(foundSubProgram);
+        if (programsResponse.success) {
+          setPrograms(programsResponse.data.data);
+        }
       } catch (err) {
-        setError("Failed to load subprogram");
-        console.error("Error fetching subprogram:", err);
+        setError("Failed to load data");
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSubProgram();
-  }, [resolvedParams.id]);
+    fetchData();
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleSubmit = async (formData: Partial<SubProgram>) => {
     try {
       setSaving(true);
       
-      // In a real app, this would be an API call
-      console.log("Updating subprogram:", { id: resolvedParams.id, ...formData });
+      const response = await updateSubProgram(resolvedParams.id, formData);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate back to subprogram detail
-      router.push(`/subprograms/${resolvedParams.id}`);
+      if (response.success) {
+        // Navigate back to subprogram detail
+        router.push(`/subprograms/${resolvedParams.id}`);
+      } else {
+        alert("Failed to update subprogram. Please try again.");
+      }
     } catch (err) {
       console.error("Error updating subprogram:", err);
       alert("Failed to update subprogram. Please try again.");
@@ -310,7 +164,7 @@ export default function SubProgramEditPage({ params }: SubProgramEditPageProps) 
         {/* Form */}
         <SubProgramForm
           subProgram={subProgram}
-          programs={mockPrograms}
+          programs={programs}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           loading={saving}

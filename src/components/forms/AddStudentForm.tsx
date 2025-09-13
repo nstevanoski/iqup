@@ -39,33 +39,21 @@ const sampleStudents: Student[] = [
     id: "student_1",
     firstName: "John",
     lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1-555-1001",
     dateOfBirth: new Date("1995-05-15"),
-    address: {
-      street: "123 Main St",
-      city: "Boston",
-      state: "MA",
-      zipCode: "02101",
-      country: "USA",
-    },
-    emergencyContact: {
-      email: "jane.doe@example.com",
-      phone: "+1-555-1002",
-    },
-    status: "active",
+    address: "123 Main St",
+    city: "Boston",
+    state: "MA",
+    postalCode: "02101",
+    country: "USA",
+    emergencyContactEmail: "jane.doe@example.com",
+    emergencyContactPhone: "+1-555-1002",
+    status: "ACTIVE",
     enrollmentDate: new Date("2024-01-15"),
-    programIds: ["prog_1"],
-    subProgramIds: [],
-    learningGroupIds: [],
-    gender: "male",
-    notes: "Excellent student",
-    parentInfo: {
-      firstName: "Jane",
-      lastName: "Doe",
-      phone: "+1-555-1002",
-      email: "jane.doe@example.com",
-    },
+    gender: "MALE",
+    parentFirstName: "Jane",
+    parentLastName: "Doe",
+    parentPhone: "+1-555-1002",
+    parentEmail: "jane.doe@example.com",
     lastCurrentLG: {
       id: "lg_1",
       name: "Advanced English Group",
@@ -79,30 +67,24 @@ const sampleStudents: Student[] = [
       materials: ["Textbook", "Workbook", "Audio CD"],
       purchaseDate: new Date("2024-01-15"),
     },
-    contactOwner: {
-      id: "user_1",
-      name: "Sarah Wilson",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "franchise_1",
+    lcId: 1,
+    mfId: 1,
+    hqId: 1,
+    lc: {
+      id: 1,
       name: "Boston Learning Center",
-      type: "LC",
+      code: "BLC001",
     },
-    mfName: "Northeast Master Franchise",
-    programHistory: [
-      {
-        id: "hist_1",
-        programId: "prog_1",
-        programName: "English Language Program",
-        startDate: new Date("2024-01-15"),
-        endDate: new Date("2024-06-15"),
-        status: "completed",
-        grade: 95,
-      },
-    ],
-    payments: [],
-    certificates: [],
+    mf: {
+      id: 1,
+      name: "Northeast MF",
+      code: "NEMF001",
+    },
+    hq: {
+      id: 1,
+      name: "IQ UP HQ",
+      code: "IQHQ001",
+    },
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-15"),
   },
@@ -110,33 +92,21 @@ const sampleStudents: Student[] = [
     id: "student_2",
     firstName: "Alice",
     lastName: "Smith",
-    email: "alice.smith@example.com",
-    phone: "+1-555-1003",
     dateOfBirth: new Date("1998-08-22"),
-    address: {
-      street: "456 Oak Ave",
-      city: "Seattle",
-      state: "WA",
-      zipCode: "98101",
-      country: "USA",
-    },
-    emergencyContact: {
-      email: "bob.smith@example.com",
-      phone: "+1-555-1004",
-    },
-    status: "active",
+    address: "456 Oak Ave",
+    city: "Seattle",
+    state: "WA",
+    postalCode: "98101",
+    country: "USA",
+    emergencyContactEmail: "bob.smith@example.com",
+    emergencyContactPhone: "+1-555-1004",
+    status: "ACTIVE",
     enrollmentDate: new Date("2024-01-20"),
-    programIds: ["prog_2"],
-    subProgramIds: [],
-    learningGroupIds: [],
-    gender: "female",
-    notes: "Quick learner",
-    parentInfo: {
-      firstName: "Bob",
-      lastName: "Smith",
-      phone: "+1-555-1004",
-      email: "bob.smith@example.com",
-    },
+    gender: "FEMALE",
+    parentFirstName: "Bob",
+    parentLastName: "Smith",
+    parentPhone: "+1-555-1004",
+    parentEmail: "bob.smith@example.com",
     lastCurrentLG: {
       id: "lg_2",
       name: "Mathematics Group",
@@ -150,30 +120,24 @@ const sampleStudents: Student[] = [
       materials: ["Textbook", "Calculator", "Graph Paper"],
       purchaseDate: new Date("2024-01-20"),
     },
-    contactOwner: {
-      id: "user_2",
-      name: "Michael Brown",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "franchise_2",
+    lcId: 2,
+    mfId: 2,
+    hqId: 1,
+    lc: {
+      id: 2,
       name: "Seattle Learning Center",
-      type: "LC",
+      code: "SLC001",
     },
-    mfName: "Northwest Master Franchise",
-    programHistory: [
-      {
-        id: "hist_2",
-        programId: "prog_2",
-        programName: "Mathematics Program",
-        startDate: new Date("2024-01-20"),
-        endDate: new Date("2024-07-20"),
-        status: "completed",
-        grade: 88,
-      },
-    ],
-    payments: [],
-    certificates: [],
+    mf: {
+      id: 2,
+      name: "Northwest MF",
+      code: "NWMF001",
+    },
+    hq: {
+      id: 1,
+      name: "IQ UP HQ",
+      code: "IQHQ001",
+    },
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-20"),
   },
@@ -181,33 +145,21 @@ const sampleStudents: Student[] = [
     id: "student_3",
     firstName: "Michael",
     lastName: "Johnson",
-    email: "michael.johnson@example.com",
-    phone: "+1-555-1005",
     dateOfBirth: new Date("1993-12-10"),
-    address: {
-      street: "789 Pine St",
-      city: "Austin",
-      state: "TX",
-      zipCode: "73301",
-      country: "USA",
-    },
-    emergencyContact: {
-      email: "sarah.johnson@example.com",
-      phone: "+1-555-1006",
-    },
-    status: "active",
+    address: "789 Pine St",
+    city: "Austin",
+    state: "TX",
+    postalCode: "73301",
+    country: "USA",
+    emergencyContactEmail: "sarah.johnson@example.com",
+    emergencyContactPhone: "+1-555-1006",
+    status: "ACTIVE",
     enrollmentDate: new Date("2024-02-01"),
-    programIds: ["prog_3"],
-    subProgramIds: [],
-    learningGroupIds: [],
-    gender: "male",
-    notes: "Very motivated",
-    parentInfo: {
-      firstName: "Sarah",
-      lastName: "Johnson",
-      phone: "+1-555-1006",
-      email: "sarah.johnson@example.com",
-    },
+    gender: "MALE",
+    parentFirstName: "Sarah",
+    parentLastName: "Johnson",
+    parentPhone: "+1-555-1006",
+    parentEmail: "sarah.johnson@example.com",
     lastCurrentLG: {
       id: "lg_3",
       name: "Science Group",
@@ -221,30 +173,24 @@ const sampleStudents: Student[] = [
       materials: ["Textbook", "Lab Kit", "Microscope"],
       purchaseDate: new Date("2024-02-01"),
     },
-    contactOwner: {
-      id: "user_3",
-      name: "David Wilson",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "franchise_3",
+    lcId: 3,
+    mfId: 3,
+    hqId: 1,
+    lc: {
+      id: 3,
       name: "Austin Learning Center",
-      type: "LC",
+      code: "ALC001",
     },
-    mfName: "Southwest Master Franchise",
-    programHistory: [
-      {
-        id: "hist_3",
-        programId: "prog_3",
-        programName: "Science Program",
-        startDate: new Date("2024-02-01"),
-        endDate: new Date("2024-08-01"),
-        status: "completed",
-        grade: 92,
-      },
-    ],
-    payments: [],
-    certificates: [],
+    mf: {
+      id: 3,
+      name: "Southwest MF",
+      code: "SWMF001",
+    },
+    hq: {
+      id: 1,
+      name: "IQ UP HQ",
+      code: "IQHQ001",
+    },
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-02-01"),
   },
@@ -460,7 +406,7 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
               <option value="">Choose a student...</option>
               {sampleStudents.map((student) => (
                 <option key={student.id} value={student.id}>
-                  {student.firstName} {student.lastName} - {student.email}
+                  {student.firstName} {student.lastName}
                 </option>
               ))}
             </select>
@@ -472,11 +418,8 @@ export function AddStudentForm({ learningGroupId, onAddStudent, onCancel, loadin
                   <div className="font-medium text-blue-900">
                     {selectedStudent.firstName} {selectedStudent.lastName}
                   </div>
-                  <div className="text-blue-700">
-                    {selectedStudent.email} • {selectedStudent.phone}
-                  </div>
                   <div className="text-blue-600 text-xs mt-1">
-                    Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate ? selectedStudent.enrollmentDate.toLocaleDateString() : "N/A"}
+                    Status: {selectedStudent.status} • Enrolled: {selectedStudent.enrollmentDate ? new Date(selectedStudent.enrollmentDate).toLocaleDateString() : "N/A"}
                   </div>
                 </div>
               </div>

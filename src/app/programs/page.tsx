@@ -5,23 +5,25 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Program } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen } from "lucide-react";
 import { getPrograms, deleteProgram, programsAPI } from "@/lib/api/programs";
+import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
+import { DeleteConfirmationModal } from "@/components/ui";
 
 
 // Helper function to get MF scope names
-const getMFScopeNames = (scopeIds: string[]): string[] => {
-  const scopeMap: Record<string, string> = {
-    "mf_region_1": "Region 1",
-    "mf_region_2": "Region 2",
-  };
-  return scopeIds.map(id => scopeMap[id] || id);
+const getMFScopeNames = (scopeIds: string[], mfAccounts: MFAccount[]): string[] => {
+  const mfMap: Record<string, string> = {};
+  mfAccounts.forEach(mf => {
+    mfMap[mf.id.toString()] = mf.name;
+  });
+  return scopeIds.map(id => mfMap[id] || `MF-${id}`);
 };
 
 // Column definitions
-const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Program) => void): Column<Program>[] => {
+const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Program) => void, mfAccounts: MFAccount[]): Column<Program>[] => {
   const baseColumns: Column<Program>[] = [
     {
       key: "name",
@@ -133,7 +135,7 @@ const getColumns = (userRole: string, canEdit: boolean, onNameClick: (row: Progr
           </span>
           {value === "shared" && row.sharedWithMFs.length > 0 && (
             <div className="text-xs text-gray-500">
-              Shared with: {getMFScopeNames(row.sharedWithMFs).join(", ")}
+              Shared with: {getMFScopeNames(row.sharedWithMFs, mfAccounts).join(", ")}
             </div>
           )}
         </div>
@@ -152,44 +154,257 @@ export default function ProgramsPage() {
   const [data, setData] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
+  
+  // Backend search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  // Fetch programs from API
-  useEffect(() => {
-    const fetchPrograms = async () => {
-      if (!user || !selectedScope || !token) return;
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [programToDelete, setProgramToDelete] = useState<Program | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-      try {
+  // Function to fetch programs with current parameters
+  const fetchPrograms = useCallback(async (params: {
+    page?: number;
+    search?: string;
+    status?: string;
+    category?: string;
+    kind?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    isSearch?: boolean;
+  } = {}) => {
+    if (!user || !selectedScope || !token) return;
+
+    try {
+      if (params.isSearch) {
+        setSearchLoading(true);
+      } else {
         setLoading(true);
-        setError(null);
+      }
+      setError(null);
 
-        // Update API token
-        programsAPI.updateToken(token);
+      // Update API token
+      programsAPI.updateToken(token);
 
-        const response = await getPrograms({
-          userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
-          userScope: selectedScope.id,
-          page: 1,
-          limit: 100, // Get all programs for now
-        });
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: params.page || currentPage,
+        limit: 10, // Use pageSize from DataTable
+        search: params.search || searchTerm,
+        status: params.status || filters.status || '',
+        category: params.category || filters.category || '',
+        kind: params.kind || filters.kind || '',
+        sortBy: params.sortBy || sortBy,
+        sortOrder: params.sortOrder || sortOrder,
+      });
 
-        if (response.success) {
-          setData(response.data.data);
-        } else {
-          setError("Failed to fetch programs");
-        }
-      } catch (err) {
-        console.error("Error fetching programs:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch programs");
-      } finally {
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      if (params.isSearch) {
+        setSearchLoading(false);
+      } else {
         setLoading(false);
+      }
+    }
+  }, [user, selectedScope, token]);
+
+  // Initial fetch - only when user, selectedScope, or token changes
+  useEffect(() => {
+    fetchPrograms();
+  }, [user, selectedScope, token, fetchPrograms]);
+
+  // Fetch MF accounts for HQ users
+  useEffect(() => {
+    const fetchMFAccounts = async () => {
+      if (user?.role !== "HQ" || !token) return;
+      
+      try {
+        const response = await getMFAccounts();
+        if (response.success) {
+          setMfAccounts(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching MF accounts:', error);
       }
     };
 
-    fetchPrograms();
+    fetchMFAccounts();
+  }, [user?.role, token]);
+
+  // Backend search handlers
+  const handleSearch = useCallback(async (term: string) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setSearchTerm(term);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: 1,
+        limit: 10,
+        search: term,
+        status: filters.status || '',
+        category: filters.category || '',
+        kind: filters.kind || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
+
+  const handleFilter = useCallback(async (newFilters: Record<string, string>) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setFilters(newFilters);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: newFilters.status || '',
+        category: newFilters.category || '',
+        kind: newFilters.kind || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
+
+  const handleSort = useCallback(async (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    if (!user || !selectedScope || !token) return;
+    
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        category: filters.category || '',
+        kind: filters.kind || '',
+        sortBy: newSortBy,
+        sortOrder: newSortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token]);
+
+  const handlePageChange = useCallback(async (page: number) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setCurrentPage(page);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      programsAPI.updateToken(token);
+      const response = await getPrograms({
+        userRole: user.role as 'HQ' | 'MF' | 'LC' | 'TT',
+        userScope: selectedScope.id,
+        page,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        category: filters.category || '',
+        kind: filters.kind || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError("Failed to fetch programs");
+      }
+    } catch (err) {
+      console.error("Error fetching programs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch programs");
+    } finally {
+      setSearchLoading(false);
+    }
   }, [user, selectedScope, token]);
 
   const canEdit = user?.role === "HQ";
-  const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`));
+  const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/programs/${row.id}`), mfAccounts);
 
   const handleRowAction = async (action: string, row: Program) => {
     console.log(`${action} action for program:`, row);
@@ -207,22 +422,8 @@ export default function ProgramsPage() {
         break;
       case "delete":
         if (canEdit) {
-          if (confirm(`Are you sure you want to delete ${row.name}?`)) {
-            try {
-              setLoading(true);
-              const response = await deleteProgram(row.id);
-              if (response.success) {
-                setData(prev => prev.filter(item => item.id !== row.id));
-              } else {
-                alert("Failed to delete program. Please try again.");
-              }
-            } catch (err) {
-              console.error("Error deleting program:", err);
-              alert("Failed to delete program. Please try again.");
-            } finally {
-              setLoading(false);
-            }
-          }
+          setProgramToDelete(row);
+          setDeleteModalOpen(true);
         } else {
           alert("You don't have permission to delete programs");
         }
@@ -240,11 +441,52 @@ export default function ProgramsPage() {
     
     switch (action) {
       case "delete":
-        if (confirm(`Are you sure you want to delete ${rows.length} programs?`)) {
-          const idsToDelete = new Set(rows.map(row => row.id));
-          setData(prev => prev.filter(item => !idsToDelete.has(item.id)));
-        }
+        // For bulk delete, we'll use a single program object to represent the bulk operation
+        const bulkDeleteProgram: Program = {
+          id: 'bulk',
+          name: `${rows.length} programs`,
+          description: `This will delete ${rows.length} selected programs`,
+        } as Program;
+        setProgramToDelete(bulkDeleteProgram);
+        setDeleteModalOpen(true);
         break;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!programToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      if (programToDelete.id === 'bulk') {
+        // Handle bulk delete - this is a simplified version
+        // In a real implementation, you'd want to call a bulk delete API
+        alert("Bulk delete functionality would be implemented here");
+        setDeleteModalOpen(false);
+        setProgramToDelete(null);
+      } else {
+        // Handle single program delete
+        const response = await deleteProgram(programToDelete.id);
+        if (response.success) {
+          setData(prev => prev.filter(item => item.id !== programToDelete.id));
+          setDeleteModalOpen(false);
+          setProgramToDelete(null);
+        } else {
+          alert("Failed to delete program. Please try again.");
+        }
+      }
+    } catch (err) {
+      console.error("Error deleting program:", err);
+      alert("Failed to delete program. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!isDeleting) {
+      setDeleteModalOpen(false);
+      setProgramToDelete(null);
     }
   };
 
@@ -292,27 +534,6 @@ export default function ProgramsPage() {
           )}
         </div>
 
-        {/* Role-based info */}
-        {user?.role !== "HQ" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <BookOpen className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
-              <div>
-                <h3 className="text-sm font-medium text-blue-800">
-                  {user?.role === "MF" || user?.role === "LC" 
-                    ? "Shared Programs" 
-                    : "Public Programs"}
-                </h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  {user?.role === "MF" || user?.role === "LC"
-                    ? `You can view programs shared with ${selectedScope?.name || "your scope"}.`
-                    : "You can view public programs only."}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
@@ -351,15 +572,41 @@ export default function ProgramsPage() {
             pagination={true}
             pageSize={10}
             bulkActions={canEdit}
-            rowActions={true}
+            rowActions={canEdit}
             onRowAction={handleRowAction}
             onBulkAction={handleBulkAction}
             onExport={handleExport}
             loading={loading}
             emptyMessage="No programs found"
+            // Backend search props
+            backendSearch={true}
+            // onSearch={handleSearch}
+            // onFilter={handleFilter}
+            // onSort={handleSort}
+            // onPageChange={handlePageChange}
+            searchLoading={searchLoading}
+            // Backend pagination info
+            totalItems={totalItems}
+            totalPages={totalPages}
+            currentPage={currentPage}
           />
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemName={programToDelete?.name}
+        isLoading={isDeleting}
+        title="Delete Program"
+        description={
+          programToDelete?.id === 'bulk' 
+            ? `Are you sure you want to delete ${programToDelete.name}? This action cannot be undone.`
+            : undefined
+        }
+      />
     </DashboardLayout>
   );
 }

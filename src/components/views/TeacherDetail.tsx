@@ -6,7 +6,6 @@ import {
   Mail, 
   Phone, 
   MapPin, 
-  Users, 
   Clock, 
   Edit,
   Trash2
@@ -59,9 +58,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
     }
   };
 
-  const getActiveCenters = () => {
-    return teacher.centers?.filter(center => center.isActive) || [];
-  };
+  // getActiveCenters function removed per requirements
 
   const getCompletedTrainings = () => {
     return teacher.trainings?.filter(training => training.status === 'completed') || [];
@@ -77,7 +74,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {teacher.title} {teacher.firstName} {teacher.lastName}
+              {teacher.firstName} {teacher.lastName}
             </h1>
             <div className="flex items-center space-x-4 mt-2">
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(teacher.status)}`}>
@@ -170,33 +167,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
 
       {/* Education and Trainings removed per requirements */}
 
-      {/* Active Centers */}
-      {getActiveCenters().length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Users className="h-5 w-5 mr-2" />
-            Active Centers
-          </h2>
-          <div className="space-y-3">
-            {getActiveCenters().map((center, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900">{center.centerName}</h3>
-                  <p className="text-xs text-gray-600">{center.role}</p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                    Active
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Since {new Date(center.startDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Active Centers section removed per requirements */}
 
       {/* Availability */}
       {teacher.availability && teacher.availability.length > 0 && (

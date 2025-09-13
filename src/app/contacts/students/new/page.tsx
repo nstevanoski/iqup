@@ -8,142 +8,52 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { useUser } from "@/store/auth";
 import { Student, Program, SubProgram, LearningGroup } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { createStudent, CreateStudentData } from "@/lib/api/students";
 
-// Mock data - in a real app, this would come from an API
-const mockPrograms: Program[] = [
-  {
-    id: "prog_1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program for all levels",
-    status: "active",
-    category: "Language",
-    duration: 24,
-    price: 299.99,
-    maxStudents: 100,
-    currentStudents: 45,
-    requirements: ["Basic reading skills", "Age 16+"],
-    learningObjectives: ["Fluency in English", "Grammar mastery", "Conversational skills"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "prog_2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum covering algebra, calculus, and statistics",
-    status: "active",
-    category: "STEM",
-    duration: 36,
-    price: 399.99,
-    maxStudents: 80,
-    currentStudents: 32,
-    requirements: ["High school diploma", "Basic math skills"],
-    learningObjectives: ["Advanced problem solving", "Mathematical reasoning", "Statistical analysis"],
-    createdBy: "user_1",
-    hours: 180,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-];
-
-const mockSubPrograms: SubProgram[] = [
-  {
-    id: "sub_1",
-    programId: "prog_1",
-    name: "Beginner English",
-    description: "Introduction to English language basics",
-    status: "active",
-    order: 1,
-    duration: 8,
-    price: 99.99,
-    prerequisites: [],
-    learningObjectives: ["Basic vocabulary", "Simple grammar", "Pronunciation"],
-    createdBy: "user_1",
-    pricingModel: "one-time",
-    coursePrice: 99.99,
-    sharedWithLCs: ["lc_center_nyc", "lc_center_la"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-];
-
-const mockLearningGroups: LearningGroup[] = [
-  {
-    id: "lg_1",
-    name: "English Beginners Group A",
-    description: "Beginner English learning group",
-    programId: "prog_1",
-    subProgramId: "sub_1",
-    teacherId: "teacher_1",
-    studentIds: [],
-    maxStudents: 20,
-    status: "active",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-05-31"),
-    schedule: [],
-    location: "Main Campus",
-    notes: "Morning session",
-    dates: {
-      startDate: "2024-02-01",
-      endDate: "2024-05-31",
-      registrationDeadline: "2024-01-25",
-      lastClassDate: "2024-05-31",
-    },
-    pricingSnapshot: {
-      programPrice: 299.99,
-      subProgramPrice: 99.99,
-      totalPrice: 399.98,
-      finalPrice: 399.98,
-      currency: "USD",
-      coursePrice: 399.98,
-      numberOfPayments: 3,
-      gapBetweenPayments: 30,
-      pricePerMonth: 133.33,
-      paymentMethod: "installments",
-    },
-    owner: {
-      id: "user_1",
-      name: "LC Manager",
-      role: "LC",
-    },
-    franchisee: {
-      id: "lc_1",
-      name: "New York Learning Center",
-      location: "New York",
-    },
-    students: [],
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-];
+// No more mock data - using real API only
 
 export default function NewStudentPage() {
   const router = useRouter();
   const user = useUser();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (data: Partial<Student>) => {
+  const handleSubmit = async (data: any) => {
     setLoading(true);
     
     try {
-      // In a real app, this would make an API call
-      console.log("Creating student:", data);
+      // Convert the form data to API format
+      // Note: Form still uses nested structure internally, so we access it that way
+      const studentData: CreateStudentData = {
+        firstName: data.firstName!,
+        lastName: data.lastName!,
+        dateOfBirth: data.dateOfBirth!, // Already in string format from form
+        gender: data.gender!.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
+        enrollmentDate: data.enrollmentDate,
+        status: data.status?.toUpperCase() as "ACTIVE" | "INACTIVE" | "GRADUATED" | "SUSPENDED",
+        address: data.address?.street,
+        city: data.address?.city,
+        state: data.address?.state,
+        country: data.address?.country,
+        postalCode: data.address?.zipCode,
+        parentFirstName: data.parentInfo!.firstName,
+        parentLastName: data.parentInfo!.lastName,
+        parentPhone: data.parentInfo!.phone,
+        parentEmail: data.parentInfo!.email,
+        emergencyContactEmail: undefined,
+        emergencyContactPhone: undefined,
+        notes: data.notes,
+        avatar: data.avatar,
+        // The API will use the user's LC, MF, and HQ IDs automatically
+      };
+
+      const response = await createStudent(studentData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirect back to students list
-      router.push("/contacts/students");
+      if (response.success) {
+        // Redirect back to students list
+        router.push("/contacts/students");
+      } else {
+        alert("Failed to create student. Please try again.");
+      }
     } catch (error) {
       console.error("Error creating student:", error);
       alert("Failed to create student. Please try again.");
@@ -230,9 +140,9 @@ export default function NewStudentPage() {
 
         {/* Form */}
         <StudentForm
-          programs={mockPrograms}
-          subPrograms={mockSubPrograms}
-          learningGroups={mockLearningGroups}
+          programs={[]}
+          subPrograms={[]}
+          learningGroups={[]}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           loading={loading}

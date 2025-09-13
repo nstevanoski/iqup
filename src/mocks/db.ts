@@ -312,34 +312,23 @@ export const students: Student[] = [
     id: studentId1,
     firstName: "John",
     lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1-555-0101",
     dateOfBirth: new Date("1995-03-15"),
-    gender: "male",
+    gender: "MALE",
     enrollmentDate: createDate(60),
-    status: "active",
-    programIds: [programs[0].id, programs[1].id],
-    subProgramIds: [subPrograms[0].id, subPrograms[2].id],
-    learningGroupIds: [],
-    emergencyContact: {
-      email: "jane.doe@example.com",
-      phone: "+1-555-0102",
-    },
-    address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "NY",
-      zipCode: "10001",
-      country: "USA",
-    },
+    status: "ACTIVE",
+    emergencyContactEmail: "jane.doe@example.com",
+    emergencyContactPhone: "+1-555-0102",
+    address: "123 Main St",
+    city: "New York",
+    state: "NY",
+    country: "USA",
+    postalCode: "10001",
     notes: "Excellent student, very motivated",
     // New required fields
-    parentInfo: {
-      firstName: "Jane",
-      lastName: "Doe",
-      phone: "+1-555-0102",
-      email: "jane.doe@example.com",
-    },
+    parentFirstName: "Jane",
+    parentLastName: "Doe",
+    parentPhone: "+1-555-0102",
+    parentEmail: "jane.doe@example.com",
     lastCurrentLG: {
       id: "lg_english_basic_1",
       name: "English Basics - Morning Group",
@@ -354,17 +343,24 @@ export const students: Student[] = [
       materials: ["Textbook Level 1", "Workbook", "Audio CD", "Online Access Code"],
       purchaseDate: createDate(60),
     },
-    contactOwner: {
-      id: "user_lc_manager_ny",
-      name: "Sarah Johnson",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "lc_new_york_01",
+    lcId: 1,
+    mfId: 1,
+    hqId: 1,
+    lc: {
+      id: 1,
       name: "New York Learning Center",
-      type: "LC",
+      code: "NYC01",
     },
-    mfName: "North America Master Franchise",
+    mf: {
+      id: 1,
+      name: "North America Master Franchise",
+      code: "NAMF01",
+    },
+    hq: {
+      id: 1,
+      name: "Headquarters",
+      code: "HQ01",
+    },
     programHistory: [
       {
         id: "hist_1",
@@ -391,34 +387,23 @@ export const students: Student[] = [
     id: studentId2,
     firstName: "Jane",
     lastName: "Smith",
-    email: "jane.smith@example.com",
-    phone: "+1-555-0201",
     dateOfBirth: new Date("1998-07-22"),
-    gender: "female",
+    gender: "FEMALE",
     enrollmentDate: createDate(45),
-    status: "active",
-    programIds: [programs[0].id],
-    subProgramIds: [subPrograms[1].id],
-    learningGroupIds: [],
-    emergencyContact: {
-      email: "bob.smith@example.com",
-      phone: "+1-555-0202",
-    },
-    address: {
-      street: "456 Oak Ave",
-      city: "Los Angeles",
-      state: "CA",
-      zipCode: "90210",
-      country: "USA",
-    },
+    status: "ACTIVE",
+    emergencyContactEmail: "bob.smith@example.com",
+    emergencyContactPhone: "+1-555-0202",
+    address: "456 Oak Ave",
+    city: "Los Angeles",
+    state: "CA",
+    country: "USA",
+    postalCode: "90210",
     notes: "Very dedicated student, excellent attendance",
     // New required fields
-    parentInfo: {
-      firstName: "Robert",
-      lastName: "Smith",
-      phone: "+1-555-0202",
-      email: "bob.smith@example.com",
-    },
+    parentFirstName: "Robert",
+    parentLastName: "Smith",
+    parentPhone: "+1-555-0202",
+    parentEmail: "bob.smith@example.com",
     lastCurrentLG: {
       id: "lg_english_inter_1",
       name: "English Intermediate - Evening Group",
@@ -433,17 +418,24 @@ export const students: Student[] = [
       materials: ["Textbook Level 2", "Advanced Workbook", "Audio CD Set", "Online Platform Access"],
       purchaseDate: createDate(45),
     },
-    contactOwner: {
-      id: "user_lc_manager_la",
-      name: "Michael Chen",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "lc_los_angeles_01",
+    lcId: 2,
+    mfId: 2,
+    hqId: 1,
+    lc: {
+      id: 2,
       name: "Los Angeles Learning Center",
-      type: "LC",
+      code: "LA01",
     },
-    mfName: "West Coast Master Franchise",
+    mf: {
+      id: 2,
+      name: "West Coast Master Franchise",
+      code: "WCMF01",
+    },
+    hq: {
+      id: 1,
+      name: "Headquarters",
+      code: "HQ01",
+    },
     programHistory: [
       {
         id: "hist_2",
@@ -470,34 +462,23 @@ export const students: Student[] = [
     id: studentId3,
     firstName: "Bob",
     lastName: "Johnson",
-    email: "bob.johnson@example.com",
-    phone: "+1-555-0301",
     dateOfBirth: new Date("1993-11-08"),
-    gender: "male",
+    gender: "MALE",
     enrollmentDate: createDate(30),
-    status: "active",
-    programIds: [programs[2].id],
-    subProgramIds: [],
-    learningGroupIds: [],
-    emergencyContact: {
-      email: "mary.johnson@example.com",
-      phone: "+1-555-0302",
-    },
-    address: {
-      street: "789 Pine St",
-      city: "Chicago",
-      state: "IL",
-      zipCode: "60601",
-      country: "USA",
-    },
+    status: "ACTIVE",
+    emergencyContactEmail: "mary.johnson@example.com",
+    emergencyContactPhone: "+1-555-0302",
+    address: "789 Pine St",
+    city: "Chicago",
+    state: "IL",
+    country: "USA",
+    postalCode: "60601",
     notes: "Excellent problem-solving skills, shows great potential in STEM",
     // New required fields
-    parentInfo: {
-      firstName: "Mary",
-      lastName: "Johnson",
-      phone: "+1-555-0302",
-      email: "mary.johnson@example.com",
-    },
+    parentFirstName: "Mary",
+    parentLastName: "Johnson",
+    parentPhone: "+1-555-0302",
+    parentEmail: "mary.johnson@example.com",
     lastCurrentLG: {
       id: "lg_math_advanced_1",
       name: "Advanced Mathematics - Intensive Course",
@@ -512,17 +493,24 @@ export const students: Student[] = [
       materials: ["Advanced Calculus Textbook", "Problem Set Collection", "Graphing Calculator", "Online Simulation Access"],
       purchaseDate: createDate(30),
     },
-    contactOwner: {
-      id: "user_lc_manager_chi",
-      name: "David Rodriguez",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "lc_chicago_01",
+    lcId: 3,
+    mfId: 3,
+    hqId: 1,
+    lc: {
+      id: 3,
       name: "Chicago Learning Center",
-      type: "LC",
+      code: "CHI01",
     },
-    mfName: "Midwest Master Franchise",
+    mf: {
+      id: 3,
+      name: "Midwest Master Franchise",
+      code: "MWMF01",
+    },
+    hq: {
+      id: 1,
+      name: "Headquarters",
+      code: "HQ01",
+    },
     programHistory: [],
     payments: [], // Will be populated separately
     certificates: [], // Will be populated separately
@@ -533,34 +521,23 @@ export const students: Student[] = [
     id: studentId4,
     firstName: "Emily",
     lastName: "Davis",
-    email: "emily.davis@example.com",
-    phone: "+1-555-0401",
     dateOfBirth: new Date("2000-09-12"),
-    gender: "female",
+    gender: "FEMALE",
     enrollmentDate: createDate(90),
-    status: "graduated",
-    programIds: [programs[0].id, programs[1].id],
-    subProgramIds: [subPrograms[0].id, subPrograms[1].id],
-    learningGroupIds: [],
-    emergencyContact: {
-      email: "susan.davis@example.com",
-      phone: "+1-555-0402",
-    },
-    address: {
-      street: "321 Elm Street",
-      city: "Miami",
-      state: "FL",
-      zipCode: "33101",
-      country: "USA",
-    },
+    status: "GRADUATED",
+    emergencyContactEmail: "susan.davis@example.com",
+    emergencyContactPhone: "+1-555-0402",
+    address: "321 Elm Street",
+    city: "Miami",
+    state: "FL",
+    country: "USA",
+    postalCode: "33101",
     notes: "Outstanding student, completed multiple programs with excellence",
     // New required fields
-    parentInfo: {
-      firstName: "Susan",
-      lastName: "Davis",
-      phone: "+1-555-0402",
-      email: "susan.davis@example.com",
-    },
+    parentFirstName: "Susan",
+    parentLastName: "Davis",
+    parentPhone: "+1-555-0402",
+    parentEmail: "susan.davis@example.com",
     lastCurrentLG: {
       id: "lg_business_advanced_1",
       name: "Business Communication - Advanced",
@@ -575,17 +552,24 @@ export const students: Student[] = [
       materials: ["Business English Textbook", "Case Study Collection", "Presentation Templates", "Professional Writing Guide"],
       purchaseDate: createDate(180),
     },
-    contactOwner: {
-      id: "user_lc_manager_mia",
-      name: "Carlos Martinez",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "lc_miami_01",
+    lcId: 4,
+    mfId: 4,
+    hqId: 1,
+    lc: {
+      id: 4,
       name: "Miami Learning Center",
-      type: "LC",
+      code: "MIA01",
     },
-    mfName: "Southeast Master Franchise",
+    mf: {
+      id: 4,
+      name: "Southeast Master Franchise",
+      code: "SEMF01",
+    },
+    hq: {
+      id: 1,
+      name: "Headquarters",
+      code: "HQ01",
+    },
     programHistory: [
       {
         id: "hist_3",
@@ -627,34 +611,23 @@ export const students: Student[] = [
     id: studentId5,
     firstName: "Alex",
     lastName: "Thompson",
-    email: "alex.thompson@example.com",
-    phone: "+1-555-0501",
     dateOfBirth: new Date("1997-05-03"),
-    gender: "other",
+    gender: "OTHER",
     enrollmentDate: createDate(15),
-    status: "inactive",
-    programIds: [programs[0].id],
-    subProgramIds: [subPrograms[0].id],
-    learningGroupIds: [],
-    emergencyContact: {
-      email: "pat.thompson@example.com",
-      phone: "+1-555-0502",
-    },
-    address: {
-      street: "654 Maple Drive",
-      city: "Seattle",
-      state: "WA",
-      zipCode: "98101",
-      country: "USA",
-    },
+    status: "INACTIVE",
+    emergencyContactEmail: "pat.thompson@example.com",
+    emergencyContactPhone: "+1-555-0502",
+    address: "654 Maple Drive",
+    city: "Seattle",
+    state: "WA",
+    country: "USA",
+    postalCode: "98101",
     notes: "Temporarily paused due to personal reasons, planning to resume next semester",
     // New required fields
-    parentInfo: {
-      firstName: "Pat",
-      lastName: "Thompson",
-      phone: "+1-555-0502",
-      email: "pat.thompson@example.com",
-    },
+    parentFirstName: "Pat",
+    parentLastName: "Thompson",
+    parentPhone: "+1-555-0502",
+    parentEmail: "pat.thompson@example.com",
     lastCurrentLG: {
       id: "lg_english_basic_4",
       name: "English Basics - Self-Paced",
@@ -668,17 +641,24 @@ export const students: Student[] = [
       materials: ["Digital Textbook", "Interactive Workbook", "Video Lessons", "Mobile App Access"],
       purchaseDate: createDate(15),
     },
-    contactOwner: {
-      id: "user_lc_manager_sea",
-      name: "Jennifer Lee",
-      role: "LC",
-    },
-    accountFranchise: {
-      id: "lc_seattle_01",
+    lcId: 5,
+    mfId: 5,
+    hqId: 1,
+    lc: {
+      id: 5,
       name: "Seattle Learning Center",
-      type: "LC",
+      code: "SEA01",
     },
-    mfName: "Pacific Northwest Master Franchise",
+    mf: {
+      id: 5,
+      name: "Pacific Northwest Master Franchise",
+      code: "PNWMF01",
+    },
+    hq: {
+      id: 1,
+      name: "Headquarters",
+      code: "HQ01",
+    },
     programHistory: [],
     payments: [], // Will be populated separately
     certificates: [], // Will be populated separately
@@ -1020,7 +1000,6 @@ export const teachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1980-05-15"),
     gender: "female",
-    title: "Dr.",
     email: "sarah.wilson@example.com",
     phone: "+1-555-1001",
     specialization: ["English Literature", "Linguistics"],
@@ -1076,22 +1055,6 @@ export const teachers: Teacher[] = [
         status: "in_progress",
       },
     ],
-    centers: [
-      {
-        centerId: "center_1",
-        centerName: "Boston Learning Center",
-        role: "Senior English Instructor",
-        startDate: "2018-01-15",
-        isActive: true,
-      },
-      {
-        centerId: "center_2",
-        centerName: "Cambridge Education Hub",
-        role: "Literature Consultant",
-        startDate: "2020-06-01",
-        isActive: true,
-      },
-    ],
     createdAt: createDate(120),
     updatedAt: createDate(7),
   },
@@ -1101,7 +1064,6 @@ export const teachers: Teacher[] = [
     lastName: "Brown",
     dateOfBirth: new Date("1975-08-22"),
     gender: "male",
-    title: "Prof.",
     email: "michael.brown@example.com",
     phone: "+1-555-1002",
     specialization: ["Mathematics", "Statistics"],
@@ -1150,15 +1112,6 @@ export const teachers: Teacher[] = [
         status: "completed",
       },
     ],
-    centers: [
-      {
-        centerId: "center_3",
-        centerName: "Seattle Math Academy",
-        role: "Head of Mathematics Department",
-        startDate: "2019-09-01",
-        isActive: true,
-      },
-    ],
     createdAt: createDate(100),
     updatedAt: createDate(4),
   },
@@ -1168,7 +1121,6 @@ export const teachers: Teacher[] = [
     lastName: "Davis",
     dateOfBirth: new Date("1985-12-03"),
     gender: "female",
-    title: "Dr.",
     email: "emily.davis@example.com",
     phone: "+1-555-1003",
     specialization: ["Physics", "Chemistry"],
@@ -1217,23 +1169,6 @@ export const teachers: Teacher[] = [
         status: "scheduled",
       },
     ],
-    centers: [
-      {
-        centerId: "center_4",
-        centerName: "Austin Science Center",
-        role: "Physics Instructor",
-        startDate: "2020-08-15",
-        isActive: true,
-      },
-      {
-        centerId: "center_5",
-        centerName: "Texas Learning Hub",
-        role: "Chemistry Lab Coordinator",
-        startDate: "2021-01-10",
-        endDate: "2023-12-31",
-        isActive: false,
-      },
-    ],
     createdAt: createDate(80),
     updatedAt: createDate(2),
   },
@@ -1243,7 +1178,6 @@ export const teachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1988-03-18"),
     gender: "male",
-    title: "Mr.",
     email: "david.wilson@example.com",
     phone: "+1-555-1004",
     specialization: ["Computer Science", "Programming"],
@@ -1274,15 +1208,6 @@ export const teachers: Teacher[] = [
         trainingName: "Modern Programming Languages",
         completedDate: "2024-02-10",
         status: "completed",
-      },
-    ],
-    centers: [
-      {
-        centerId: "center_6",
-        centerName: "San Francisco Tech Academy",
-        role: "Senior Programming Instructor",
-        startDate: "2019-03-01",
-        isActive: true,
       },
     ],
     createdAt: createDate(60),
@@ -1331,7 +1256,7 @@ export const learningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_1",
-      name: "Dr. Sarah Wilson",
+      name: "Sarah Wilson",
       role: "Program Director",
     },
     franchisee: {
@@ -1396,7 +1321,7 @@ export const learningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_2",
-      name: "Prof. Michael Brown",
+      name: "Michael Brown",
       role: "Mathematics Coordinator",
     },
     franchisee: {
@@ -1456,7 +1381,7 @@ export const learningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_3",
-      name: "Dr. Emily Davis",
+      name: "Emily Davis",
       role: "Physics Department Head",
     },
     franchisee: {
@@ -1767,8 +1692,20 @@ export const orders: Order[] = [
     total: 64.78,
     paymentStatus: "paid",
     paymentMethod: "Credit Card",
-    shippingAddress: students[0].address!,
-    billingAddress: students[0].address!,
+    shippingAddress: {
+      street: students[0].address!,
+      city: students[0].city!,
+      state: students[0].state!,
+      zipCode: students[0].postalCode!,
+      country: students[0].country!,
+    },
+    billingAddress: {
+      street: students[0].address!,
+      city: students[0].city!,
+      state: students[0].state!,
+      zipCode: students[0].postalCode!,
+      country: students[0].country!,
+    },
     processedBy: "user_1",
     orderType: "lc_to_student",
     fromEntity: {
@@ -1806,8 +1743,20 @@ export const orders: Order[] = [
     discount: 0,
     total: 97.19,
     paymentStatus: "pending",
-    shippingAddress: students[1].address!,
-    billingAddress: students[1].address!,
+    shippingAddress: {
+      street: students[1].address!,
+      city: students[1].city!,
+      state: students[1].state!,
+      zipCode: students[1].postalCode!,
+      country: students[1].country!,
+    },
+    billingAddress: {
+      street: students[1].address!,
+      city: students[1].city!,
+      state: students[1].state!,
+      zipCode: students[1].postalCode!,
+      country: students[1].country!,
+    },
     orderType: "lc_to_student",
     fromEntity: {
       id: "lc_region_2",
@@ -2068,12 +2017,12 @@ export const trainings: Training[] = [
     },
     teacherTrainer: {
       id: "tt_1",
-      name: "Dr. Sarah Wilson",
+      name: "Sarah Wilson",
       role: "primary",
     },
     assistant: {
       id: "tt_2",
-      name: "Prof. Michael Brown",
+      name: "Michael Brown",
     },
     ttStatus: "completed",
     ttComments: "All participants successfully completed the training with excellent performance.",
@@ -2173,7 +2122,7 @@ export const trainings: Training[] = [
     },
     teacherTrainer: {
       id: "tt_3",
-      name: "Dr. Emily Davis",
+      name: "Emily Davis",
       role: "primary",
     },
     ttStatus: "pending",
@@ -2377,7 +2326,7 @@ export const studentReports: StudentReportRow[] = [
     studentName: `${students[0].firstName} ${students[0].lastName}`,
     programId: programs[0].id,
     programName: programs[0].name,
-    enrollmentDate: students[0].enrollmentDate || new Date(),
+    enrollmentDate: students[0].enrollmentDate instanceof Date ? students[0].enrollmentDate : new Date(students[0].enrollmentDate || new Date()),
     completionDate: undefined,
     status: "active",
     progress: 65,
@@ -4601,6 +4550,9 @@ export class MockDatabase {
     // Update student's payments array
     const student = students.find(s => s.id === newPayment.studentId);
     if (student) {
+      if (!student.payments) {
+        student.payments = [];
+      }
       student.payments.push(newPayment);
     }
     
@@ -4619,7 +4571,7 @@ export class MockDatabase {
     
     // Update student's payments array
     const student = students.find(s => s.id === studentPayments[index].studentId);
-    if (student) {
+    if (student && student.payments) {
       const studentPaymentIndex = student.payments.findIndex(p => p.id === id);
       if (studentPaymentIndex !== -1) {
         student.payments[studentPaymentIndex] = studentPayments[index];
@@ -4638,7 +4590,7 @@ export class MockDatabase {
     
     // Update student's payments array
     const student = students.find(s => s.id === payment.studentId);
-    if (student) {
+    if (student && student.payments) {
       student.payments = student.payments.filter(p => p.id !== id);
     }
     
@@ -4668,6 +4620,9 @@ export class MockDatabase {
     // Update student's certificates array
     const student = students.find(s => s.id === newCertificate.studentId);
     if (student) {
+      if (!student.certificates) {
+        student.certificates = [];
+      }
       student.certificates.push(newCertificate);
     }
     
@@ -4685,7 +4640,7 @@ export class MockDatabase {
     
     // Update student's certificates array
     const student = students.find(s => s.id === studentCertificates[index].studentId);
-    if (student) {
+    if (student && student.certificates) {
       const studentCertIndex = student.certificates.findIndex(c => c.id === id);
       if (studentCertIndex !== -1) {
         student.certificates[studentCertIndex] = studentCertificates[index];
@@ -4704,7 +4659,7 @@ export class MockDatabase {
     
     // Update student's certificates array
     const student = students.find(s => s.id === certificate.studentId);
-    if (student) {
+    if (student && student.certificates) {
       student.certificates = student.certificates.filter(c => c.id !== id);
     }
     

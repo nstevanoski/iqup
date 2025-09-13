@@ -1,119 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SubProgramForm } from "@/components/forms/SubProgramForm";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { useUser } from "@/store/auth";
+import { useUser, useSelectedScope, useToken, useIsAuthenticated, useIsHydrated } from "@/store/auth";
 import { Program, SubProgram } from "@/types";
 import { ArrowLeft } from "lucide-react";
+import { createSubProgram } from "@/lib/api/subprograms";
+import { getPrograms, programsAPI } from "@/lib/api/programs";
 
-// Mock programs data - in a real app, this would come from an API
-const mockPrograms: Program[] = [
-  {
-    id: "prog_1",
-    name: "English Language Program",
-    description: "Comprehensive English language learning program",
-    status: "active",
-    category: "Language",
-    duration: 12,
-    price: 299.99,
-    maxStudents: 20,
-    currentStudents: 15,
-    requirements: ["Basic reading skills"],
-    learningObjectives: ["Fluency in English", "Grammar mastery"],
-    createdBy: "user_1",
-    hours: 120,
-    lessonLength: 60,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "prog_2",
-    name: "Mathematics Program",
-    description: "Advanced mathematics curriculum",
-    status: "active",
-    category: "Mathematics",
-    duration: 16,
-    price: 399.99,
-    maxStudents: 25,
-    currentStudents: 20,
-    requirements: ["Basic arithmetic"],
-    learningObjectives: ["Problem solving", "Mathematical reasoning"],
-    createdBy: "user_1",
-    hours: 160,
-    lessonLength: 90,
-    kind: "academic",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "prog_3",
-    name: "STEM Camp",
-    description: "Science, Technology, Engineering, and Mathematics camp",
-    status: "active",
-    category: "STEM",
-    duration: 8,
-    price: 199.99,
-    maxStudents: 30,
-    currentStudents: 25,
-    requirements: ["Age 8-14"],
-    learningObjectives: ["STEM exploration", "Hands-on learning"],
-    createdBy: "user_1",
-    hours: 80,
-    lessonLength: 120,
-    kind: "stem_camp",
-    sharedWithMFs: ["mf_region_1", "mf_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-05"),
-  },
-  {
-    id: "prog_4",
-    name: "Birthday Party Program",
-    description: "Educational birthday party activities",
-    status: "active",
-    category: "Entertainment",
-    duration: 2,
-    price: 99.99,
-    maxStudents: 15,
-    currentStudents: 8,
-    requirements: ["Age 5-12"],
-    learningObjectives: ["Fun learning", "Social interaction"],
-    createdBy: "user_1",
-    hours: 4,
-    lessonLength: 120,
-    kind: "birthday_party",
-    sharedWithMFs: ["mf_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-20"),
-  },
-];
 
 export default function NewSubProgramPage() {
   const router = useRouter();
   const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
+  const isAuthenticated = useIsAuthenticated();
+  const isHydrated = useIsHydrated();
   const [loading, setLoading] = useState(false);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isHydrated, router]);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      if (!user || !selectedScope || !token) return;
+      
+      try {
+        setProgramsLoading(true);
+        
+        // Update API token
+        programsAPI.updateToken(token);
+        
+        const response = await getPrograms({ 
+          limit: 100
+          // userRole and userScope parameters are deprecated - API now uses authenticated user's role and scope
+        });
+        if (response.success) {
+          setPrograms(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching programs:", error);
+      } finally {
+        setProgramsLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, [user, selectedScope, token]);
 
   const handleSubmit = async (data: Partial<SubProgram>) => {
     setLoading(true);
     
     try {
-      // In a real app, this would make an API call
-      console.log("Creating subprogram:", data);
+      const response = await createSubProgram(data as any);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirect back to subprograms list
-      router.push("/subprograms");
+      if (response.success) {
+        // Redirect back to subprograms list
+        router.push("/subprograms");
+      } else {
+        alert("Failed to create subprogram. Please try again.");
+      }
     } catch (error) {
       console.error("Error creating subprogram:", error);
       alert("Failed to create subprogram. Please try again.");
@@ -125,6 +80,30 @@ export default function NewSubProgramPage() {
   const handleCancel = () => {
     router.push("/subprograms");
   };
+
+  // Show loading while hydrating
+  if (!isHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Check if user has permission to create subprograms (HQ and MF)
   if (user?.role !== "MF" && user?.role !== "HQ") {
@@ -197,12 +176,18 @@ export default function NewSubProgramPage() {
         </div>
 
         {/* Form */}
-        <SubProgramForm
-          programs={mockPrograms}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          loading={loading}
-        />
+        {programsLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <SubProgramForm
+            programs={programs}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            loading={loading}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

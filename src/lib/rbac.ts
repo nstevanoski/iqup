@@ -178,6 +178,7 @@ export const navigationRules: NavigationRule[] = [
     allowedRoutes: [
       "/dashboard",
       "/programs",
+      "/subprograms",
       "/contacts/students",
       "/contacts/teachers",
       "/learning-groups",
@@ -189,6 +190,10 @@ export const navigationRules: NavigationRule[] = [
       "/programs": {
         scope: ["MF"],
         description: "Programs visible based on parent MF sharing",
+      },
+      "/subprograms": {
+        scope: ["LC"],
+        description: "Subprograms shared with LC account",
       },
       "/orders": {
         scope: ["MF"],

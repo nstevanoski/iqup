@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -47,6 +47,17 @@ export interface DataTableProps<T> {
   className?: string;
   loading?: boolean;
   emptyMessage?: string;
+  // Backend search props
+  backendSearch?: boolean;
+  onSearch?: (searchTerm: string) => void;
+  onFilter?: (filters: Record<string, string>) => void;
+  onSort?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+  onPageChange?: (page: number) => void;
+  searchLoading?: boolean;
+  // Backend pagination info
+  totalItems?: number;
+  totalPages?: number;
+  currentPage?: number;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -65,6 +76,17 @@ export function DataTable<T extends Record<string, any>>({
   className,
   loading = false,
   emptyMessage = "No data available",
+  // Backend search props
+  backendSearch = false,
+  onSearch,
+  onFilter,
+  onSort,
+  onPageChange,
+  searchLoading = false,
+  // Backend pagination info
+  totalItems: backendTotalItems,
+  totalPages: backendTotalPages,
+  currentPage: backendCurrentPage,
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
@@ -78,6 +100,28 @@ export function DataTable<T extends Record<string, any>>({
   );
   const [filters, setFilters] = useState<Record<string, string>>({});
 
+  // Debounced search effect for backend search
+  useEffect(() => {
+    if (!backendSearch || !onSearch) return;
+
+    const timeoutId = setTimeout(() => {
+      onSearch(searchTerm);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, backendSearch, onSearch]);
+
+  // Debounced filter effect for backend search
+  useEffect(() => {
+    if (!backendSearch || !onFilter) return;
+
+    const timeoutId = setTimeout(() => {
+      onFilter(filters);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [filters, backendSearch, onFilter]);
+
   // Filter visible columns
   const visibleColumnsData = useMemo(() => {
     return columns.filter(col => visibleColumns.has(col.key as string));
@@ -85,6 +129,11 @@ export function DataTable<T extends Record<string, any>>({
 
   // Filter and search data
   const filteredData = useMemo(() => {
+    // If backend search is enabled, return data as-is (filtering is handled by backend)
+    if (backendSearch) {
+      return data;
+    }
+
     let result = data;
 
     // Apply search
@@ -111,10 +160,15 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     return result;
-  }, [data, searchTerm, filters, columns, searchable, filterable]);
+  }, [data, searchTerm, filters, columns, searchable, filterable, backendSearch]);
 
   // Sort data
   const sortedData = useMemo(() => {
+    // If backend search is enabled, return filteredData as-is (sorting is handled by backend)
+    if (backendSearch) {
+      return filteredData;
+    }
+
     if (!sortConfig || !sortable) return filteredData;
 
     return [...filteredData].sort((a, b) => {
@@ -129,35 +183,58 @@ export function DataTable<T extends Record<string, any>>({
       }
       return 0;
     });
-  }, [filteredData, sortConfig, sortable]);
+  }, [filteredData, sortConfig, sortable, backendSearch]);
 
   // Paginate data
   const paginatedData = useMemo(() => {
+    // If backend search is enabled, return sortedData as-is (pagination is handled by backend)
+    if (backendSearch) {
+      return sortedData;
+    }
+
     if (!pagination) return sortedData;
 
     const startIndex = (currentPage - 1) * pageSize;
     return sortedData.slice(startIndex, startIndex + pageSize);
-  }, [sortedData, currentPage, pageSize, pagination]);
+  }, [sortedData, currentPage, pageSize, pagination, backendSearch]);
 
   // Pagination info
-  const totalPages = Math.ceil(sortedData.length / pageSize);
-  const totalItems = sortedData.length;
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const totalPages = backendSearch && backendTotalPages ? backendTotalPages : Math.ceil(sortedData.length / pageSize);
+  const totalItems = backendSearch && backendTotalItems ? backendTotalItems : sortedData.length;
+  const currentPageNum = backendSearch && backendCurrentPage ? backendCurrentPage : currentPage;
+  const startItem = (currentPageNum - 1) * pageSize + 1;
+  const endItem = Math.min(currentPageNum * pageSize, totalItems);
 
   // Handlers
   const handleSort = useCallback((key: string) => {
     if (!sortable) return;
 
-    setSortConfig(prev => {
-      if (prev?.key === key) {
-        return prev.direction === "asc"
-          ? { key, direction: "desc" }
-          : null;
+    if (backendSearch && onSort) {
+      // For backend search, determine the new sort direction
+      const newDirection = sortConfig?.key === key 
+        ? (sortConfig.direction === "asc" ? "desc" : "asc")
+        : "asc";
+      
+      // If toggling the same column and it's already desc, clear the sort
+      if (sortConfig?.key === key && sortConfig.direction === "desc") {
+        setSortConfig(null);
+        onSort(key, "asc"); // Reset to default
+      } else {
+        setSortConfig({ key, direction: newDirection });
+        onSort(key, newDirection);
       }
-      return { key, direction: "asc" };
-    });
-  }, [sortable]);
+    } else {
+      // Client-side sorting
+      setSortConfig(prev => {
+        if (prev?.key === key) {
+          return prev.direction === "asc"
+            ? { key, direction: "desc" }
+            : null;
+        }
+        return { key, direction: "asc" };
+      });
+    }
+  }, [sortable, backendSearch, onSort, sortConfig]);
 
   const handleSelectRow = useCallback((rowId: string) => {
     setSelectedRows(prev => {
@@ -193,6 +270,14 @@ export function DataTable<T extends Record<string, any>>({
       : sortedData;
     onExport?.(dataToExport);
   }, [selectedRows, paginatedData, sortedData, onExport]);
+
+  const handlePageChange = useCallback((page: number) => {
+    if (backendSearch && onPageChange) {
+      onPageChange(page);
+    } else {
+      setCurrentPage(page);
+    }
+  }, [backendSearch, onPageChange]);
 
   const toggleColumn = useCallback((columnKey: string) => {
     setVisibleColumns(prev => {
@@ -232,7 +317,13 @@ export function DataTable<T extends Record<string, any>>({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={searchLoading}
               />
+              {searchLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                </div>
+              )}
             </div>
           )}
 
@@ -448,32 +539,32 @@ export function DataTable<T extends Record<string, any>>({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
+              onClick={() => handlePageChange(1)}
+              disabled={currentPageNum === 1}
               className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronsLeft className="h-4 w-4" />
             </button>
             <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
+              onClick={() => handlePageChange(Math.max(1, currentPageNum - 1))}
+              disabled={currentPageNum === 1}
               className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="px-3 py-2 text-sm">
-              Page {currentPage} of {totalPages}
+              Page {currentPageNum} of {totalPages}
             </span>
             <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(Math.min(totalPages, currentPageNum + 1))}
+              disabled={currentPageNum === totalPages}
               className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPageNum === totalPages}
               className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               <ChevronsRight className="h-4 w-4" />

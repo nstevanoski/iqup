@@ -26,23 +26,30 @@ export async function GET(request: NextRequest) {
     // Build where clause
     let whereClause: any = {}
 
-    // Apply role-based filtering
-    if (userRole === 'MF' || userRole === 'LC') {
+    // Apply role-based filtering using authenticated user's role
+    let roleFilter: any = {}
+    const isMFUser = user.role === 'MF_ADMIN' || user.role === 'MF_STAFF'
+    const isLCUser = user.role === 'LC_ADMIN' || user.role === 'LC_STAFF'
+    const isTTUser = user.role === 'TT_ADMIN' || user.role === 'TT_STAFF'
+    const isHQUser = user.role === 'HQ_ADMIN' || user.role === 'HQ_STAFF'
+    
+    if (isMFUser || isLCUser) {
       // MF can see shared programs for their MF scope
       // LC inherits visibility from its parent MF
       const allowedMfIds: number[] = []
-      if (userRole === 'MF' && userScope) {
-        allowedMfIds.push(parseInt(userScope))
-      } else if (userRole === 'LC' && userScope) {
-        // Get parent MF ID for LC scope
+      if (isMFUser && user.mfId) {
+        // Use authenticated user's MF ID directly for security
+        allowedMfIds.push(user.mfId)
+      } else if (isLCUser && user.lcId) {
+        // Get parent MF ID for LC scope using authenticated user's LC ID
         const lc = await prisma.learningCenter.findUnique({
-          where: { id: parseInt(userScope) },
+          where: { id: user.lcId },
           select: { mfId: true }
         })
         if (lc) allowedMfIds.push(lc.mfId)
       }
 
-      whereClause.OR = [
+      roleFilter.OR = [
         { visibility: 'PUBLIC' },
         {
           AND: [
@@ -50,40 +57,58 @@ export async function GET(request: NextRequest) {
             {
               sharedWithMFs: {
                 path: '$',
-                array_contains: allowedMfIds
+                array_contains: [user.mfId]
               }
             }
           ]
         }
       ]
-    } else if (userRole === 'TT') {
+    } else if (isTTUser) {
       // TT can only see public programs
-      whereClause.visibility = 'PUBLIC'
+      roleFilter.visibility = 'PUBLIC'
     }
     // HQ can see all programs (no filtering)
 
     // Apply search filter
+    let searchFilter: any = {}
     if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { kind: { contains: search, mode: 'insensitive' } }
+      searchFilter.OR = [
+        { name: { contains: search } },
+        { description: { contains: search } },
+        { category: { contains: search } }
       ]
     }
 
+    // Combine role and search filters
+    if (Object.keys(roleFilter).length > 0 && Object.keys(searchFilter).length > 0) {
+      whereClause.AND = [roleFilter, searchFilter]
+    } else if (Object.keys(roleFilter).length > 0) {
+      Object.assign(whereClause, roleFilter)
+    } else if (Object.keys(searchFilter).length > 0) {
+      Object.assign(whereClause, searchFilter)
+    }
+
     // Apply status filter
-    if (status) {
-      whereClause.status = status.toUpperCase()
+    if (status && status.trim() !== '') {
+      const validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT']
+      const upperStatus = status.toUpperCase()
+      if (validStatuses.includes(upperStatus)) {
+        whereClause.status = upperStatus
+      }
     }
 
     // Apply category filter
-    if (category) {
-      whereClause.category = { contains: category, mode: 'insensitive' }
+    if (category && category.trim() !== '') {
+      whereClause.category = category
     }
 
     // Apply kind filter
-    if (kind) {
-      whereClause.kind = kind.toUpperCase()
+    if (kind && kind.trim() !== '') {
+      const validKinds = ['ACADEMIC', 'WORKSHEET', 'BIRTHDAY_PARTY', 'STEM_CAMP', 'VOCATIONAL', 'CERTIFICATION', 'WORKSHOP']
+      const upperKind = kind.toUpperCase()
+      if (validKinds.includes(upperKind)) {
+        whereClause.kind = upperKind
+      }
     }
 
     // Calculate pagination

@@ -3,135 +3,14 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
-import { useUser, useSelectedScope } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { SubProgram } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, DollarSign, CreditCard, Calendar } from "lucide-react";
+import { getSubPrograms, deleteSubProgram, subProgramsAPI } from "@/lib/api/subprograms";
+import { DeleteConfirmationModal } from "@/components/ui";
 
-// Sample data - in a real app, this would come from an API
-const sampleSubPrograms: SubProgram[] = [
-  {
-    id: "1",
-    programId: "prog_1",
-    name: "Beginner English",
-    description: "Introduction to English language basics",
-    status: "active",
-    order: 1,
-    duration: 8,
-    price: 99.99,
-    prerequisites: [],
-    learningObjectives: ["Basic vocabulary", "Simple grammar", "Pronunciation"],
-    createdBy: "user_1",
-    pricingModel: "one-time",
-    coursePrice: 99.99,
-    sharedWithLCs: ["lc_region_1", "lc_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    programId: "prog_1",
-    name: "Intermediate English",
-    description: "Intermediate English language skills",
-    status: "active",
-    order: 2,
-    duration: 8,
-    price: 99.99,
-    prerequisites: ["Beginner English completion"],
-    learningObjectives: ["Complex grammar", "Reading comprehension", "Writing skills"],
-    createdBy: "user_1",
-    pricingModel: "installments",
-    coursePrice: 99.99,
-    numberOfPayments: 3,
-    gap: 30,
-    sharedWithLCs: ["lc_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "3",
-    programId: "prog_2",
-    name: "Algebra Fundamentals",
-    description: "Core algebraic concepts and problem solving",
-    status: "active",
-    order: 1,
-    duration: 12,
-    price: 149.99,
-    prerequisites: ["Basic arithmetic"],
-    learningObjectives: ["Equation solving", "Graphing", "Word problems"],
-    createdBy: "user_1",
-    pricingModel: "subscription",
-    coursePrice: 149.99,
-    pricePerMonth: 49.99,
-    sharedWithLCs: ["lc_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-05"),
-  },
-  {
-    id: "4",
-    programId: "prog_2",
-    name: "Calculus Advanced",
-    description: "Advanced calculus concepts and applications",
-    status: "draft",
-    order: 2,
-    duration: 16,
-    price: 199.99,
-    prerequisites: ["Algebra Fundamentals"],
-    learningObjectives: ["Derivatives", "Integrals", "Applications"],
-    createdBy: "user_1",
-    pricingModel: "one-time",
-    coursePrice: 199.99,
-    sharedWithLCs: [],
-    visibility: "private",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-25"),
-  },
-  {
-    id: "5",
-    programId: "prog_3",
-    name: "Social Media Marketing",
-    description: "Comprehensive social media marketing strategies",
-    status: "active",
-    order: 1,
-    duration: 4,
-    price: 79.99,
-    prerequisites: ["Basic computer skills"],
-    learningObjectives: ["Platform management", "Content creation", "Analytics"],
-    createdBy: "user_1",
-    pricingModel: "installments",
-    coursePrice: 79.99,
-    numberOfPayments: 2,
-    gap: 14,
-    sharedWithLCs: ["lc_region_1", "lc_region_2"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-20"),
-  },
-  {
-    id: "6",
-    programId: "prog_4",
-    name: "Python Programming",
-    description: "Learn Python programming from scratch",
-    status: "active",
-    order: 1,
-    duration: 12,
-    price: 299.99,
-    prerequisites: ["Basic computer skills"],
-    learningObjectives: ["Python syntax", "Data structures", "Algorithms"],
-    createdBy: "user_1",
-    pricingModel: "subscription",
-    coursePrice: 299.99,
-    pricePerMonth: 99.99,
-    sharedWithLCs: ["lc_region_1"],
-    visibility: "shared",
-    createdAt: new Date("2024-01-10"),
-    updatedAt: new Date("2024-01-15"),
-  },
-];
 
 // Helper function to get LC scope names
 const getLCScopeNames = (scopeIds: string[]): string[] => {
@@ -287,35 +166,234 @@ export default function SubProgramsPage() {
   const router = useRouter();
   const user = useUser();
   const selectedScope = useSelectedScope();
-  const [data, setData] = useState<SubProgram[]>(sampleSubPrograms);
-  const [loading, setLoading] = useState(false);
+  const token = useToken();
+  const [data, setData] = useState<SubProgram[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Backend search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  // Filter data based on user role and scope
-  useEffect(() => {
-    if (!user || !selectedScope) return;
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [subProgramToDelete, setSubProgramToDelete] = useState<SubProgram | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    let filteredSubPrograms = sampleSubPrograms;
+  // Function to fetch subprograms with current parameters
+  const fetchSubPrograms = useCallback(async (params: {
+    page?: number;
+    search?: string;
+    status?: string;
+    programId?: string;
+    pricingModel?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    isSearch?: boolean;
+  } = {}) => {
+    if (!user || !selectedScope || !token) return;
 
-    if (user.role === "LC") {
-      // LC can only see subprograms shared with their scope
-      filteredSubPrograms = sampleSubPrograms.filter(sp => 
-        sp.visibility === "public" || 
-        (sp.visibility === "shared" && sp.sharedWithLCs.includes(selectedScope.id))
-      );
-    } else if (user.role === "TT") {
-      // TT can only see public subprograms
-      filteredSubPrograms = sampleSubPrograms.filter(sp => sp.visibility === "public");
+    try {
+      if (params.isSearch) {
+        setSearchLoading(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      // Update API token
+      subProgramsAPI.updateToken(token);
+
+      const response = await getSubPrograms({
+        page: params.page || currentPage,
+        limit: 10, // Use pageSize from DataTable
+        search: params.search || searchTerm,
+        status: params.status || filters.status || '',
+        programId: params.programId || filters.programId || '',
+        pricingModel: params.pricingModel || filters.pricingModel || '',
+        sortBy: params.sortBy || sortBy,
+        sortOrder: params.sortOrder || sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      if (params.isSearch) {
+        setSearchLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
-    // MF and HQ can see all subprograms (no filtering)
+  }, [user, selectedScope, token]);
 
-    setData(filteredSubPrograms);
-  }, [user, selectedScope]);
+  // Initial fetch - only when user, selectedScope, or token changes
+  useEffect(() => {
+    fetchSubPrograms();
+  }, [user, selectedScope, token, fetchSubPrograms]);
+
+  // Backend search handlers
+  const handleSearch = useCallback(async (term: string) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setSearchTerm(term);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      const response = await getSubPrograms({
+        page: 1,
+        limit: 10,
+        search: term,
+        status: filters.status || '',
+        programId: filters.programId || '',
+        pricingModel: filters.pricingModel || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token, filters, sortBy, sortOrder]);
+
+  const handleFilter = useCallback(async (newFilters: Record<string, string>) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setFilters(newFilters);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      subProgramsAPI.updateToken(token);
+      const response = await getSubPrograms({
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: newFilters.status || '',
+        programId: newFilters.programId || '',
+        pricingModel: newFilters.pricingModel || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token, searchTerm, sortBy, sortOrder]);
+
+  const handleSort = useCallback(async (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    if (!user || !selectedScope || !token) return;
+    
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      subProgramsAPI.updateToken(token);
+      const response = await getSubPrograms({
+        page: 1,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        programId: filters.programId || '',
+        pricingModel: filters.pricingModel || '',
+        sortBy: newSortBy,
+        sortOrder: newSortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token, searchTerm, filters]);
+
+  const handlePageChange = useCallback(async (page: number) => {
+    if (!user || !selectedScope || !token) return;
+    
+    setCurrentPage(page);
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      subProgramsAPI.updateToken(token);
+      const response = await getSubPrograms({
+        page,
+        limit: 10,
+        search: searchTerm,
+        status: filters.status || '',
+        programId: filters.programId || '',
+        pricingModel: filters.pricingModel || '',
+        sortBy,
+        sortOrder,
+      });
+
+      if (response.success) {
+        setData(response.data.data);
+        setTotalPages(response.data.pagination.totalPages);
+        setTotalItems(response.data.pagination.total);
+      } else {
+        setError('Failed to fetch subprograms');
+      }
+    } catch (err) {
+      console.error('Error fetching subprograms:', err);
+      setError('Failed to fetch subprograms');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [user, selectedScope, token, searchTerm, filters, sortBy, sortOrder]);
 
   const canEdit = user?.role === "MF";
   const canView = user?.role === "MF" || user?.role === "LC" || user?.role === "HQ";
   const columns = getColumns(user?.role || "", canEdit, (row) => router.push(`/subprograms/${row.id}`));
 
-  const handleRowAction = (action: string, row: SubProgram) => {
+  const handleRowAction = async (action: string, row: SubProgram) => {
     console.log(`${action} action for subprogram:`, row);
     
     switch (action) {
@@ -331,9 +409,8 @@ export default function SubProgramsPage() {
         break;
       case "delete":
         if (canEdit) {
-          if (confirm(`Are you sure you want to delete ${row.name}?`)) {
-            setData(prev => prev.filter(item => item.id !== row.id));
-          }
+          setSubProgramToDelete(row);
+          setDeleteModalOpen(true);
         } else {
           alert("You don't have permission to delete subprograms");
         }
@@ -341,7 +418,7 @@ export default function SubProgramsPage() {
     }
   };
 
-  const handleBulkAction = (action: string, rows: SubProgram[]) => {
+  const handleBulkAction = async (action: string, rows: SubProgram[]) => {
     if (!canEdit) {
       alert("You don't have permission to perform bulk actions");
       return;
@@ -351,11 +428,52 @@ export default function SubProgramsPage() {
     
     switch (action) {
       case "delete":
-        if (confirm(`Are you sure you want to delete ${rows.length} subprograms?`)) {
-          const idsToDelete = new Set(rows.map(row => row.id));
-          setData(prev => prev.filter(item => !idsToDelete.has(item.id)));
-        }
+        // For bulk delete, we'll use a single subprogram object to represent the bulk operation
+        const bulkDeleteSubProgram: SubProgram = {
+          id: 'bulk',
+          name: `${rows.length} subprograms`,
+          description: `This will delete ${rows.length} selected subprograms`,
+        } as SubProgram;
+        setSubProgramToDelete(bulkDeleteSubProgram);
+        setDeleteModalOpen(true);
         break;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!subProgramToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      if (subProgramToDelete.id === 'bulk') {
+        // Handle bulk delete - this is a simplified version
+        // In a real implementation, you'd want to call a bulk delete API
+        alert("Bulk delete functionality would be implemented here");
+        setDeleteModalOpen(false);
+        setSubProgramToDelete(null);
+      } else {
+        // Handle single subprogram delete
+        const response = await deleteSubProgram(subProgramToDelete.id);
+        if (response.success) {
+          setData(prev => prev.filter(item => item.id !== subProgramToDelete.id));
+          setDeleteModalOpen(false);
+          setSubProgramToDelete(null);
+        } else {
+          alert('Failed to delete subprogram');
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting subprogram:', err);
+      alert('Failed to delete subprogram');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!isDeleting) {
+      setDeleteModalOpen(false);
+      setSubProgramToDelete(null);
     }
   };
 
@@ -392,6 +510,25 @@ export default function SubProgramsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600">Error</h1>
+            <p className="text-gray-600">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -417,27 +554,6 @@ export default function SubProgramsPage() {
           )}
         </div>
 
-        {/* Role-based info */}
-        {user?.role !== "MF" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <BookOpen className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
-              <div>
-                <h3 className="text-sm font-medium text-blue-800">
-                  {user?.role === "LC" 
-                    ? "Shared SubPrograms" 
-                    : "All SubPrograms"}
-                </h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  {user?.role === "LC"
-                    ? `You can view subprograms shared with ${selectedScope?.name || "your scope"}.`
-                    : "You have read-only access to all subprograms."}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div>
           <DataTable
             data={data}
@@ -448,15 +564,41 @@ export default function SubProgramsPage() {
             pagination={true}
             pageSize={10}
             bulkActions={canEdit}
-            rowActions={true}
+            rowActions={canEdit}
             onRowAction={handleRowAction}
             onBulkAction={handleBulkAction}
             onExport={handleExport}
             loading={loading}
             emptyMessage="No subprograms found"
+            // Backend search props
+            backendSearch={true}
+            // onSearch={handleSearch}
+            // onFilter={handleFilter}
+            // onSort={handleSort}
+            // onPageChange={handlePageChange}
+            searchLoading={searchLoading}
+            // Backend pagination info
+            totalItems={totalItems}
+            totalPages={totalPages}
+            currentPage={currentPage}
           />
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        itemName={subProgramToDelete?.name}
+        isLoading={isDeleting}
+        title="Delete SubProgram"
+        description={
+          subProgramToDelete?.id === 'bulk' 
+            ? `Are you sure you want to delete ${subProgramToDelete.name}? This action cannot be undone.`
+            : undefined
+        }
+      />
     </DashboardLayout>
   );
 }

@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { useUser } from "@/store/auth";
 import { Student } from "@/types";
 import { ArrowLeft, Edit, DollarSign, Award, User, Phone, Mail, MapPin, Calendar, GraduationCap } from "lucide-react";
+import { getStudent } from "@/lib/api/students";
 
 interface StudentDetailPageProps {
   params: Promise<{
@@ -14,98 +15,7 @@ interface StudentDetailPageProps {
   }>;
 }
 
-// Mock data - in a real app, this would come from an API
-const mockStudent: Student = {
-  id: "student_1",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  phone: "+1-555-1001",
-  dateOfBirth: new Date("1995-05-15"),
-  address: {
-    street: "123 Main St",
-    city: "Boston",
-    state: "MA",
-    zipCode: "02101",
-    country: "USA",
-  },
-  // emergencyContact removed per requirements
-  status: "active",
-  enrollmentDate: new Date("2024-01-15"),
-  programIds: ["prog_1"],
-  subProgramIds: [],
-  learningGroupIds: [],
-  gender: "male",
-  notes: "Excellent student, very motivated",
-  parentInfo: {
-    firstName: "Jane",
-    lastName: "Doe",
-    phone: "+1-555-1002",
-    email: "jane.doe@example.com",
-  },
-  lastCurrentLG: {
-    id: "lg_1",
-    name: "English Beginners Group A",
-    programName: "English Language Program",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-05-31"),
-  },
-  product: {
-    id: "prod_1",
-    name: "English Learning Kit",
-    description: "Complete learning materials for English program",
-    materials: ["Textbook", "Workbook", "Audio CD", "Online Access"],
-    purchaseDate: new Date("2024-01-15"),
-  },
-  contactOwner: {
-    id: "user_1",
-    name: "LC Manager",
-    role: "LC",
-  },
-  accountFranchise: {
-    id: "lc_1",
-    name: "Boston Learning Center",
-    type: "LC",
-  },
-  mfName: "North America MF",
-  programHistory: [
-    {
-      id: "hist_1",
-      programId: "prog_1",
-      programName: "English Language Program",
-      subProgramId: "sub_1",
-      subProgramName: "Beginner English",
-      learningGroupId: "lg_1",
-      learningGroupName: "English Beginners Group A",
-      startDate: new Date("2024-02-01"),
-      endDate: new Date("2024-05-31"),
-      status: "completed",
-      completionDate: new Date("2024-05-31"),
-      grade: 85,
-      certificateId: "cert_1",
-    },
-  ],
-  payments: [],
-  certificates: [
-    {
-      id: "cert_1",
-      studentId: "student_1",
-      programId: "prog_1",
-      programName: "English Language Program",
-      subProgramId: "sub_1",
-      subProgramName: "Beginner English",
-      certificateCode: "CERT-2024-001234",
-      issuedDate: new Date("2024-06-01"),
-      validUntil: new Date("2026-06-01"),
-      status: "active",
-      downloadUrl: "/certificates/cert_1.pdf",
-      issuedBy: "LC Manager",
-      createdAt: new Date("2024-06-01"),
-    },
-  ],
-  createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-06-01"),
-};
+// No more mock data - using real API only
 
 export default function StudentDetailPage({ params }: StudentDetailPageProps) {
   const router = useRouter();
@@ -122,19 +32,17 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
         setError(null);
         
         // Fetch student data from API
-        const response = await fetch(`/api/students/${resolvedParams.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setStudent(data.data);
+        const response = await getStudent(resolvedParams.id);
+        if (response.success) {
+          setStudent(response.data);
         } else {
-          // Fallback to mock data
-          setStudent(mockStudent);
+          setError("Student not found");
         }
       } catch (err) {
         setError("Failed to load student");
         console.error("Error fetching student:", err);
-        // Fallback to mock data
-        setStudent(mockStudent);
+        // No fallback - show error state
+        setStudent(null);
       } finally {
         setLoading(false);
       }
@@ -166,12 +74,15 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return "";
+    const d = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(d.getTime())) return "";
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }).format(date);
+    }).format(d);
   };
 
   if (loading) {
@@ -287,7 +198,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Programs</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {student.programHistory.length}
+                  {(student.programHistory?.length || 0)}
                 </p>
               </div>
             </div>
@@ -301,7 +212,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Certificates</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {student.certificates.length}
+                  {(student.certificates?.length || 0)}
                 </p>
               </div>
             </div>
@@ -331,21 +242,6 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                   <p className="mt-1 text-sm text-gray-900 capitalize">{student.gender}</p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <div className="mt-1 flex items-center">
-                    <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.email}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <div className="mt-1 flex items-center">
-                    <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.phone}</span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -356,11 +252,11 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                 <div className="flex items-start">
                   <MapPin className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
                   <div>
-                    <p className="text-sm text-gray-900">{student.address.street}</p>
+                    <p className="text-sm text-gray-900">{student.address}</p>
                     <p className="text-sm text-gray-900">
-                      {student.address.city}, {student.address.state} {student.address.zipCode}
+                      {student.city}, {student.state} {student.postalCode}
                     </p>
-                    <p className="text-sm text-gray-900">{student.address.country}</p>
+                    <p className="text-sm text-gray-900">{student.country}</p>
                   </div>
                 </div>
               </div>
@@ -373,7 +269,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Parent Name</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {student.parentInfo.firstName} {student.parentInfo.lastName}
+                    {student.parentFirstName || ''} {student.parentLastName || ''}
                   </p>
                 </div>
                 
@@ -381,7 +277,7 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                   <label className="block text-sm font-medium text-gray-700">Parent Phone</label>
                   <div className="mt-1 flex items-center">
                     <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.parentInfo.phone}</span>
+                    <span className="text-sm text-gray-900">{student.parentPhone || ''}</span>
                   </div>
                 </div>
 
@@ -389,14 +285,14 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
                   <label className="block text-sm font-medium text-gray-700">Parent Email</label>
                   <div className="mt-1 flex items-center">
                     <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-900">{student.parentInfo.email}</span>
+                    <span className="text-sm text-gray-900">{student.parentEmail || ''}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Program History */}
-            {student.programHistory.length > 0 && (
+            {student.programHistory && student.programHistory.length > 0 && (
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Program History</h3>
                 <div className="space-y-4">
@@ -458,18 +354,18 @@ export default function StudentDetailPage({ params }: StudentDetailPageProps) {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Organizational Info</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Contact Owner</label>
-                  <p className="mt-1 text-sm text-gray-900">{student.contactOwner.name}</p>
+                  <label className="block text-sm font-medium text-gray-700">Learning Center</label>
+                  <p className="mt-1 text-sm text-gray-900">{student.lc?.name || 'N/A'} ({student.lc?.code || 'N/A'})</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Account/Franchise</label>
-                  <p className="mt-1 text-sm text-gray-900">{student.accountFranchise.name}</p>
+                  <label className="block text-sm font-medium text-gray-700">Master Franchisee</label>
+                  <p className="mt-1 text-sm text-gray-900">{student.mf?.name || 'N/A'} ({student.mf?.code || 'N/A'})</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">MF Name</label>
-                  <p className="mt-1 text-sm text-gray-900">{student.mfName}</p>
+                  <label className="block text-sm font-medium text-gray-700">Headquarters</label>
+                  <p className="mt-1 text-sm text-gray-900">{student.hq?.name || 'N/A'} ({student.hq?.code || 'N/A'})</p>
                 </div>
               </div>
             </div>

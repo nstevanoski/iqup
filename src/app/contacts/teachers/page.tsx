@@ -6,9 +6,10 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { Teacher } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/store/auth";
-import { Plus, Eye, Edit, Trash2, Users, Clock, MapPin } from "lucide-react";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
+import { Plus, Eye, Edit, Trash2, Users, Clock } from "lucide-react";
 import Link from "next/link";
+import { teachersAPI } from "@/lib/api/teachers";
 
 // Sample data - in a real app, this would come from an API
 const sampleTeachers: Teacher[] = [
@@ -18,7 +19,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1980-05-15"),
     gender: "female",
-    title: "Dr.",
     email: "sarah.wilson@example.com",
     phone: "+1-555-1001",
     specialization: ["English Literature", "Linguistics"],
@@ -74,22 +74,7 @@ const sampleTeachers: Teacher[] = [
         status: "in_progress",
       },
     ],
-    centers: [
-      {
-        centerId: "center_1",
-        centerName: "Boston Learning Center",
-        role: "Senior English Instructor",
-        startDate: "2018-01-15",
-        isActive: true,
-      },
-      {
-        centerId: "center_2",
-        centerName: "Cambridge Education Hub",
-        role: "Literature Consultant",
-        startDate: "2020-06-01",
-        isActive: true,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-15"),
   },
@@ -99,7 +84,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Brown",
     dateOfBirth: new Date("1975-08-22"),
     gender: "male",
-    title: "Prof.",
     email: "michael.brown@example.com",
     phone: "+1-555-1002",
     specialization: ["Mathematics", "Statistics"],
@@ -148,15 +132,7 @@ const sampleTeachers: Teacher[] = [
         status: "completed",
       },
     ],
-    centers: [
-      {
-        centerId: "center_3",
-        centerName: "Seattle Math Academy",
-        role: "Head of Mathematics Department",
-        startDate: "2019-09-01",
-        isActive: true,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-10"),
   },
@@ -166,7 +142,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Davis",
     dateOfBirth: new Date("1985-12-03"),
     gender: "female",
-    title: "Dr.",
     email: "emily.davis@example.com",
     phone: "+1-555-1003",
     specialization: ["Physics", "Chemistry"],
@@ -215,23 +190,7 @@ const sampleTeachers: Teacher[] = [
         status: "scheduled",
       },
     ],
-    centers: [
-      {
-        centerId: "center_4",
-        centerName: "Austin Science Center",
-        role: "Physics Instructor",
-        startDate: "2020-08-15",
-        isActive: true,
-      },
-      {
-        centerId: "center_5",
-        centerName: "Texas Learning Hub",
-        role: "Chemistry Lab Coordinator",
-        startDate: "2021-01-10",
-        endDate: "2023-12-31",
-        isActive: false,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-05"),
   },
@@ -241,7 +200,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1988-03-18"),
     gender: "male",
-    title: "Mr.",
     email: "david.wilson@example.com",
     phone: "+1-555-1004",
     specialization: ["Computer Science", "Programming"],
@@ -274,24 +232,13 @@ const sampleTeachers: Teacher[] = [
         status: "completed",
       },
     ],
-    centers: [
-      {
-        centerId: "center_6",
-        centerName: "San Francisco Tech Academy",
-        role: "Senior Programming Instructor",
-        startDate: "2019-03-01",
-        isActive: true,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-02"),
   },
 ];
 
-// Helper function to get active centers
-const getActiveCenters = (centers: Teacher["centers"]) => {
-  return centers.filter(center => center.isActive);
-};
+// Helper function removed per requirements
 
 // Column definitions
 const columns: Column<Teacher>[] = [
@@ -304,7 +251,7 @@ const columns: Column<Teacher>[] = [
     render: (_, row) => (
       <div>
         <Link href={`/contacts/teachers/${row.id}`} className="font-medium text-blue-600 hover:underline cursor-pointer">
-          {row.title} {row.firstName} {row.lastName}
+          {row.firstName} {row.lastName}
         </Link>
         <div className="text-sm text-gray-500">{row.email}</div>
       </div>
@@ -339,63 +286,40 @@ const columns: Column<Teacher>[] = [
       </div>
     ),
   },
-  // Removed Hourly Rate, Education, Trainings columns per requirements
-  {
-    key: "centers",
-    label: "Active Centers",
-    sortable: false,
-    render: (value) => {
-      const activeCenters = getActiveCenters(value);
-      return (
-        <div className="space-y-1">
-          {activeCenters.slice(0, 2).map((center, index) => (
-            <div key={index} className="flex items-center text-xs">
-              <MapPin className="h-3 w-3 mr-1 text-gray-400" />
-              <span className="truncate">{center.centerName}</span>
-            </div>
-          ))}
-          {activeCenters.length > 2 && (
-            <div className="text-xs text-gray-500">+{activeCenters.length - 2} more</div>
-          )}
-          {activeCenters.length === 0 && (
-            <div className="text-xs text-gray-500">No active centers</div>
-          )}
-        </div>
-      );
-    },
-  },
+  // Removed Hourly Rate, Education, Trainings, and Centers columns per requirements
 ];
 
 export default function TeachersPage() {
   const router = useRouter();
   const user = useUser();
-  const [data, setData] = useState<Teacher[]>(sampleTeachers);
+  const selectedScope = useSelectedScope();
+  const token = useToken();
+  const [data, setData] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTeachers = async () => {
+      if (!user || !selectedScope || !token) return;
+
       try {
         setLoading(true);
-        const response = await fetch("/api/teachers");
-        if (response.ok) {
-          const result = await response.json();
-          const teachers: Teacher[] = result.data || [];
-          setData(teachers);
-        } else {
-          // Fallback to sample data
-          setData(sampleTeachers);
-        }
+        
+        // Update API token to match current user context
+        teachersAPI.updateToken(token);
+        
+        const result = await teachersAPI.getTeachers();
+        setData(result.data.teachers);
       } catch (error) {
         console.error("Error fetching teachers:", error);
-        // Fallback to sample data
-        setData(sampleTeachers);
+        // Show empty state instead of fallback data
+        setData([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchTeachers();
-  }, []);
+  }, [user, selectedScope, token]);
 
   const handleRowAction = (action: string, row: Teacher) => {
     switch (action) {
@@ -406,7 +330,7 @@ export default function TeachersPage() {
         router.push(`/contacts/teachers/${row.id}/edit`);
         break;
       case "delete":
-        if (confirm(`Are you sure you want to delete ${row.title} ${row.firstName} ${row.lastName}?`)) {
+        if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
           handleDeleteTeacher(row.id);
         }
         break;
@@ -414,22 +338,14 @@ export default function TeachersPage() {
   };
 
   const handleDeleteTeacher = async (teacherId: string) => {
+    if (!token) return;
+    
     try {
-      const response = await fetch(`/api/teachers/${teacherId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        // Refresh the data
-        const fetchResponse = await fetch("/api/teachers");
-        if (fetchResponse.ok) {
-          const result = await fetchResponse.json();
-          setData(result.data || []);
-        }
-      } else {
-        const error = await response.json();
-        alert(`Error deleting teacher: ${error.message}`);
-      }
+      // Ensure API has the latest token
+      teachersAPI.updateToken(token);
+      await teachersAPI.deleteTeacher(teacherId);
+      // Remove from local state
+      setData(data.filter(teacher => teacher.id !== teacherId));
     } catch (error) {
       console.error("Error deleting teacher:", error);
       alert("Failed to delete teacher. Please try again.");

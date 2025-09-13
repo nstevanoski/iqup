@@ -10,6 +10,11 @@ export interface AuthScope {
   name: string;
   type: Role;
   description: string;
+  parentMF?: {
+    id: string;
+    name: string;
+    code: string;
+  };
 }
 
 interface AuthState {
@@ -53,6 +58,11 @@ const getAccountScopes = (backendUser: any): AuthScope | null => {
       name: backendUser.account.lc.name,
       type: "LC" as Role,
       description: `Learning Center: ${backendUser.account.lc.code}`,
+      parentMF: backendUser.account.lc.mf ? {
+        id: backendUser.account.lc.mf.id.toString(),
+        name: backendUser.account.lc.mf.name,
+        code: backendUser.account.lc.mf.code,
+      } : undefined,
     };
   } else if (backendUser.account.tt) {
     return {

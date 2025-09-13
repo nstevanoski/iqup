@@ -59,20 +59,23 @@ export async function GET(
       return errorResponse('Program not found', 404)
     }
 
-    // Check access permissions based on user role
-    const userRole = request.nextUrl.searchParams.get('userRole') as 'HQ' | 'MF' | 'LC' | 'TT' | null
-    const userScope = request.nextUrl.searchParams.get('userScope') || ''
+    // Check access permissions based on authenticated user's role
+    const isMFUser = user.role === 'MF_ADMIN' || user.role === 'MF_STAFF'
+    const isLCUser = user.role === 'LC_ADMIN' || user.role === 'LC_STAFF'
+    const isTTUser = user.role === 'TT_ADMIN' || user.role === 'TT_STAFF'
+    const isHQUser = user.role === 'HQ_ADMIN' || user.role === 'HQ_STAFF'
 
-    if (userRole === 'MF' || userRole === 'LC') {
+    if (isMFUser || isLCUser) {
       let allowed = program.visibility === 'PUBLIC'
       if (!allowed && program.visibility === 'SHARED') {
         const allowedMfIds = program.sharedWithMFs as number[]
-        if (userRole === 'MF' && userScope) {
-          allowed = allowedMfIds.includes(parseInt(userScope))
-        } else if (userRole === 'LC' && userScope) {
-          // Get parent MF ID for LC scope
+        if (isMFUser && user.mfId) {
+          // Use authenticated user's MF ID directly for security
+          allowed = allowedMfIds.includes(user.mfId)
+        } else if (isLCUser && user.lcId) {
+          // Get parent MF ID for LC scope using authenticated user's LC ID
           const lc = await prisma.learningCenter.findUnique({
-            where: { id: parseInt(userScope) },
+            where: { id: user.lcId },
             select: { mfId: true }
           })
           if (lc) {
@@ -83,7 +86,7 @@ export async function GET(
       if (!allowed) {
         return errorResponse('Access denied', 403)
       }
-    } else if (userRole === 'TT') {
+    } else if (isTTUser) {
       if (program.visibility !== 'PUBLIC') {
         return errorResponse('Access denied', 403)
       }

@@ -9,7 +9,7 @@ interface StudentFormProps {
   programs: Program[];
   subPrograms: SubProgram[];
   learningGroups: LearningGroup[];
-  onSubmit: (data: Partial<Student>) => void;
+  onSubmit: (data: any) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -19,8 +19,6 @@ interface FormData {
   lastName: string;
   dateOfBirth: string;
   gender: "male" | "female" | "other";
-  email: string;
-  phone: string;
   address: {
     street: string;
     city: string;
@@ -70,8 +68,6 @@ const initialFormData: FormData = {
   lastName: "",
   dateOfBirth: "",
   gender: "male",
-  email: "",
-  phone: "",
   address: {
     street: "",
     city: "",
@@ -138,34 +134,51 @@ export function StudentForm({
     student ? {
       firstName: student.firstName,
       lastName: student.lastName,
-      dateOfBirth: student.dateOfBirth.toISOString().split('T')[0],
-      gender: student.gender,
-      email: student.email,
-      phone: student.phone || "",
-      address: student.address || initialFormData.address,
-      parentInfo: student.parentInfo,
+      dateOfBirth: typeof student.dateOfBirth === 'string' ? student.dateOfBirth.split('T')[0] : student.dateOfBirth.toISOString().split('T')[0],
+      gender: student.gender.toLowerCase() as "male" | "female" | "other",
+      address: {
+        street: student.address || '',
+        city: student.city || '',
+        state: student.state || '',
+        zipCode: student.postalCode || '',
+        country: student.country || '',
+      },
+      parentInfo: {
+        firstName: student.parentFirstName,
+        lastName: student.parentLastName,
+        phone: student.parentPhone,
+        email: student.parentEmail,
+      },
       // emergencyContact removed per requirements
-      status: student.status,
-      enrollmentDate: student.enrollmentDate ? student.enrollmentDate.toISOString().split('T')[0] : undefined,
+      status: student.status.toLowerCase() as "active" | "inactive" | "graduated" | "suspended",
+      enrollmentDate: student.enrollmentDate ? (typeof student.enrollmentDate === 'string' ? student.enrollmentDate.split('T')[0] : student.enrollmentDate.toISOString().split('T')[0]) : undefined,
       lastCurrentLG: student.lastCurrentLG ? {
         ...student.lastCurrentLG,
-        startDate: student.lastCurrentLG.startDate.toISOString().split('T')[0],
-        endDate: student.lastCurrentLG.endDate?.toISOString().split('T')[0],
+        startDate: new Date(student.lastCurrentLG.startDate as any).toISOString().split('T')[0],
+        endDate: student.lastCurrentLG.endDate ? new Date(student.lastCurrentLG.endDate as any).toISOString().split('T')[0] : undefined,
       } : undefined,
       product: student.product ? {
         ...student.product,
-        purchaseDate: student.product.purchaseDate.toISOString().split('T')[0],
+        purchaseDate: new Date(student.product.purchaseDate as any).toISOString().split('T')[0],
       } : undefined,
-      contactOwner: student.contactOwner,
-      accountFranchise: student.accountFranchise,
-      mfName: student.mfName,
+      contactOwner: {
+        id: user?.id || '',
+        name: user?.name || '',
+        role: (user?.role === "HQ" || user?.role === "MF" || user?.role === "LC") ? user.role : "LC"
+      },
+      accountFranchise: {
+        id: student.lc.id.toString(),
+        name: student.lc.name,
+        type: "LC" as const
+      },
+      mfName: student.mf.name,
       notes: student.notes || "",
     } : {
       ...initialFormData,
       // Auto-fill organizational info for LC users based on current session
       contactOwner: user ? { id: user.id, name: user.name, role: (user.role === "HQ" || user.role === "MF" || user.role === "LC") ? user.role : "LC" } : initialFormData.contactOwner,
       accountFranchise: selectedScope ? { id: selectedScope.id, name: selectedScope.name, type: selectedScope.type === "MF" ? "MF" : "LC" } : initialFormData.accountFranchise,
-      mfName: selectedScope?.type === "LC" ? "" : initialFormData.mfName,
+      mfName: selectedScope?.type === "LC" && selectedScope.parentMF ? selectedScope.parentMF.name : initialFormData.mfName,
     }
   );
 
@@ -182,9 +195,6 @@ export function StudentForm({
     }
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = "Date of birth is required";
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
     }
     if (!formData.parentInfo.firstName.trim()) {
       newErrors.parentFirstName = "Parent first name is required";
@@ -350,34 +360,6 @@ export function StudentForm({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email *
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.email ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Enter email"
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter phone number"
-            />
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -590,7 +572,7 @@ export function StudentForm({
               className={`w-full px-3 py-2 border rounded-md ${user?.role === "LC" ? "bg-gray-50 text-gray-700" : "focus:outline-none focus:ring-2 focus:ring-blue-500"} ${
                 errors.mfName ? "border-red-500" : "border-gray-300"
               }`}
-              placeholder="Enter Master Franchisor name"
+              placeholder={user?.role === "LC" ? "Auto-filled from your parent MF" : "Enter Master Franchisor name"}
             />
             {errors.mfName && <p className="text-red-500 text-sm mt-1">{errors.mfName}</p>}
           </div>

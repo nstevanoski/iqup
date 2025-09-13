@@ -66,27 +66,57 @@ export interface SubProgram extends BaseEntity {
 }
 
 // User types
-export interface Student extends BaseEntity, ContactInfo {
+export interface Student extends BaseEntity {
   firstName: string;
   lastName: string;
-  dateOfBirth: Date;
-  gender: "male" | "female" | "other";
-  enrollmentDate?: Date;
-  status: "active" | "inactive" | "graduated" | "suspended";
-  programIds: string[];
-  subProgramIds: string[];
-  learningGroupIds: string[];
-  emergencyContact?: ContactInfo;
+  dateOfBirth: Date | string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  enrollmentDate?: Date | string;
+  status: "ACTIVE" | "INACTIVE" | "GRADUATED" | "SUSPENDED";
+  
+  // Address information (individual fields as stored in DB)
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  
+  // Parent information (individual fields as stored in DB)
+  parentFirstName: string;
+  parentLastName: string;
+  parentPhone: string;
+  parentEmail: string;
+  
+  // Emergency contact
+  emergencyContactEmail?: string;
+  emergencyContactPhone?: string;
+  
+  // Organizational relationships (from backend includes)
+  lcId: number;
+  mfId: number;
+  hqId: number;
+  lc: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  mf: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  hq: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  
+  // Additional fields
   notes?: string;
   avatar?: string;
   
-  // New required fields
-  parentInfo: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    email: string;
-  };
+  // Optional extended data (may not always be included)
+  programHistory?: ProgramHistoryEntry[];
   lastCurrentLG?: {
     id: string;
     name: string;
@@ -101,20 +131,8 @@ export interface Student extends BaseEntity, ContactInfo {
     materials: string[];
     purchaseDate: Date;
   };
-  contactOwner: {
-    id: string;
-    name: string;
-    role: "HQ" | "MF" | "LC";
-  };
-  accountFranchise: {
-    id: string;
-    name: string;
-    type: "MF" | "LC";
-  };
-  mfName: string;
-  programHistory: ProgramHistoryEntry[];
-  payments: StudentPayment[];
-  certificates: StudentCertificate[];
+  payments?: StudentPayment[];
+  certificates?: StudentCertificate[];
 }
 
 export interface ProgramHistoryEntry {
@@ -178,7 +196,6 @@ export interface Teacher extends BaseEntity, ContactInfo {
   lastName: string;
   dateOfBirth: Date;
   gender: "male" | "female" | "other";
-  title: string; // Dr., Prof., etc.
   specialization: string[];
   experience: number; // years
   qualifications: string[];
@@ -201,14 +218,7 @@ export interface Teacher extends BaseEntity, ContactInfo {
     status: "completed" | "in_progress" | "scheduled";
     certification?: string;
   }[];
-  centers: {
-    centerId: string;
-    centerName: string;
-    role: string;
-    startDate: string;
-    endDate?: string;
-    isActive: boolean;
-  }[];
+  // centers field removed per requirements
 }
 
 export interface Availability {

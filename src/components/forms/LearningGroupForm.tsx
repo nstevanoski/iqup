@@ -130,7 +130,7 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
       // Mock current user data - in real app, this would come from auth context
       const currentUser = {
         id: "current_user_1",
-        name: "Dr. Sarah Wilson",
+        name: "Sarah Wilson",
         role: "LC Manager",
         franchisee: {
           id: "franchisee_1",
@@ -385,9 +385,9 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                 }`}
               >
                 <option value="">Select Teacher</option>
-                <option value="teacher_1">Dr. Sarah Wilson</option>
-                <option value="teacher_2">Prof. Michael Brown</option>
-                <option value="teacher_3">Dr. Emily Davis</option>
+                <option value="teacher_1">Sarah Wilson</option>
+                <option value="teacher_2">Michael Brown</option>
+                <option value="teacher_3">Emily Davis</option>
               </select>
               {errors.teacherId && <p className="text-red-500 text-sm mt-1">{errors.teacherId}</p>}
             </div>
@@ -569,8 +569,8 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.programPrice}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.programPrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -583,8 +583,8 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.subProgramPrice}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.subProgramPrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -597,8 +597,8 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.coursePrice}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.coursePrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -611,8 +611,8 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.discount || 0}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", parseFloat(e.target.value) || 0)}
+                  value={formData.pricingSnapshot.discount || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -704,8 +704,8 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.pricingSnapshot.pricePerMonth || 0}
-                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", parseFloat(e.target.value) || 0)}
+                    value={formData.pricingSnapshot.pricePerMonth || ""}
+                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

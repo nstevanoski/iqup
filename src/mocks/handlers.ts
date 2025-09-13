@@ -689,7 +689,7 @@ export const studentHandlers = [
       students = students.filter(s => 
         s.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
         s.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        s.email.toLowerCase().includes(filters.search!.toLowerCase())
+        s.parentEmail.toLowerCase().includes(filters.search!.toLowerCase())
       );
     }
     
@@ -697,8 +697,17 @@ export const studentHandlers = [
       students = students.filter(s => s.status === filters.status);
     }
     
-    const response = createPaginatedResponse(students, filters.page, filters.limit);
-    return HttpResponse.json(response);
+    const paginatedData = createPaginatedResponse(students, filters.page, filters.limit);
+    // Students API expects data.students structure
+    const studentsResponse = {
+      students: paginatedData.data,
+      pagination: {
+        ...paginatedData.pagination,
+        hasNext: paginatedData.pagination.page < paginatedData.pagination.totalPages,
+        hasPrev: paginatedData.pagination.page > 1
+      }
+    };
+    return HttpResponse.json(createResponse(studentsResponse));
   }),
 
   // Get student by ID

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Program } from "@/types";
 import { useUser, useSelectedScope } from "@/store/auth";
+import { getMFAccounts, MFAccount } from "@/lib/api/accounts";
 
 interface ProgramFormProps {
   program?: Program;
@@ -15,10 +16,10 @@ interface FormData {
   name: string;
   description: string;
   status: "active" | "inactive" | "draft";
-  duration: number;
-  maxStudents: number;
-  hours: number;
-  lessonLength: number;
+  duration: number | string;
+  maxStudents: number | string;
+  hours: number | string;
+  lessonLength: number | string;
   kind: "academic" | "worksheet" | "birthday_party" | "stem_camp";
   sharedWithMFs: string[];
   visibility: "private" | "shared" | "public";
@@ -46,11 +47,7 @@ const programKinds = [
   { value: "stem_camp", label: "STEM Camp" }
 ];
 
-const availableScopes = [
-  { id: "mf_region_1", name: "Region 1" },
-  { id: "mf_region_2", name: "Region 2" },
-  { id: "mf_region_3", name: "Region 3" },
-];
+// This will be populated from the API
 
 export function ProgramForm({ program, onSubmit, onCancel, loading = false }: ProgramFormProps) {
   const user = useUser();
@@ -74,6 +71,92 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [mfAccounts, setMfAccounts] = useState<MFAccount[]>([]);
+  const [loadingMFs, setLoadingMFs] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAllSelected, setShowAllSelected] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Fetch MF accounts with search functionality
+  const fetchMFAccounts = async (search?: string) => {
+    if (user?.role !== "HQ") return;
+    
+    try {
+      setLoadingMFs(true);
+      const response = await getMFAccounts(undefined, search);
+      if (response.success) {
+        setMfAccounts(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching MF accounts:', error);
+    } finally {
+      setLoadingMFs(false);
+    }
+  };
+
+  // Fetch MF accounts when component mounts
+  useEffect(() => {
+    fetchMFAccounts();
+  }, [user?.role]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      fetchMFAccounts(searchTerm || undefined);
+    }, 300); // 300ms debounce
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [searchTerm, user?.role]);
+
+  // Get selected and unselected accounts (no frontend filtering needed since backend handles search)
+  const selectedMFs = mfAccounts.filter(mf => formData.sharedWithMFs.includes(mf.id.toString()));
+  const unselectedMFs = mfAccounts.filter(mf => !formData.sharedWithMFs.includes(mf.id.toString()));
+
+  // Bulk selection handlers
+  const handleSelectAll = () => {
+    const allFilteredIds = mfAccounts.map(mf => mf.id.toString());
+    setFormData(prev => {
+      const combinedIds = [...prev.sharedWithMFs, ...allFilteredIds];
+      const uniqueIds = Array.from(new Set(combinedIds));
+      return {
+        ...prev,
+        sharedWithMFs: uniqueIds
+      };
+    });
+  };
+
+  const handleSelectNone = () => {
+    const filteredIds = mfAccounts.map(mf => mf.id.toString());
+    setFormData(prev => ({
+      ...prev,
+      sharedWithMFs: prev.sharedWithMFs.filter(id => !filteredIds.includes(id))
+    }));
+  };
+
+  const handleSelectAllMFs = () => {
+    const allIds = mfAccounts.map(mf => mf.id.toString());
+    setFormData(prev => ({
+      ...prev,
+      sharedWithMFs: allIds
+    }));
+  };
+
+  const handleClearAll = () => {
+    setFormData(prev => ({
+      ...prev,
+      sharedWithMFs: []
+    }));
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -86,19 +169,19 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       newErrors.description = "Description is required";
     }
 
-    if (formData.duration <= 0) {
+    if (!formData.duration || (typeof formData.duration === 'number' && formData.duration <= 0) || (typeof formData.duration === 'string' && (!formData.duration.trim() || parseInt(formData.duration) <= 0))) {
       newErrors.duration = "Duration must be greater than 0";
     }
 
-    if (formData.maxStudents <= 0) {
+    if (!formData.maxStudents || (typeof formData.maxStudents === 'number' && formData.maxStudents <= 0) || (typeof formData.maxStudents === 'string' && (!formData.maxStudents.trim() || parseInt(formData.maxStudents) <= 0))) {
       newErrors.maxStudents = "Max students must be greater than 0";
     }
 
-    if (formData.hours <= 0) {
+    if (!formData.hours || (typeof formData.hours === 'number' && formData.hours <= 0) || (typeof formData.hours === 'string' && (!formData.hours.trim() || parseInt(formData.hours) <= 0))) {
       newErrors.hours = "Total hours must be greater than 0";
     }
 
-    if (formData.lessonLength <= 0) {
+    if (!formData.lessonLength || (typeof formData.lessonLength === 'number' && formData.lessonLength <= 0) || (typeof formData.lessonLength === 'string' && (!formData.lessonLength.trim() || parseInt(formData.lessonLength) <= 0))) {
       newErrors.lessonLength = "Lesson length must be greater than 0";
     }
 
@@ -148,7 +231,16 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
       return;
     }
 
-    onSubmit(formData);
+    // Convert string values back to numbers for submission
+    const submitData = {
+      ...formData,
+      duration: typeof formData.duration === 'string' ? parseInt(formData.duration) : formData.duration,
+      maxStudents: typeof formData.maxStudents === 'string' ? parseInt(formData.maxStudents) : formData.maxStudents,
+      hours: typeof formData.hours === 'string' ? parseInt(formData.hours) : formData.hours,
+      lessonLength: typeof formData.lessonLength === 'string' ? parseInt(formData.lessonLength) : formData.lessonLength,
+    };
+
+    onSubmit(submitData);
   };
 
   const canEdit = user?.role === "HQ";
@@ -246,8 +338,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.duration}
-              onChange={(e) => handleInputChange("duration", parseInt(e.target.value) || 0)}
+              value={formData.duration || ""}
+              onChange={(e) => handleInputChange("duration", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.duration ? "border-red-500" : "border-gray-300"
               }`}
@@ -262,8 +354,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.hours}
-              onChange={(e) => handleInputChange("hours", parseInt(e.target.value) || 0)}
+              value={formData.hours || ""}
+              onChange={(e) => handleInputChange("hours", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.hours ? "border-red-500" : "border-gray-300"
               }`}
@@ -278,8 +370,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.lessonLength}
-              onChange={(e) => handleInputChange("lessonLength", parseInt(e.target.value) || 0)}
+              value={formData.lessonLength || ""}
+              onChange={(e) => handleInputChange("lessonLength", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.lessonLength ? "border-red-500" : "border-gray-300"
               }`}
@@ -294,8 +386,8 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
             <input
               type="number"
               min="1"
-              value={formData.maxStudents}
-              onChange={(e) => handleInputChange("maxStudents", parseInt(e.target.value) || 0)}
+              value={formData.maxStudents || ""}
+              onChange={(e) => handleInputChange("maxStudents", e.target.value === "" ? "" : parseInt(e.target.value) || "")}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.maxStudents ? "border-red-500" : "border-gray-300"
               }`}
@@ -329,41 +421,242 @@ export function ProgramForm({ program, onSubmit, onCancel, loading = false }: Pr
           {formData.visibility === "shared" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Share with scopes *
+                Share with Master Franchisees *
               </label>
-              <div className="space-y-2">
-                {availableScopes.map(scope => (
-                  <label key={scope.id} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.sharedWithMFs.includes(scope.id)}
-                      onChange={(e) => handleScopeChange(scope.id, e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">{scope.name}</span>
-                  </label>
-                ))}
+              
+              <div className="border border-gray-200 rounded-lg">
+                {loadingMFs ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="flex items-center space-x-2 text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span className="text-sm">
+                        {searchTerm ? 'Searching MF accounts...' : 'Loading MF accounts...'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary and Bulk Actions */}
+                    <div className="p-4 border-b border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{selectedMFs.length}</span> of <span className="font-medium">{mfAccounts.length}</span> MF accounts selected
+                          {searchTerm && (
+                            <span className="ml-2 text-blue-600">
+                              ({mfAccounts.length} match search)
+                            </span>
+                          )}
+                        </div>
+                        {mfAccounts.length > 0 && (
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={handleSelectAllMFs}
+                              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleClearAll}
+                              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Search */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search by name, code, city, or state..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 pl-8 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          disabled={loadingMFs}
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          {loadingMFs ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          ) : (
+                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          )}
+                        </div>
+                        {searchTerm && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchTerm("")}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            disabled={loadingMFs}
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filter Actions */}
+                    {searchTerm && (
+                      <div className="p-3 border-b border-gray-200 bg-blue-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-blue-700">
+                              Search results: {mfAccounts.length} accounts
+                            </span>
+                            {mfAccounts.length === 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSearchTerm("")}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                              >
+                                Clear search
+                              </button>
+                            )}
+                          </div>
+                          {mfAccounts.length > 0 && (
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={handleSelectAll}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                              >
+                                Select All Results
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSelectNone}
+                                className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                              >
+                                Deselect All Results
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Selected Accounts Summary */}
+                    {selectedMFs.length > 0 && (
+                      <div className="p-3 border-b border-gray-200 bg-green-50">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-green-700">
+                            {selectedMFs.length} account{selectedMFs.length !== 1 ? 's' : ''} selected
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleClearAll}
+                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                          >
+                            Clear Selection
+                          </button>
+                        </div>
+                        <div className="mt-2">
+                          <div className="flex flex-wrap gap-1">
+                            {selectedMFs.map(mf => (
+                              <span
+                                key={mf.id}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                              >
+                                {mf.name}
+                                <button
+                                  type="button"
+                                  onClick={() => handleScopeChange(mf.id.toString(), false)}
+                                  className="ml-1 text-green-600 hover:text-green-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* MF Accounts List or Empty State */}
+                    {mfAccounts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-8 text-center">
+                        <div className="text-gray-400 mb-2">
+                          <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                          {searchTerm ? (
+                            <>
+                              <p className="font-medium mb-1">No MF accounts found</p>
+                              <p className="text-xs">Try adjusting your search terms or clear the search to see all accounts</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-medium mb-1">No MF accounts available</p>
+                              <p className="text-xs">Contact your administrator to add MF accounts</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto">
+                        <div className="divide-y divide-gray-200">
+                          {mfAccounts.map(mf => (
+                            <label key={mf.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.sharedWithMFs.includes(mf.id.toString())}
+                                onChange={(e) => handleScopeChange(mf.id.toString(), e.target.checked)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <div className="ml-3 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">{mf.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {mf.code} • {mf.city}, {mf.state}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-xs text-gray-400">
+                                      {mf._count.users} users
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                      {mf._count.learningCenters} LCs
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
+              
               {errors.sharedWithMFs && <p className="text-red-500 text-sm mt-1">{errors.sharedWithMFs}</p>}
             </div>
           )}
         </div>
       </div>
-
+      
       {/* Form Actions */}
-      <div className="flex justify-end space-x-4 pt-6">
+      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-          disabled={loading}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Saving..." : program ? "Update Program" : "Create Program"}
         </button>
