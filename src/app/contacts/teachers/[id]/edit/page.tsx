@@ -7,64 +7,8 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TeacherForm } from "@/components/forms/TeacherForm";
 import { Teacher } from "@/types";
 import { ArrowLeft, Info } from "lucide-react";
+import { teachersAPI } from "@/lib/api/teachers";
 
-// Mock teacher data for fallback
-const mockTeacher: Teacher = {
-  id: "1",
-  firstName: "Sarah",
-  lastName: "Wilson",
-  dateOfBirth: new Date("1980-05-15"),
-  gender: "female",
-  title: "Dr.",
-  email: "sarah.wilson@example.com",
-  phone: "+1-555-1001",
-  specialization: ["English Literature", "Linguistics"],
-  experience: 15,
-  qualifications: ["PhD in English Literature", "TESOL Certification"],
-  status: "active",
-  hourlyRate: 75,
-  availability: [
-    { dayOfWeek: 1, startTime: "09:00", endTime: "17:00" },
-    { dayOfWeek: 3, startTime: "09:00", endTime: "17:00" },
-    { dayOfWeek: 5, startTime: "09:00", endTime: "17:00" },
-  ],
-  bio: "Experienced English professor with 15 years of teaching experience",
-  address: {
-    street: "321 Elm St",
-    city: "Boston",
-    state: "MA",
-    zipCode: "02101",
-    country: "USA",
-  },
-  education: [
-    {
-      degree: "PhD",
-      institution: "Harvard University",
-      graduationYear: 2008,
-      fieldOfStudy: "English Literature",
-    },
-  ],
-  trainings: [
-    {
-      trainingId: "train_1",
-      trainingName: "Advanced Teaching Methods",
-      completedDate: "2024-01-15",
-      status: "completed",
-      certification: "Advanced Teaching Certificate",
-    },
-  ],
-  centers: [
-    {
-      centerId: "center_1",
-      centerName: "Boston Learning Center",
-      role: "Senior English Instructor",
-      startDate: "2018-01-15",
-      isActive: true,
-    },
-  ],
-  createdAt: new Date("2024-01-01"),
-  updatedAt: new Date("2024-01-15"),
-};
 
 interface EditTeacherPageProps {
   params: Promise<{ id: string }>;
@@ -81,18 +25,11 @@ export default function EditTeacherPage({ params }: EditTeacherPageProps) {
     const fetchTeacher = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/teachers/${resolvedParams.id}`);
-        if (response.ok) {
-          const result = await response.json();
-          setTeacher(result.data);
-        } else {
-          // Fallback to mock data
-          setTeacher(mockTeacher);
-        }
+        const result = await teachersAPI.getTeacher(resolvedParams.id);
+        setTeacher(result.data);
       } catch (error) {
         console.error("Error fetching teacher:", error);
-        // Fallback to mock data
-        setTeacher(mockTeacher);
+        setTeacher(null);
       } finally {
         setLoading(false);
       }
@@ -106,21 +43,8 @@ export default function EditTeacherPage({ params }: EditTeacherPageProps) {
   const handleSubmit = async (teacherData: Omit<Teacher, "id" | "createdAt" | "updatedAt">) => {
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/teachers/${resolvedParams.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(teacherData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        router.push(`/contacts/teachers/${resolvedParams.id}`);
-      } else {
-        const error = await response.json();
-        alert(`Error updating teacher: ${error.message}`);
-      }
+      await teachersAPI.updateTeacher(resolvedParams.id, teacherData);
+      router.push(`/contacts/teachers/${resolvedParams.id}`);
     } catch (error) {
       console.error("Error updating teacher:", error);
       alert("Failed to update teacher. Please try again.");

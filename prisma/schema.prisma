@@ -85,6 +85,7 @@ model HQ {
   masterFranchisees MasterFranchisee[]
   teacherTrainers   TeacherTrainer[]
   students          Student[]
+  teachers          Teacher[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -114,6 +115,7 @@ model MasterFranchisee {
   users          User[]
   learningCenters LearningCenter[]
   students       Student[]
+  teachers       Teacher[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -142,6 +144,7 @@ model LearningCenter {
   // Relationships
   users      User[]
   students   Student[]
+  teachers   Teacher[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -330,4 +333,61 @@ enum StudentStatus {
   INACTIVE
   GRADUATED
   SUSPENDED
+}
+
+// Teacher model
+model Teacher {
+  id                Int      @id @default(autoincrement())
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime
+  gender            Gender
+  title             String?  // Dr., Prof., etc.
+  email             String
+  phone             String?
+  experience        Int      @default(0) // years
+  status            TeacherStatus @default(ACTIVE)
+  bio               String?  @db.Text
+  avatar            String?
+  
+  // Address information
+  address           String?
+  city              String?
+  state             String?
+  country           String?
+  postalCode        String?
+  
+  // Availability (stored as JSON)
+  availability      Json?    // Array of availability objects
+  
+  // Education (stored as JSON)
+  education         Json?    // Array of education objects
+  
+  // Trainings (stored as JSON)
+  trainings         Json?    // Array of training objects
+  
+  // Specialization and qualifications (stored as JSON arrays)
+  specialization    Json?    // Array of strings
+  qualifications    Json?    // Array of strings
+  
+  // Relationships to accounts
+  lcId              Int?
+  mfId              Int
+  hqId              Int
+  
+  lc                LearningCenter? @relation(fields: [lcId], references: [id])
+  mf                MasterFranchisee @relation(fields: [mfId], references: [id])
+  hq                HQ @relation(fields: [hqId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("teachers")
+}
+
+// Enums for Teacher model
+enum TeacherStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
 }

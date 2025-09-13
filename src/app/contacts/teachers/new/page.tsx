@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { TeacherForm } from "@/components/forms/TeacherForm";
 import { Teacher } from "@/types";
 import { ArrowLeft, Info } from "lucide-react";
+import { teachersAPI } from "@/lib/api/teachers";
 
 export default function NewTeacherPage() {
   const router = useRouter();
@@ -15,21 +16,8 @@ export default function NewTeacherPage() {
   const handleSubmit = async (teacherData: Omit<Teacher, "id" | "createdAt" | "updatedAt">) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/teachers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(teacherData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        router.push(`/contacts/teachers/${result.data.id}`);
-      } else {
-        const error = await response.json();
-        alert(`Error creating teacher: ${error.message}`);
-      }
+      const result = await teachersAPI.createTeacher(teacherData);
+      router.push(`/contacts/teachers/${result.data.id}`);
     } catch (error) {
       console.error("Error creating teacher:", error);
       alert("Failed to create teacher. Please try again.");

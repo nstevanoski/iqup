@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/store/auth";
 import { Plus, Eye, Edit, Trash2, Users, Clock } from "lucide-react";
 import Link from "next/link";
+import { teachersAPI } from "@/lib/api/teachers";
 
 // Sample data - in a real app, this would come from an API
 const sampleTeachers: Teacher[] = [
@@ -295,26 +296,19 @@ const columns: Column<Teacher>[] = [
 export default function TeachersPage() {
   const router = useRouter();
   const user = useUser();
-  const [data, setData] = useState<Teacher[]>(sampleTeachers);
+  const [data, setData] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/teachers");
-        if (response.ok) {
-          const result = await response.json();
-          const teachers: Teacher[] = result.data || [];
-          setData(teachers);
-        } else {
-          // Fallback to sample data
-          setData(sampleTeachers);
-        }
+        const result = await teachersAPI.getTeachers();
+        setData(result.data.teachers);
       } catch (error) {
         console.error("Error fetching teachers:", error);
-        // Fallback to sample data
-        setData(sampleTeachers);
+        // Show empty state instead of fallback data
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -341,21 +335,9 @@ export default function TeachersPage() {
 
   const handleDeleteTeacher = async (teacherId: string) => {
     try {
-      const response = await fetch(`/api/teachers/${teacherId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        // Refresh the data
-        const fetchResponse = await fetch("/api/teachers");
-        if (fetchResponse.ok) {
-          const result = await fetchResponse.json();
-          setData(result.data || []);
-        }
-      } else {
-        const error = await response.json();
-        alert(`Error deleting teacher: ${error.message}`);
-      }
+      await teachersAPI.deleteTeacher(teacherId);
+      // Remove from local state
+      setData(data.filter(teacher => teacher.id !== teacherId));
     } catch (error) {
       console.error("Error deleting teacher:", error);
       alert("Failed to delete teacher. Please try again.");
