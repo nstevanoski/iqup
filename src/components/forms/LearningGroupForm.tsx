@@ -130,7 +130,7 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
       // Mock current user data - in real app, this would come from auth context
       const currentUser = {
         id: "current_user_1",
-        name: "Dr. Sarah Wilson",
+        name: "Sarah Wilson",
         role: "LC Manager",
         franchisee: {
           id: "franchisee_1",
@@ -385,9 +385,9 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
                 }`}
               >
                 <option value="">Select Teacher</option>
-                <option value="teacher_1">Dr. Sarah Wilson</option>
-                <option value="teacher_2">Prof. Michael Brown</option>
-                <option value="teacher_3">Dr. Emily Davis</option>
+                <option value="teacher_1">Sarah Wilson</option>
+                <option value="teacher_2">Michael Brown</option>
+                <option value="teacher_3">Emily Davis</option>
               </select>
               {errors.teacherId && <p className="text-red-500 text-sm mt-1">{errors.teacherId}</p>}
             </div>

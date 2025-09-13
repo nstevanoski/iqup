@@ -16,7 +16,6 @@ interface FormData {
   lastName: string;
   dateOfBirth: string;
   gender: "male" | "female" | "other";
-  title: string;
   email: string;
   phone: string;
   // specialization removed per requirements
@@ -45,7 +44,6 @@ const initialFormData: FormData = {
   lastName: "",
   dateOfBirth: "",
   gender: "other",
-  title: "",
   email: "",
   phone: "",
   // specialization removed per requirements
@@ -72,7 +70,6 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
       lastName: teacher.lastName,
       dateOfBirth: teacher.dateOfBirth ? teacher.dateOfBirth.toISOString().split('T')[0] : "",
       gender: teacher.gender,
-      title: teacher.title,
       email: teacher.email,
       phone: teacher.phone || "",
       // specialization removed per requirements
@@ -212,23 +209,6 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
               {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <select
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Select title</option>
-                <option value="Dr.">Dr.</option>
-                <option value="Prof.">Prof.</option>
-                <option value="Mr.">Mr.</option>
-                <option value="Ms.">Ms.</option>
-                <option value="Mrs.">Mrs.</option>
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

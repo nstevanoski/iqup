@@ -265,7 +265,7 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                 <div className="flex items-center">
                   <User className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Teacher:</span>
-                  <span className="ml-2 text-sm font-medium">Dr. Sarah Wilson</span>
+                  <span className="ml-2 text-sm font-medium">Sarah Wilson</span>
                 </div>
               </div>
             </div>

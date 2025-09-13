@@ -196,7 +196,6 @@ export interface Teacher extends BaseEntity, ContactInfo {
   lastName: string;
   dateOfBirth: Date;
   gender: "male" | "female" | "other";
-  title: string; // Dr., Prof., etc.
   specialization: string[];
   experience: number; // years
   qualifications: string[];

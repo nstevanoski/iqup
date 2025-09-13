@@ -342,7 +342,6 @@ model Teacher {
   lastName          String
   dateOfBirth       DateTime
   gender            Gender
-  title             String?  // Dr., Prof., etc.
   email             String
   phone             String?
   experience        Int      @default(0) // years

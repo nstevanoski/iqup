@@ -74,7 +74,7 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {teacher.title} {teacher.firstName} {teacher.lastName}
+              {teacher.firstName} {teacher.lastName}
             </h1>
             <div className="flex items-center space-x-4 mt-2">
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(teacher.status)}`}>

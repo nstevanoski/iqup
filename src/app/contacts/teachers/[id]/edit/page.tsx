@@ -114,7 +114,7 @@ export default function EditTeacherPage({ params }: EditTeacherPageProps) {
           items={[
             { label: "Contacts", href: "/contacts" },
             { label: "Teachers", href: "/contacts/teachers" },
-            { label: `${teacher.title} ${teacher.firstName} ${teacher.lastName}`, href: `/contacts/teachers/${resolvedParams.id}` },
+            { label: `${teacher.firstName} ${teacher.lastName}`, href: `/contacts/teachers/${resolvedParams.id}` },
             { label: "Edit", href: `/contacts/teachers/${resolvedParams.id}/edit` },
           ]}
         />

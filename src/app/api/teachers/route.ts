@@ -126,7 +126,6 @@ export async function GET(request: NextRequest) {
         { firstName: { contains: search } },
         { lastName: { contains: search } },
         { email: { contains: search } },
-        { title: { contains: search } }
       ]
     }
 
@@ -189,7 +188,6 @@ export async function POST(request: NextRequest) {
       lastName,
       dateOfBirth,
       gender,
-      title,
       email,
       phone,
       experience,
@@ -296,7 +294,6 @@ export async function POST(request: NextRequest) {
         lastName,
         dateOfBirth: new Date(dateOfBirth),
         gender: gender.toUpperCase(),
-        title,
         email,
         phone,
         experience: experience || 0,

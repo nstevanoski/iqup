@@ -1000,7 +1000,6 @@ export const teachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1980-05-15"),
     gender: "female",
-    title: "Dr.",
     email: "sarah.wilson@example.com",
     phone: "+1-555-1001",
     specialization: ["English Literature", "Linguistics"],
@@ -1065,7 +1064,6 @@ export const teachers: Teacher[] = [
     lastName: "Brown",
     dateOfBirth: new Date("1975-08-22"),
     gender: "male",
-    title: "Prof.",
     email: "michael.brown@example.com",
     phone: "+1-555-1002",
     specialization: ["Mathematics", "Statistics"],
@@ -1123,7 +1121,6 @@ export const teachers: Teacher[] = [
     lastName: "Davis",
     dateOfBirth: new Date("1985-12-03"),
     gender: "female",
-    title: "Dr.",
     email: "emily.davis@example.com",
     phone: "+1-555-1003",
     specialization: ["Physics", "Chemistry"],
@@ -1181,7 +1178,6 @@ export const teachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1988-03-18"),
     gender: "male",
-    title: "Mr.",
     email: "david.wilson@example.com",
     phone: "+1-555-1004",
     specialization: ["Computer Science", "Programming"],
@@ -1260,7 +1256,7 @@ export const learningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_1",
-      name: "Dr. Sarah Wilson",
+      name: "Sarah Wilson",
       role: "Program Director",
     },
     franchisee: {
@@ -1325,7 +1321,7 @@ export const learningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_2",
-      name: "Prof. Michael Brown",
+      name: "Michael Brown",
       role: "Mathematics Coordinator",
     },
     franchisee: {
@@ -1385,7 +1381,7 @@ export const learningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_3",
-      name: "Dr. Emily Davis",
+      name: "Emily Davis",
       role: "Physics Department Head",
     },
     franchisee: {
@@ -2021,12 +2017,12 @@ export const trainings: Training[] = [
     },
     teacherTrainer: {
       id: "tt_1",
-      name: "Dr. Sarah Wilson",
+      name: "Sarah Wilson",
       role: "primary",
     },
     assistant: {
       id: "tt_2",
-      name: "Prof. Michael Brown",
+      name: "Michael Brown",
     },
     ttStatus: "completed",
     ttComments: "All participants successfully completed the training with excellent performance.",
@@ -2126,7 +2122,7 @@ export const trainings: Training[] = [
     },
     teacherTrainer: {
       id: "tt_3",
-      name: "Dr. Emily Davis",
+      name: "Emily Davis",
       role: "primary",
     },
     ttStatus: "pending",

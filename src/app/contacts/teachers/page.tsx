@@ -19,7 +19,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1980-05-15"),
     gender: "female",
-    title: "Dr.",
     email: "sarah.wilson@example.com",
     phone: "+1-555-1001",
     specialization: ["English Literature", "Linguistics"],
@@ -85,7 +84,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Brown",
     dateOfBirth: new Date("1975-08-22"),
     gender: "male",
-    title: "Prof.",
     email: "michael.brown@example.com",
     phone: "+1-555-1002",
     specialization: ["Mathematics", "Statistics"],
@@ -144,7 +142,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Davis",
     dateOfBirth: new Date("1985-12-03"),
     gender: "female",
-    title: "Dr.",
     email: "emily.davis@example.com",
     phone: "+1-555-1003",
     specialization: ["Physics", "Chemistry"],
@@ -203,7 +200,6 @@ const sampleTeachers: Teacher[] = [
     lastName: "Wilson",
     dateOfBirth: new Date("1988-03-18"),
     gender: "male",
-    title: "Mr.",
     email: "david.wilson@example.com",
     phone: "+1-555-1004",
     specialization: ["Computer Science", "Programming"],
@@ -255,7 +251,7 @@ const columns: Column<Teacher>[] = [
     render: (_, row) => (
       <div>
         <Link href={`/contacts/teachers/${row.id}`} className="font-medium text-blue-600 hover:underline cursor-pointer">
-          {row.title} {row.firstName} {row.lastName}
+          {row.firstName} {row.lastName}
         </Link>
         <div className="text-sm text-gray-500">{row.email}</div>
       </div>
@@ -334,7 +330,7 @@ export default function TeachersPage() {
         router.push(`/contacts/teachers/${row.id}/edit`);
         break;
       case "delete":
-        if (confirm(`Are you sure you want to delete ${row.title} ${row.firstName} ${row.lastName}?`)) {
+        if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
           handleDeleteTeacher(row.id);
         }
         break;

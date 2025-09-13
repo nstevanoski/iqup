@@ -72,18 +72,18 @@ const additionalHandlers = [
   // Learning Groups
   http.get("/api/learning-groups", () => {
     return HttpResponse.json([
-      { id: 1, name: "Advanced English", teacher: "Dr. Sarah Wilson", students: 25, schedule: "Mon, Wed, Fri 10:00 AM" },
-      { id: 2, name: "Calculus I", teacher: "Prof. Michael Brown", students: 30, schedule: "Tue, Thu 2:00 PM" },
-      { id: 3, name: "Physics Lab", teacher: "Dr. Emily Davis", students: 20, schedule: "Wed 3:00 PM" },
+      { id: 1, name: "Advanced English", teacher: "Sarah Wilson", students: 25, schedule: "Mon, Wed, Fri 10:00 AM" },
+      { id: 2, name: "Calculus I", teacher: "Michael Brown", students: 30, schedule: "Tue, Thu 2:00 PM" },
+      { id: 3, name: "Physics Lab", teacher: "Emily Davis", students: 20, schedule: "Wed 3:00 PM" },
     ]);
   }),
 
   // Trainings
   http.get("/api/trainings", () => {
     return HttpResponse.json([
-      { id: 1, title: "Teaching Methodology", instructor: "Dr. Sarah Wilson", participants: 15, date: "2024-01-20", status: "scheduled" },
-      { id: 2, title: "Classroom Management", instructor: "Prof. Michael Brown", participants: 12, date: "2024-01-18", status: "completed" },
-      { id: 3, title: "Assessment Techniques", instructor: "Dr. Emily Davis", participants: 18, date: "2024-01-25", status: "scheduled" },
+      { id: 1, title: "Teaching Methodology", instructor: "Sarah Wilson", participants: 15, date: "2024-01-20", status: "scheduled" },
+      { id: 2, title: "Classroom Management", instructor: "Michael Brown", participants: 12, date: "2024-01-18", status: "completed" },
+      { id: 3, title: "Assessment Techniques", instructor: "Emily Davis", participants: 18, date: "2024-01-25", status: "scheduled" },
     ]);
   }),
 
@@ -99,9 +99,9 @@ const additionalHandlers = [
   // Teacher Trainers
   http.get("/api/teacher-trainers", () => {
     return HttpResponse.json([
-      { id: 1, name: "Dr. Sarah Wilson", email: "sarah@example.com", role: "TT", status: "active" },
-      { id: 2, name: "Prof. Michael Brown", email: "michael@example.com", role: "TT", status: "active" },
-      { id: 3, name: "Dr. Emily Davis", email: "emily@example.com", role: "TT", status: "active" },
+      { id: 1, name: "Sarah Wilson", email: "sarah@example.com", role: "TT", status: "active" },
+      { id: 2, name: "Michael Brown", email: "michael@example.com", role: "TT", status: "active" },
+      { id: 3, name: "Emily Davis", email: "emily@example.com", role: "TT", status: "active" },
     ]);
   }),
 

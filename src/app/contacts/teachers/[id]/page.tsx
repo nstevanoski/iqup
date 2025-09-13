@@ -56,7 +56,7 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
   const handleDelete = async () => {
     if (!teacher || !token) return;
     
-    if (confirm(`Are you sure you want to delete ${teacher.title} ${teacher.firstName} ${teacher.lastName}?`)) {
+    if (confirm(`Are you sure you want to delete ${teacher.firstName} ${teacher.lastName}?`)) {
       try {
         // Ensure API has the latest token
         teachersAPI.updateToken(token);
@@ -110,7 +110,7 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
           items={[
             { label: "Contacts", href: "/contacts" },
             { label: "Teachers", href: "/contacts/teachers" },
-            { label: `${teacher.title} ${teacher.firstName} ${teacher.lastName}`, href: `/contacts/teachers/${resolvedParams.id}` },
+            { label: `${teacher.firstName} ${teacher.lastName}`, href: `/contacts/teachers/${resolvedParams.id}` },
           ]}
         />
 

@@ -50,7 +50,7 @@ const sampleLearningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_1",
-      name: "Dr. Sarah Wilson",
+      name: "Sarah Wilson",
       role: "Program Director",
     },
     franchisee: {
@@ -116,7 +116,7 @@ const sampleLearningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_2",
-      name: "Prof. Michael Brown",
+      name: "Michael Brown",
       role: "Mathematics Coordinator",
     },
     franchisee: {
@@ -177,7 +177,7 @@ const sampleLearningGroups: LearningGroup[] = [
     },
     owner: {
       id: "owner_3",
-      name: "Dr. Emily Davis",
+      name: "Emily Davis",
       role: "Physics Department Head",
     },
     franchisee: {
@@ -213,9 +213,9 @@ const getProgramName = (programId: string): string => {
 // Helper function to get teacher name
 const getTeacherName = (teacherId: string): string => {
   const teacherMap: Record<string, string> = {
-    "teacher_1": "Dr. Sarah Wilson",
-    "teacher_2": "Prof. Michael Brown",
-    "teacher_3": "Dr. Emily Davis",
+    "teacher_1": "Sarah Wilson",
+    "teacher_2": "Michael Brown",
+    "teacher_3": "Emily Davis",
   };
   return teacherMap[teacherId] || teacherId;
 };

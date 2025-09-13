@@ -368,9 +368,9 @@ export default function NewLearningGroupPage() {
                   }`}
                 >
                   <option value="">Select Teacher</option>
-                  <option value="teacher_1">Dr. Sarah Wilson</option>
-                  <option value="teacher_2">Prof. Michael Brown</option>
-                  <option value="teacher_3">Dr. Emily Davis</option>
+                  <option value="teacher_1">Sarah Wilson</option>
+                  <option value="teacher_2">Michael Brown</option>
+                  <option value="teacher_3">Emily Davis</option>
                 </select>
                 {errors.teacherId && <p className="text-red-500 text-sm mt-1">{errors.teacherId}</p>}
               </div>

@@ -61,12 +61,12 @@ const sampleTrainings: Training[] = [
     },
     teacherTrainer: {
       id: "tt_1",
-      name: "Dr. Sarah Wilson",
+      name: "Sarah Wilson",
       role: "primary",
     },
     assistant: {
       id: "tt_2",
-      name: "Prof. Michael Brown",
+      name: "Michael Brown",
     },
     ttStatus: "completed",
     ttComments: "All participants successfully completed the training with excellent performance.",
@@ -136,7 +136,7 @@ const sampleTrainings: Training[] = [
     },
     teacherTrainer: {
       id: "tt_3",
-      name: "Dr. Emily Davis",
+      name: "Emily Davis",
       role: "primary",
     },
     ttStatus: "pending",
