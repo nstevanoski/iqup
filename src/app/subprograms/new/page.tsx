@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SubProgramForm } from "@/components/forms/SubProgramForm";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { useUser, useSelectedScope, useToken } from "@/store/auth";
+import { useUser, useSelectedScope, useToken, useIsAuthenticated, useIsHydrated } from "@/store/auth";
 import { Program, SubProgram } from "@/types";
 import { ArrowLeft } from "lucide-react";
 import { createSubProgram } from "@/lib/api/subprograms";
@@ -17,9 +17,18 @@ export default function NewSubProgramPage() {
   const user = useUser();
   const selectedScope = useSelectedScope();
   const token = useToken();
+  const isAuthenticated = useIsAuthenticated();
+  const isHydrated = useIsHydrated();
   const [loading, setLoading] = useState(false);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [programsLoading, setProgramsLoading] = useState(true);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isHydrated, router]);
 
   useEffect(() => {
     const fetchPrograms = async () => {
@@ -71,6 +80,30 @@ export default function NewSubProgramPage() {
   const handleCancel = () => {
     router.push("/subprograms");
   };
+
+  // Show loading while hydrating
+  if (!isHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Check if user has permission to create subprograms (HQ and MF)
   if (user?.role !== "MF" && user?.role !== "HQ") {
