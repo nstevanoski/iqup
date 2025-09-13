@@ -554,27 +554,6 @@ export default function SubProgramsPage() {
           )}
         </div>
 
-        {/* Role-based info */}
-        {user?.role !== "MF" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <BookOpen className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
-              <div>
-                <h3 className="text-sm font-medium text-blue-800">
-                  {user?.role === "LC" 
-                    ? "Shared SubPrograms" 
-                    : "All SubPrograms"}
-                </h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  {user?.role === "LC"
-                    ? `You can view subprograms shared with ${selectedScope?.name || "your scope"}.`
-                    : "You have read-only access to all subprograms."}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div>
           <DataTable
             data={data}

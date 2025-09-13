@@ -534,27 +534,6 @@ export default function ProgramsPage() {
           )}
         </div>
 
-        {/* Role-based info */}
-        {user?.role !== "HQ" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <BookOpen className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
-              <div>
-                <h3 className="text-sm font-medium text-blue-800">
-                  {user?.role === "MF" || user?.role === "LC" 
-                    ? "Shared Programs" 
-                    : "Public Programs"}
-                </h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  {user?.role === "MF" || user?.role === "LC"
-                    ? `You can view programs shared with ${selectedScope?.name || "your scope"}.`
-                    : "You can view public programs only."}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start">
