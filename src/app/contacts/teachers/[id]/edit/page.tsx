@@ -8,6 +8,7 @@ import { TeacherForm } from "@/components/forms/TeacherForm";
 import { Teacher } from "@/types";
 import { ArrowLeft, Info } from "lucide-react";
 import { teachersAPI } from "@/lib/api/teachers";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 
 
 interface EditTeacherPageProps {
@@ -17,14 +18,23 @@ interface EditTeacherPageProps {
 export default function EditTeacherPage({ params }: EditTeacherPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTeacher = async () => {
+      if (!user || !selectedScope || !token) return;
+      
       try {
         setLoading(true);
+        
+        // Update API token to match current user context
+        teachersAPI.updateToken(token);
+        
         const result = await teachersAPI.getTeacher(resolvedParams.id);
         setTeacher(result.data);
       } catch (error) {
@@ -38,11 +48,17 @@ export default function EditTeacherPage({ params }: EditTeacherPageProps) {
     if (resolvedParams.id) {
       fetchTeacher();
     }
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleSubmit = async (teacherData: Omit<Teacher, "id" | "createdAt" | "updatedAt">) => {
+    if (!token) return;
+    
     try {
       setSubmitting(true);
+      
+      // Ensure API has the latest token
+      teachersAPI.updateToken(token);
+      
       await teachersAPI.updateTeacher(resolvedParams.id, teacherData);
       router.push(`/contacts/teachers/${resolvedParams.id}`);
     } catch (error) {

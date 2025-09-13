@@ -8,6 +8,7 @@ import { TeacherDetail } from "@/components/views/TeacherDetail";
 import { Teacher } from "@/types";
 import { ArrowLeft } from "lucide-react";
 import { teachersAPI } from "@/lib/api/teachers";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 
 
 interface TeacherDetailPageProps {
@@ -17,13 +18,22 @@ interface TeacherDetailPageProps {
 export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
+  const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTeacher = async () => {
+      if (!user || !selectedScope || !token) return;
+      
       try {
         setLoading(true);
+        
+        // Update API token to match current user context
+        teachersAPI.updateToken(token);
+        
         const result = await teachersAPI.getTeacher(resolvedParams.id);
         setTeacher(result.data);
       } catch (error) {
@@ -37,17 +47,19 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
     if (resolvedParams.id) {
       fetchTeacher();
     }
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, user, selectedScope, token]);
 
   const handleEdit = () => {
     router.push(`/contacts/teachers/${resolvedParams.id}/edit`);
   };
 
   const handleDelete = async () => {
-    if (!teacher) return;
+    if (!teacher || !token) return;
     
     if (confirm(`Are you sure you want to delete ${teacher.title} ${teacher.firstName} ${teacher.lastName}?`)) {
       try {
+        // Ensure API has the latest token
+        teachersAPI.updateToken(token);
         await teachersAPI.deleteTeacher(resolvedParams.id);
         router.push("/contacts/teachers");
       } catch (error) {

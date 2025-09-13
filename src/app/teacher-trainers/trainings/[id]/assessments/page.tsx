@@ -21,13 +21,6 @@ const sampleTeachers: Teacher[] = [
     dateOfBirth: new Date("1985-03-15"),
     gender: "male",
     status: "active",
-    centers: [{
-      centerId: "center_1",
-      centerName: "Boston Learning Center",
-      role: "Teacher",
-      startDate: "2023-01-01",
-      isActive: true,
-    }],
     education: [{
       degree: "Bachelor of Education",
       institution: "University of Education",
@@ -63,13 +56,6 @@ const sampleTeachers: Teacher[] = [
     dateOfBirth: new Date("1988-07-22"),
     gender: "female",
     status: "active",
-    centers: [{
-      centerId: "center_1",
-      centerName: "Boston Learning Center",
-      role: "Teacher",
-      startDate: "2023-01-01",
-      isActive: true,
-    }],
     education: [{
       degree: "Master of Education",
       institution: "Education University",

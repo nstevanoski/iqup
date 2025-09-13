@@ -72,6 +72,9 @@ export async function GET(request: NextRequest) {
         whereClause.lcId = requestedLcId
       } else if (userRolePrefix === 'MF') {
         // MF can only access LCs under their MF
+        if (!user.mfId) {
+          return errorResponse('MF user missing mfId', 403)
+        }
         const lc = await prisma.learningCenter.findFirst({
           where: { id: requestedLcId, mfId: user.mfId }
         })
@@ -305,11 +308,11 @@ export async function POST(request: NextRequest) {
         state,
         country,
         postalCode,
-        availability: availability ? JSON.stringify(availability) : null,
-        education: education ? JSON.stringify(education) : null,
-        trainings: trainings ? JSON.stringify(trainings) : null,
-        specialization: specialization ? JSON.stringify(specialization) : null,
-        qualifications: qualifications ? JSON.stringify(qualifications) : null,
+        availability: availability ? JSON.stringify(availability) : undefined,
+        education: education ? JSON.stringify(education) : undefined,
+        trainings: trainings ? JSON.stringify(trainings) : undefined,
+        specialization: specialization ? JSON.stringify(specialization) : undefined,
+        qualifications: qualifications ? JSON.stringify(qualifications) : undefined,
         lcId: finalLcId,
         mfId: finalMfId,
         hqId: finalHqId

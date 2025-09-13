@@ -72,6 +72,9 @@ export async function GET(request: NextRequest) {
         whereClause.lcId = requestedLcId
       } else if (userRolePrefix === 'MF') {
         // MF can only access LCs under their MF
+        if (!user.mfId) {
+          return errorResponse('MF user missing mfId', 403)
+        }
         const lc = await prisma.learningCenter.findFirst({
           where: { id: requestedLcId, mfId: user.mfId }
         })

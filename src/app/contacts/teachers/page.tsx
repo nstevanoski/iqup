@@ -6,7 +6,7 @@ import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { Teacher } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/store/auth";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 import { Plus, Eye, Edit, Trash2, Users, Clock } from "lucide-react";
 import Link from "next/link";
 import { teachersAPI } from "@/lib/api/teachers";
@@ -296,13 +296,21 @@ const columns: Column<Teacher>[] = [
 export default function TeachersPage() {
   const router = useRouter();
   const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const [data, setData] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTeachers = async () => {
+      if (!user || !selectedScope || !token) return;
+
       try {
         setLoading(true);
+        
+        // Update API token to match current user context
+        teachersAPI.updateToken(token);
+        
         const result = await teachersAPI.getTeachers();
         setData(result.data.teachers);
       } catch (error) {
@@ -315,7 +323,7 @@ export default function TeachersPage() {
     };
 
     fetchTeachers();
-  }, []);
+  }, [user, selectedScope, token]);
 
   const handleRowAction = (action: string, row: Teacher) => {
     switch (action) {
@@ -334,7 +342,11 @@ export default function TeachersPage() {
   };
 
   const handleDeleteTeacher = async (teacherId: string) => {
+    if (!token) return;
+    
     try {
+      // Ensure API has the latest token
+      teachersAPI.updateToken(token);
       await teachersAPI.deleteTeacher(teacherId);
       // Remove from local state
       setData(data.filter(teacher => teacher.id !== teacherId));

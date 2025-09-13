@@ -8,14 +8,24 @@ import { TeacherForm } from "@/components/forms/TeacherForm";
 import { Teacher } from "@/types";
 import { ArrowLeft, Info } from "lucide-react";
 import { teachersAPI } from "@/lib/api/teachers";
+import { useUser, useSelectedScope, useToken } from "@/store/auth";
 
 export default function NewTeacherPage() {
   const router = useRouter();
+  const user = useUser();
+  const selectedScope = useSelectedScope();
+  const token = useToken();
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (teacherData: Omit<Teacher, "id" | "createdAt" | "updatedAt">) => {
+    if (!user || !selectedScope || !token) return;
+    
     try {
       setLoading(true);
+      
+      // Update API token to match current user context
+      teachersAPI.updateToken(token);
+      
       const result = await teachersAPI.createTeacher(teacherData);
       router.push(`/contacts/teachers/${result.data.id}`);
     } catch (error) {

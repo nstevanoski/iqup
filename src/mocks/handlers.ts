@@ -689,7 +689,7 @@ export const studentHandlers = [
       students = students.filter(s => 
         s.firstName.toLowerCase().includes(filters.search!.toLowerCase()) ||
         s.lastName.toLowerCase().includes(filters.search!.toLowerCase()) ||
-        s.parentInfo.email.toLowerCase().includes(filters.search!.toLowerCase())
+        s.parentEmail.toLowerCase().includes(filters.search!.toLowerCase())
       );
     }
     

@@ -159,11 +159,11 @@ export async function PUT(
         state,
         country,
         postalCode,
-        availability: availability ? JSON.stringify(availability) : existingTeacher.availability,
-        education: education ? JSON.stringify(education) : existingTeacher.education,
-        trainings: trainings ? JSON.stringify(trainings) : existingTeacher.trainings,
-        specialization: specialization ? JSON.stringify(specialization) : existingTeacher.specialization,
-        qualifications: qualifications ? JSON.stringify(qualifications) : existingTeacher.qualifications
+        availability: availability ? JSON.stringify(availability) : undefined,
+        education: education ? JSON.stringify(education) : undefined,
+        trainings: trainings ? JSON.stringify(trainings) : undefined,
+        specialization: specialization ? JSON.stringify(specialization) : undefined,
+        qualifications: qualifications ? JSON.stringify(qualifications) : undefined
       },
       include: {
         lc: {
