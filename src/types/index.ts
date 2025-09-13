@@ -219,14 +219,7 @@ export interface Teacher extends BaseEntity, ContactInfo {
     status: "completed" | "in_progress" | "scheduled";
     certification?: string;
   }[];
-  centers: {
-    centerId: string;
-    centerName: string;
-    role: string;
-    startDate: string;
-    endDate?: string;
-    isActive: boolean;
-  }[];
+  // centers field removed per requirements
 }
 
 export interface Availability {

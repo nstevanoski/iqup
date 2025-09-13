@@ -7,7 +7,7 @@ import { Teacher } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/store/auth";
-import { Plus, Eye, Edit, Trash2, Users, Clock, MapPin } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Users, Clock } from "lucide-react";
 import Link from "next/link";
 
 // Sample data - in a real app, this would come from an API
@@ -74,22 +74,7 @@ const sampleTeachers: Teacher[] = [
         status: "in_progress",
       },
     ],
-    centers: [
-      {
-        centerId: "center_1",
-        centerName: "Boston Learning Center",
-        role: "Senior English Instructor",
-        startDate: "2018-01-15",
-        isActive: true,
-      },
-      {
-        centerId: "center_2",
-        centerName: "Cambridge Education Hub",
-        role: "Literature Consultant",
-        startDate: "2020-06-01",
-        isActive: true,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-15"),
   },
@@ -148,15 +133,7 @@ const sampleTeachers: Teacher[] = [
         status: "completed",
       },
     ],
-    centers: [
-      {
-        centerId: "center_3",
-        centerName: "Seattle Math Academy",
-        role: "Head of Mathematics Department",
-        startDate: "2019-09-01",
-        isActive: true,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-10"),
   },
@@ -215,23 +192,7 @@ const sampleTeachers: Teacher[] = [
         status: "scheduled",
       },
     ],
-    centers: [
-      {
-        centerId: "center_4",
-        centerName: "Austin Science Center",
-        role: "Physics Instructor",
-        startDate: "2020-08-15",
-        isActive: true,
-      },
-      {
-        centerId: "center_5",
-        centerName: "Texas Learning Hub",
-        role: "Chemistry Lab Coordinator",
-        startDate: "2021-01-10",
-        endDate: "2023-12-31",
-        isActive: false,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-05"),
   },
@@ -274,24 +235,13 @@ const sampleTeachers: Teacher[] = [
         status: "completed",
       },
     ],
-    centers: [
-      {
-        centerId: "center_6",
-        centerName: "San Francisco Tech Academy",
-        role: "Senior Programming Instructor",
-        startDate: "2019-03-01",
-        isActive: true,
-      },
-    ],
+    // centers data removed per requirements
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-02"),
   },
 ];
 
-// Helper function to get active centers
-const getActiveCenters = (centers: Teacher["centers"]) => {
-  return centers.filter(center => center.isActive);
-};
+// Helper function removed per requirements
 
 // Column definitions
 const columns: Column<Teacher>[] = [
@@ -339,31 +289,7 @@ const columns: Column<Teacher>[] = [
       </div>
     ),
   },
-  // Removed Hourly Rate, Education, Trainings columns per requirements
-  {
-    key: "centers",
-    label: "Active Centers",
-    sortable: false,
-    render: (value) => {
-      const activeCenters = getActiveCenters(value);
-      return (
-        <div className="space-y-1">
-          {activeCenters.slice(0, 2).map((center, index) => (
-            <div key={index} className="flex items-center text-xs">
-              <MapPin className="h-3 w-3 mr-1 text-gray-400" />
-              <span className="truncate">{center.centerName}</span>
-            </div>
-          ))}
-          {activeCenters.length > 2 && (
-            <div className="text-xs text-gray-500">+{activeCenters.length - 2} more</div>
-          )}
-          {activeCenters.length === 0 && (
-            <div className="text-xs text-gray-500">No active centers</div>
-          )}
-        </div>
-      );
-    },
-  },
+  // Removed Hourly Rate, Education, Trainings, and Centers columns per requirements
 ];
 
 export default function TeachersPage() {

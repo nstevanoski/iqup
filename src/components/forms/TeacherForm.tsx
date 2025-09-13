@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Teacher } from "@/types";
-import { Plus, Trash2, MapPin } from "lucide-react";
+// Removed unused imports: Plus, Trash2, MapPin
 
 interface TeacherFormProps {
   teacher?: Teacher;
@@ -37,15 +37,7 @@ interface FormData {
     zipCode: string;
     country: string;
   };
-  // education and trainings removed per requirements
-  centers: {
-    centerId: string;
-    centerName: string;
-    role: string;
-    startDate: string;
-    endDate?: string;
-    isActive: boolean;
-  }[];
+  // education, trainings, and centers removed per requirements
 }
 
 const initialFormData: FormData = {
@@ -70,8 +62,7 @@ const initialFormData: FormData = {
     zipCode: "",
     country: "USA",
   },
-  // education and trainings removed per requirements
-  centers: [],
+  // education, trainings, and centers removed per requirements
 };
 
 export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: TeacherFormProps) {
@@ -98,8 +89,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
         zipCode: "",
         country: "USA",
       },
-      // education and trainings removed per requirements
-      centers: teacher.centers,
+      // education, trainings, and centers removed per requirements
     } : initialFormData
   );
 
@@ -138,6 +128,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
         hourlyRate: 0,
         education: [],
         trainings: [],
+        centers: [],
       };
       onSubmit(teacherData);
     }
@@ -149,34 +140,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
 
   // removed trainings handlers
 
-  const addCenter = () => {
-    setFormData(prev => ({
-      ...prev,
-      centers: [...prev.centers, {
-        centerId: "",
-        centerName: "",
-        role: "",
-        startDate: new Date().toISOString().split('T')[0],
-        isActive: true,
-      }]
-    }));
-  };
-
-  const updateCenter = (index: number, field: string, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      centers: prev.centers.map((center, i) => 
-        i === index ? { ...center, [field]: value } : center
-      )
-    }));
-  };
-
-  const removeCenter = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      centers: prev.centers.filter((_, i) => i !== index)
-    }));
-  };
+  // Center management functions removed per requirements
 
   return (
     <div className="p-6">
@@ -453,98 +417,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
 
           {/* Trainings removed */}
 
-          {/* Centers */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <MapPin className="h-5 w-5 mr-2" />
-                Centers
-              </h3>
-              <button
-                type="button"
-                onClick={addCenter}
-                className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-              >
-                <Plus className="h-4 w-4 mr-1 inline" />
-                Add Center
-              </button>
-            </div>
-            <div className="space-y-3">
-              {formData.centers.map((center, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-medium text-gray-900">Center #{index + 1}</h4>
-                    <button
-                      type="button"
-                      onClick={() => removeCenter(index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Center Name
-                      </label>
-                      <input
-                        type="text"
-                        value={center.centerName}
-                        onChange={(e) => updateCenter(index, "centerName", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter center name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Role
-                      </label>
-                      <input
-                        type="text"
-                        value={center.role}
-                        onChange={(e) => updateCenter(index, "role", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter role at center"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Start Date
-                      </label>
-                      <input
-                        type="date"
-                        value={center.startDate}
-                        onChange={(e) => updateCenter(index, "startDate", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        End Date (optional)
-                      </label>
-                      <input
-                        type="date"
-                        value={center.endDate || ""}
-                        onChange={(e) => updateCenter(index, "endDate", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={center.isActive}
-                          onChange={(e) => updateCenter(index, "isActive", e.target.checked)}
-                          className="mr-2"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Active</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Centers section removed per requirements */}
 
           {/* Form Actions */}
           <div className="flex justify-end gap-3 pt-6 border-t">
