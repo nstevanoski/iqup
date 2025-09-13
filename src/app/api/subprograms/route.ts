@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (userRolePrefix === 'HQ') {
       // No additional filtering needed - HQ has full access
     }
-    // MF users can see subprograms they created or that are shared with them
+    // MF users can see subprograms based on parent program sharing
     else if (userRolePrefix === 'MF') {
       const allowedMfIds: number[] = []
       const allowedLcIds: number[] = []
@@ -51,11 +51,29 @@ export async function GET(request: NextRequest) {
       }
 
       whereClause.OR = [
-        // Subprograms created by this user
-        { createdBy: user.id },
-        // Public subprograms
+        // Subprograms where parent program is public
+        {
+          program: {
+            visibility: 'PUBLIC'
+          }
+        },
+        // Subprograms where parent program is shared with this MF
+        {
+          program: {
+            AND: [
+              { visibility: 'SHARED' },
+              {
+                sharedWithMFs: {
+                  path: '$',
+                  array_contains: allowedMfIds
+                }
+              }
+            ]
+          }
+        },
+        // Subprograms that are directly public
         { visibility: 'PUBLIC' },
-        // Shared subprograms
+        // Subprograms that are directly shared with this MF
         {
           AND: [
             { visibility: 'SHARED' },
@@ -79,7 +97,7 @@ export async function GET(request: NextRequest) {
         }
       ]
     }
-    // LC users can see subprograms shared with their LC or their parent MF
+    // LC users can see subprograms based on parent program sharing
     else if (userRolePrefix === 'LC') {
       const allowedMfIds: number[] = []
       const allowedLcIds: number[] = []
@@ -92,9 +110,29 @@ export async function GET(request: NextRequest) {
       }
 
       whereClause.OR = [
-        // Public subprograms
+        // Subprograms where parent program is public
+        {
+          program: {
+            visibility: 'PUBLIC'
+          }
+        },
+        // Subprograms where parent program is shared with this MF
+        {
+          program: {
+            AND: [
+              { visibility: 'SHARED' },
+              {
+                sharedWithMFs: {
+                  path: '$',
+                  array_contains: allowedMfIds
+                }
+              }
+            ]
+          }
+        },
+        // Subprograms that are directly public
         { visibility: 'PUBLIC' },
-        // Shared subprograms
+        // Subprograms that are directly shared with this LC or MF
         {
           AND: [
             { visibility: 'SHARED' },

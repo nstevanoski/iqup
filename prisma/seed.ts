@@ -116,6 +116,48 @@ async function main() {
 
   console.log('✅ Created Demo TT:', demoTT)
 
+  // Create second Master Franchisee (MF2)
+  const demoMF2 = await prisma.masterFranchisee.upsert({
+    where: { code: 'MF002' },
+    update: {},
+    create: {
+      name: 'Metro Master Franchisee',
+      code: 'MF002',
+      email: 'metro.mf@iqup.com',
+      phone: '+1-800-METRO-MF',
+      address: '100 Metropolitan Avenue',
+      city: 'Metro City',
+      state: 'Urban State',
+      country: 'Education Nation',
+      postalCode: '56789',
+      status: 'ACTIVE',
+      hqId: hq.id,
+    },
+  })
+
+  console.log('✅ Created Demo MF2:', demoMF2)
+
+  // Create second Learning Center under MF2
+  const demoLC2 = await prisma.learningCenter.upsert({
+    where: { code: 'LC002' },
+    update: {},
+    create: {
+      name: 'Metro Learning Center',
+      code: 'LC002',
+      email: 'metro.lc@iqup.com',
+      phone: '+1-800-METRO-LC',
+      address: '200 Innovation Street',
+      city: 'Innovation District',
+      state: 'Future State',
+      country: 'Education Nation',
+      postalCode: '67890',
+      status: 'ACTIVE',
+      mfId: demoMF2.id,
+    },
+  })
+
+  console.log('✅ Created Demo LC2:', demoLC2)
+
   // Create demo users for each account type
   const demoUsers = [
     {
@@ -141,6 +183,22 @@ async function main() {
       role: 'TT_ADMIN',
       accountId: demoTT.id,
       accountType: 'tt',
+    },
+    {
+      email: 'mf2.admin@iqup.com',
+      firstName: 'MF2',
+      lastName: 'Administrator',
+      role: 'MF_ADMIN',
+      accountId: demoMF2.id,
+      accountType: 'mf',
+    },
+    {
+      email: 'lc2.admin@iqup.com',
+      firstName: 'LC2',
+      lastName: 'Administrator',
+      role: 'LC_ADMIN',
+      accountId: demoLC2.id,
+      accountType: 'lc',
     },
   ]
 
@@ -180,8 +238,10 @@ async function main() {
   console.log('│ Role: HQ_ADMIN                                          │')
   console.log('├─────────────────────────────────────────────────────────┤')
   console.log('│ DEMO ACCOUNTS (for testing)                            │')
-  console.log('│ MF Admin: mf.admin@iqup.com / admin123456               │')
-  console.log('│ LC Admin: lc.admin@iqup.com / admin123456               │')
+  console.log('│ MF1 Admin: mf.admin@iqup.com / admin123456              │')
+  console.log('│ LC1 Admin: lc.admin@iqup.com / admin123456              │')
+  console.log('│ MF2 Admin: mf2.admin@iqup.com / admin123456             │')
+  console.log('│ LC2 Admin: lc2.admin@iqup.com / admin123456             │')
   console.log('│ TT Admin: tt.admin@iqup.com / admin123456               │')
   console.log('└─────────────────────────────────────────────────────────┘')
 }

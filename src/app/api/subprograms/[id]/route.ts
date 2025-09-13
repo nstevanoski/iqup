@@ -68,19 +68,24 @@ export async function GET(
     if (userRolePrefix === 'HQ') {
       // No additional checks needed - HQ has full access
     }
-    // MF users can view subprograms they created or that are shared with them
+    // MF users can view subprograms based on parent program sharing
     else if (userRolePrefix === 'MF') {
       let allowed = false
       
-      // Check if MF created this subprogram
-      if (subProgram.createdBy === user.id) {
+      // Check if parent program is public
+      if (subProgram.program.visibility === 'PUBLIC') {
         allowed = true
       }
-      // Check if subprogram is public
+      // Check if parent program is shared with this MF
+      else if (subProgram.program.visibility === 'SHARED' && user.mfId) {
+        const programSharedWithMFs = subProgram.program.sharedWithMFs as number[] || []
+        allowed = programSharedWithMFs.includes(user.mfId)
+      }
+      // Check if subprogram is directly public
       else if (subProgram.visibility === 'PUBLIC') {
         allowed = true
       }
-      // Check if subprogram is shared with this MF
+      // Check if subprogram is directly shared with this MF
       else if (subProgram.visibility === 'SHARED' && user.mfId) {
         const allowedMfIds = subProgram.sharedWithMFs as number[] || []
         allowed = allowedMfIds.includes(user.mfId)
@@ -90,15 +95,24 @@ export async function GET(
         return errorResponse('Access denied', 403)
       }
     }
-    // LC users can view subprograms shared with their LC or their parent MF
+    // LC users can view subprograms based on parent program sharing
     else if (userRolePrefix === 'LC') {
       let allowed = false
       
-      // Check if subprogram is public
-      if (subProgram.visibility === 'PUBLIC') {
+      // Check if parent program is public
+      if (subProgram.program.visibility === 'PUBLIC') {
         allowed = true
       }
-      // Check if subprogram is shared with this LC or its parent MF
+      // Check if parent program is shared with this MF
+      else if (subProgram.program.visibility === 'SHARED' && user.mfId) {
+        const programSharedWithMFs = subProgram.program.sharedWithMFs as number[] || []
+        allowed = programSharedWithMFs.includes(user.mfId)
+      }
+      // Check if subprogram is directly public
+      else if (subProgram.visibility === 'PUBLIC') {
+        allowed = true
+      }
+      // Check if subprogram is directly shared with this LC or its parent MF
       else if (subProgram.visibility === 'SHARED') {
         const allowedMfIds = subProgram.sharedWithMFs as number[] || []
         const allowedLcIds = subProgram.sharedWithLCs as number[] || []

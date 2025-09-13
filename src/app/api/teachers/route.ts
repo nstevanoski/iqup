@@ -213,11 +213,8 @@ export async function POST(request: NextRequest) {
       return errorResponse('First name, last name, date of birth, gender, and email are required', 400)
     }
 
-    // Extract role prefix (HQ, MF, LC)
-    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC'
-    
     // Only LC users can create teachers
-    if (userRolePrefix !== 'LC') {
+    if (user?.role !== 'LC_ADMIN' && user?.role !== 'LC_STAFF') {
       return errorResponse('Only LC users can create teachers', 403)
     }
 
@@ -259,8 +256,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!finalMfId || !finalHqId) {
-      return errorResponse('Master Franchisee and HQ information is required', 400)
+    if (!finalLcId || !finalMfId || !finalHqId) {
+      return errorResponse('Learning Center, Master Franchisee, and HQ information is required', 400)
+    }
+
+    // Verify LC exists and is active
+    const lc = await prisma.learningCenter.findFirst({
+      where: { id: finalLcId, status: 'ACTIVE' }
+    })
+
+    if (!lc) {
+      return errorResponse('Invalid or inactive Learning Center', 400)
     }
 
     // Verify MF exists and is active
@@ -279,17 +285,6 @@ export async function POST(request: NextRequest) {
 
     if (!hq) {
       return errorResponse('Invalid or inactive HQ', 400)
-    }
-
-    // Verify LC exists and is active if provided
-    if (finalLcId) {
-      const lc = await prisma.learningCenter.findFirst({
-        where: { id: finalLcId, status: 'ACTIVE' }
-      })
-
-      if (!lc) {
-        return errorResponse('Invalid or inactive Learning Center', 400)
-      }
     }
 
     const teacher = await prisma.teacher.create({

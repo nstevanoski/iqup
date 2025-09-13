@@ -223,11 +223,8 @@ export async function DELETE(
       return errorResponse('Authentication required', 401)
     }
 
-    // Extract role prefix (HQ, MF, LC)
-    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC'
-    
     // Only LC users can delete students
-    if (userRolePrefix !== 'LC') {
+    if (user?.role !== 'LC_ADMIN' && user?.role !== 'LC_STAFF') {
       return errorResponse('Only LC users can delete students', 403)
     }
 

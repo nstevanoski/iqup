@@ -371,11 +371,11 @@ model Teacher {
   qualifications    Json?    // Array of strings
   
   // Relationships to accounts
-  lcId              Int?
+  lcId              Int
   mfId              Int
   hqId              Int
   
-  lc                LearningCenter? @relation(fields: [lcId], references: [id])
+  lc                LearningCenter @relation(fields: [lcId], references: [id])
   mf                MasterFranchisee @relation(fields: [mfId], references: [id])
   hq                HQ @relation(fields: [hqId], references: [id])
   

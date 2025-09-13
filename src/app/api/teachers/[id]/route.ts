@@ -100,11 +100,8 @@ export async function PUT(
       return errorResponse('Authentication required', 401)
     }
 
-    // Extract role prefix (HQ, MF, LC)
-    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC'
-    
     // Only LC users can update teachers
-    if (userRolePrefix !== 'LC') {
+    if (user?.role !== 'LC_ADMIN' && user?.role !== 'LC_STAFF') {
       return errorResponse('Only LC users can update teachers', 403)
     }
 
@@ -223,11 +220,8 @@ export async function DELETE(
       return errorResponse('Authentication required', 401)
     }
 
-    // Extract role prefix (HQ, MF, LC)
-    const userRolePrefix = user.role.split('_')[0] as 'HQ' | 'MF' | 'LC'
-    
     // Only LC users can delete teachers
-    if (userRolePrefix !== 'LC') {
+    if (user?.role !== 'LC_ADMIN' && user?.role !== 'LC_STAFF') {
       return errorResponse('Only LC users can delete teachers', 403)
     }
 
