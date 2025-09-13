@@ -601,10 +601,10 @@ export default function ProgramsPage() {
             emptyMessage="No programs found"
             // Backend search props
             backendSearch={true}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onSort={handleSort}
-            onPageChange={handlePageChange}
+            // onSearch={handleSearch}
+            // onFilter={handleFilter}
+            // onSort={handleSort}
+            // onPageChange={handlePageChange}
             searchLoading={searchLoading}
             // Backend pagination info
             totalItems={totalItems}

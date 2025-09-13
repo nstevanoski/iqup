@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Add search functionality
-    if (search) {
+    if (search && search.trim() !== '') {
       whereClause.OR = [
         { firstName: { contains: search } },
         { lastName: { contains: search } },

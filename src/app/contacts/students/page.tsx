@@ -310,7 +310,7 @@ export default function StudentsPage() {
           <DataTable
             data={data}
             columns={columns}
-            loading={loading}
+            loading={loading && !searchLoading}
             searchable={true}
             filterable={true}
             sortable={true}
@@ -321,10 +321,12 @@ export default function StudentsPage() {
             onRowAction={handleRowAction}
             onBulkAction={handleBulkAction}
             onExport={handleExport}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onSort={handleSort}
-            onPageChange={handlePageChange}
+            backendSearch={true}
+            // onSearch={handleSearch}
+            // onFilter={handleFilter}
+            // onSort={handleSort}
+            // onPageChange={handlePageChange}
+            searchLoading={searchLoading}
             emptyMessage="No students found"
             currentPage={currentPage}
             totalPages={totalPages}
