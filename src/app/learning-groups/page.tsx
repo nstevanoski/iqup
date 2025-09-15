@@ -220,25 +220,39 @@ const getPaymentStatusColor = (status: string) => {
   }
 };
 
-// Column definitions
-const columns: Column<LearningGroup>[] = [
-  {
-    key: "name",
-    label: "Group Name",
-    sortable: true,
-    searchable: true,
-    filterable: true,
-    render: (value, row) => (
-      <div>
-        <div className="font-medium text-gray-900">{value}</div>
-        <div className="text-sm text-gray-500">{row.description}</div>
-        <div className="text-xs text-blue-600 mt-1">
-          {getProgramName(row.programId)}
+export default function LearningGroupsPage() {
+  const router = useRouter();
+  const user = useUser();
+  const [data, setData] = useState<LearningGroup[]>(sampleLearningGroups);
+  const [loading, setLoading] = useState(false);
+
+  // Only LC users can create learning groups
+  const canCreateLearningGroup = user?.role === "LC";
+
+  // Column definitions with access to router
+  const columns: Column<LearningGroup>[] = [
+    {
+      key: "name",
+      label: "Group Name",
+      sortable: true,
+      searchable: true,
+      filterable: true,
+      render: (value, row) => (
+        <div>
+          <button
+            onClick={() => router.push(`/learning-groups/${row.id}`)}
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+          >
+            {value}
+          </button>
+          <div className="text-sm text-gray-500">{row.description}</div>
+          <div className="text-xs text-blue-600 mt-1">
+            {getProgramName(row.programId)}
+          </div>
         </div>
-      </div>
-    ),
-  },
-  {
+      ),
+    },
+    {
     key: "status",
     label: "Status",
     sortable: true,
@@ -350,15 +364,6 @@ const columns: Column<LearningGroup>[] = [
   },
 ];
 
-export default function LearningGroupsPage() {
-  const router = useRouter();
-  const user = useUser();
-  const [data, setData] = useState<LearningGroup[]>(sampleLearningGroups);
-  const [loading, setLoading] = useState(false);
-
-  // Only LC users can create learning groups
-  const canCreateLearningGroup = user?.role === "LC";
-
   const handleRowAction = (action: string, row: LearningGroup) => {
     console.log(`${action} action for learning group:`, row);
     
@@ -400,7 +405,7 @@ export default function LearningGroupsPage() {
       { key: "teacherId", label: "Teacher" },
       { key: "location", label: "Location" },
       { key: "maxStudents", label: "Max Students" },
-      { key: "pricingSnapshot.finalPrice", label: "Final Price" },
+      { key: "pricingSnapshot.coursePrice", label: "Course Price" },
       { key: "franchisee.name", label: "Franchisee" },
     ];
     
