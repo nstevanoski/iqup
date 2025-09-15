@@ -21,21 +21,14 @@ interface FormData {
   dates: {
     startDate: string;
     endDate: string;
-    registrationDeadline: string;
-    lastClassDate: string;
   };
   pricingSnapshot: {
-    programPrice: number;
-    subProgramPrice: number;
-    totalPrice: number;
-    discount?: number;
-    finalPrice: number;
-    currency: string;
+    pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
     coursePrice: number;
     numberOfPayments?: number;
-    gapBetweenPayments?: number;
+    gap?: number;
     pricePerMonth?: number;
-    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
+    pricePerSession?: number;
   };
   owner: {
     id: string;
@@ -67,21 +60,14 @@ const initialFormData: FormData = {
   dates: {
     startDate: "",
     endDate: "",
-    registrationDeadline: "",
-    lastClassDate: "",
   },
   pricingSnapshot: {
-    programPrice: 0,
-    subProgramPrice: 0,
-    totalPrice: 0,
-    discount: 0,
-    finalPrice: 0,
-    currency: "USD",
+    pricingModel: "per_course",
     coursePrice: 0,
-    numberOfPayments: 1,
-    gapBetweenPayments: 0,
-    pricePerMonth: 0,
-    paymentMethod: "one-time",
+    numberOfPayments: undefined,
+    gap: undefined,
+    pricePerMonth: undefined,
+    pricePerSession: undefined,
   },
   owner: {
     id: "",
@@ -126,21 +112,10 @@ export default function NewLearningGroupPage() {
     );
   }
 
-  // Calculate total price when program or subprogram price changes
+  // No derived totals here; pricing fields mirror SubProgram directly
   const updatePricing = () => {
-    const total = formData.pricingSnapshot.programPrice + formData.pricingSnapshot.subProgramPrice;
-    const discount = formData.pricingSnapshot.discount || 0;
-    const finalPrice = total - discount;
-    
-    setFormData(prev => ({
-      ...prev,
-      pricingSnapshot: {
-        ...prev.pricingSnapshot,
-        totalPrice: total,
-        finalPrice: finalPrice,
-        coursePrice: finalPrice,
-      },
-    }));
+    // placeholder to keep dependent calls intact if any
+    return;
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -157,10 +132,7 @@ export default function NewLearningGroupPage() {
       }));
     }
 
-    // Update pricing if relevant fields change
-    if (field === "pricingSnapshot") {
-      updatePricing();
-    }
+    // No derived pricing updates needed
   };
 
   const handleNestedInputChange = (parent: string, field: string, value: any) => {
@@ -172,10 +144,7 @@ export default function NewLearningGroupPage() {
       },
     }));
 
-    // Update pricing if relevant fields change
-    if (parent === "pricingSnapshot") {
-      updatePricing();
-    }
+    // No derived pricing updates needed
   };
 
   const addScheduleSlot = () => {
@@ -439,31 +408,6 @@ export default function NewLearningGroupPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Registration Deadline
-                </label>
-                <input
-                  type="date"
-                  value={formData.dates.registrationDeadline}
-                  onChange={(e) => handleNestedInputChange("dates", "registrationDeadline", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Class Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.dates.lastClassDate}
-                  onChange={(e) => handleNestedInputChange("dates", "lastClassDate", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
 
             {/* Schedule */}
             <div>
@@ -578,61 +522,82 @@ export default function NewLearningGroupPage() {
               <DollarSign className="h-5 w-5 inline mr-2" />
               Pricing
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Program Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Billing Type</label>
+                <select
+                  value={formData.pricingSnapshot.pricingModel}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricingModel", e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="per_month">Per month</option>
+                  <option value="per_session">Per session</option>
+                  <option value="per_course">Per course</option>
+                  <option value="installments">Installments</option>
+                  <option value="subscription">Subscription</option>
+                  <option value="program_price">Program price</option>
+                  <option value="one-time">One-time</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course Price</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.programPrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={formData.pricingSnapshot.coursePrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sub Program Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price per month</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.subProgramPrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={formData.pricingSnapshot.pricePerMonth || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Discount
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price per session</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.discount || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={formData.pricingSnapshot.pricePerSession || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Final Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Number of payments</label>
                 <input
                   type="number"
-                  step="0.01"
-                  value={formData.pricingSnapshot.finalPrice}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  min="1"
+                  value={formData.pricingSnapshot.numberOfPayments || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gap between payments</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.pricingSnapshot.gap || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "gap", parseInt(e.target.value) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Frequency (1 = monthly, 2 = every two months, etc.)</p>
               </div>
             </div>
           </div>

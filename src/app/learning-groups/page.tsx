@@ -32,22 +32,14 @@ const sampleLearningGroups: LearningGroup[] = [
     dates: {
       startDate: "2024-02-01",
       endDate: "2024-05-31",
-      registrationDeadline: "2024-01-25",
-      lastClassDate: "2024-05-29",
     },
     pricingSnapshot: {
-      programPrice: 299.99,
-      subProgramPrice: 149.99,
-      totalPrice: 449.98,
-      discount: 50.00,
-      finalPrice: 399.98,
-      currency: "USD",
-      // Enhanced payment information
+      pricingModel: "installments",
       coursePrice: 399.98,
       numberOfPayments: 3,
-      gapBetweenPayments: 30,
+      gap: 1,
       pricePerMonth: 133.33,
-      paymentMethod: "installments",
+      pricePerSession: undefined,
     },
     owner: {
       id: "owner_1",
@@ -99,21 +91,14 @@ const sampleLearningGroups: LearningGroup[] = [
     dates: {
       startDate: "2024-02-15",
       endDate: "2024-06-15",
-      registrationDeadline: "2024-02-10",
-      lastClassDate: "2024-06-13",
     },
     pricingSnapshot: {
-      programPrice: 199.99,
-      subProgramPrice: 99.99,
-      totalPrice: 299.98,
-      finalPrice: 299.98,
-      currency: "USD",
-      // Enhanced payment information
+      pricingModel: "one-time",
       coursePrice: 299.98,
-      numberOfPayments: 1,
-      gapBetweenPayments: 0,
-      pricePerMonth: 299.98,
-      paymentMethod: "one-time",
+      numberOfPayments: undefined,
+      gap: undefined,
+      pricePerMonth: undefined,
+      pricePerSession: undefined,
     },
     owner: {
       id: "owner_2",
@@ -159,22 +144,14 @@ const sampleLearningGroups: LearningGroup[] = [
     dates: {
       startDate: "2023-09-01",
       endDate: "2023-12-15",
-      registrationDeadline: "2023-08-25",
-      lastClassDate: "2023-12-13",
     },
     pricingSnapshot: {
-      programPrice: 399.99,
-      subProgramPrice: 199.99,
-      totalPrice: 599.98,
-      discount: 100.00,
-      finalPrice: 499.98,
-      currency: "USD",
-      // Enhanced payment information
+      pricingModel: "installments",
       coursePrice: 499.98,
       numberOfPayments: 6,
-      gapBetweenPayments: 15,
+      gap: 1,
       pricePerMonth: 83.33,
-      paymentMethod: "installments",
+      pricePerSession: undefined,
     },
     owner: {
       id: "owner_3",
@@ -290,9 +267,6 @@ const columns: Column<LearningGroup>[] = [
           <Calendar className="h-3 w-3 mr-1 text-gray-400" />
           <span>{value.startDate} - {value.endDate}</span>
         </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Reg. deadline: {value.registrationDeadline}
-        </div>
       </div>
     ),
   },
@@ -348,11 +322,16 @@ const columns: Column<LearningGroup>[] = [
       <div className="text-sm">
         <div className="flex items-center font-medium">
           <Euro className="h-4 w-4 mr-1 text-gray-400" />
-          <span>€{value.finalPrice}</span>
+          <span>€{value.coursePrice}</span>
         </div>
-        {value.discount && (
+        {value.pricingModel === "installments" && value.numberOfPayments && (
+          <div className="text-xs text-blue-600">
+            {value.numberOfPayments} payments
+          </div>
+        )}
+        {value.pricingModel === "per_month" && value.pricePerMonth && (
           <div className="text-xs text-green-600">
-            €{value.discount} discount
+            €{value.pricePerMonth}/month
           </div>
         )}
       </div>
