@@ -176,9 +176,29 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
     }
   };
 
+  // Calculate the final price based on pricing model
+  const getFinalPrice = (pricingSnapshot: typeof learningGroup.pricingSnapshot) => {
+    switch (pricingSnapshot.pricingModel) {
+      case 'per_course':
+      case 'one-time':
+        return pricingSnapshot.coursePrice;
+      case 'per_month':
+      case 'subscription':
+        return pricingSnapshot.pricePerMonth || pricingSnapshot.coursePrice;
+      case 'per_session':
+        return pricingSnapshot.pricePerSession || pricingSnapshot.coursePrice;
+      case 'installments':
+        return pricingSnapshot.coursePrice; // Total course price for installments
+      case 'program_price':
+        return pricingSnapshot.coursePrice;
+      default:
+        return pricingSnapshot.coursePrice;
+    }
+  };
+
   const totalRevenue = learningGroup.students.reduce((sum, student) => {
     // In a real app, you'd calculate this based on actual payments
-    return sum + learningGroup.pricingSnapshot.finalPrice;
+    return sum + getFinalPrice(learningGroup.pricingSnapshot);
   }, 0);
 
   const paidStudents = learningGroup.students.filter(s => s.paymentStatus === "paid").length;
@@ -286,7 +306,7 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                 <div className="flex items-center">
                   <Euro className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Final Price:</span>
-                  <span className="ml-2 text-sm font-medium">€{learningGroup.pricingSnapshot.finalPrice}</span>
+                  <span className="ml-2 text-sm font-medium">€{getFinalPrice(learningGroup.pricingSnapshot)}</span>
                 </div>
                 <div className="flex items-center">
                   <Euro className="h-4 w-4 text-gray-400 mr-3" />
@@ -296,7 +316,7 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                 <div className="flex items-center">
                   <CreditCard className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Payment Method:</span>
-                  <span className="ml-2 text-sm font-medium capitalize">{learningGroup.pricingSnapshot.paymentMethod?.replace('-', ' ')}</span>
+                  <span className="ml-2 text-sm font-medium capitalize">{learningGroup.pricingSnapshot.pricingModel.replace('_', ' ')}</span>
                 </div>
                 {learningGroup.pricingSnapshot.numberOfPayments && learningGroup.pricingSnapshot.numberOfPayments > 1 && (
                   <>
@@ -313,17 +333,11 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 text-gray-400 mr-3" />
                       <span className="text-sm text-gray-600">Gap Between Payments:</span>
-                      <span className="ml-2 text-sm font-medium">{learningGroup.pricingSnapshot.gapBetweenPayments} days</span>
+                      <span className="ml-2 text-sm font-medium">{learningGroup.pricingSnapshot.gap || 30} days</span>
                     </div>
                   </>
                 )}
-                {learningGroup.pricingSnapshot.discount && (
-                  <div className="flex items-center">
-                    <Euro className="h-4 w-4 text-gray-400 mr-3" />
-                    <span className="text-sm text-gray-600">Discount:</span>
-                    <span className="ml-2 text-sm font-medium text-green-600">-€{learningGroup.pricingSnapshot.discount}</span>
-                  </div>
-                )}
+                {/* Discount field removed as it doesn't exist in the pricing snapshot type */}
               </div>
             </div>
           </div>
@@ -478,7 +492,7 @@ export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, o
                         </div>
                         <div className="text-right">
                           <div className="font-medium text-gray-900">
-                            ${learningGroup.pricingSnapshot.finalPrice}
+                            €{getFinalPrice(learningGroup.pricingSnapshot)}
                           </div>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(studentEnrollment.paymentStatus)}`}>
                             {studentEnrollment.paymentStatus}

@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
           select: { id: true }
         })
 
-        const accessibleProgramIds = accessiblePrograms.map(p => p.id)
+        const accessibleProgramIds = accessiblePrograms.map((p: { id: string }) => p.id)
 
         // Now filter subprograms to only those belonging to accessible programs
         whereClause.programId = {
