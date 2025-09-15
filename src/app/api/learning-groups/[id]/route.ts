@@ -35,7 +35,7 @@ export async function GET(
           select: { id: true, firstName: true, lastName: true, email: true }
         },
         program: {
-          select: { id: true, name: true, code: true }
+          select: { id: true, name: true }
         },
         subProgram: {
           select: { id: true, name: true }
@@ -207,7 +207,7 @@ export async function PUT(
           select: { id: true, firstName: true, lastName: true, email: true }
         },
         program: {
-          select: { id: true, name: true, code: true }
+          select: { id: true, name: true }
         },
         subProgram: {
           select: { id: true, name: true }

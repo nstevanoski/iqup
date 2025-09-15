@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { LearningGroup } from "@/types";
 import { ArrowLeft, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users, User, Building } from "lucide-react";
+import { getLearningGroup, updateLearningGroup, UpdateLearningGroupData } from "@/lib/api/learning-groups";
 
 interface FormData {
   name: string;
@@ -122,40 +123,53 @@ export default function EditLearningGroupPage() {
   };
 
   useEffect(() => {
-    // Simulate API call to fetch learning group
-    const fetchLearningGroup = async () => {
+    // Fetch learning group from API
+    const fetchLearningGroupData = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be: const response = await fetch(`/api/learning-groups/${groupId}`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const data = await getLearningGroup(groupId);
         
         // Convert LearningGroup to FormData
         const formData: FormData = {
-          name: sampleLearningGroup.name,
-          description: sampleLearningGroup.description,
-          programId: sampleLearningGroup.programId,
-          subProgramId: sampleLearningGroup.subProgramId || "",
-          teacherId: sampleLearningGroup.teacherId,
-          maxStudents: sampleLearningGroup.maxStudents,
-          status: sampleLearningGroup.status,
-          location: sampleLearningGroup.location,
-          notes: sampleLearningGroup.notes || "",
-          dates: sampleLearningGroup.dates,
-          pricingSnapshot: sampleLearningGroup.pricingSnapshot,
-          owner: sampleLearningGroup.owner,
-          franchisee: sampleLearningGroup.franchisee,
-          schedule: sampleLearningGroup.schedule,
+          name: data.name,
+          description: data.description,
+          programId: data.programId.toString(),
+          subProgramId: data.subProgramId?.toString() || "",
+          teacherId: data.teacherId.toString(),
+          maxStudents: data.maxStudents,
+          status: data.status as any,
+          location: data.location,
+          notes: data.notes || "",
+          dates: {
+            startDate: new Date(data.startDate).toISOString().split('T')[0],
+            endDate: new Date(data.endDate).toISOString().split('T')[0],
+          },
+          pricingSnapshot: data.pricingSnapshot as any,
+          owner: {
+            id: (data as any).createdBy?.toString() || "",
+            name: (data as any).creator?.firstName + " " + (data as any).creator?.lastName || "",
+            role: (data as any).creator?.role || "",
+          },
+          franchisee: {
+            id: (data as any).lcId?.toString() || "",
+            name: (data as any).lc?.name || "",
+            location: (data as any).lc?.address || "",
+          },
+          schedule: data.schedule as any,
         };
         
         setFormData(formData);
       } catch (error) {
         console.error("Error fetching learning group:", error);
+        // You might want to show a toast notification here
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLearningGroup();
+    if (groupId) {
+      fetchLearningGroupData();
+    }
   }, [groupId]);
 
   // Calculate total price when program or subprogram price changes
@@ -263,23 +277,31 @@ export default function EditLearningGroupPage() {
     setSaving(true);
     
     try {
-      // Convert form data to LearningGroup format
-      const learningGroupData: Partial<LearningGroup> = {
-        ...formData,
-        startDate: new Date(formData.dates.startDate),
-        endDate: new Date(formData.dates.endDate),
+      // Convert form data to API format
+      const learningGroupData: UpdateLearningGroupData = {
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        maxStudents: formData.maxStudents,
+        startDate: formData.dates.startDate,
+        endDate: formData.dates.endDate,
+        location: formData.location,
+        notes: formData.notes,
+        schedule: formData.schedule,
+        pricingSnapshot: formData.pricingSnapshot,
+        programId: formData.programId,
+        subProgramId: formData.subProgramId || undefined,
+        teacherId: formData.teacherId,
       };
 
-      // In a real app, this would make an API call
-      console.log("Updating learning group:", learningGroupData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Update learning group via API
+      await updateLearningGroup(groupId, learningGroupData);
       
       // Navigate back to learning group detail
       router.push(`/learning-groups/${groupId}`);
     } catch (error) {
       console.error("Error updating learning group:", error);
+      // You might want to show a toast notification here
     } finally {
       setSaving(false);
     }

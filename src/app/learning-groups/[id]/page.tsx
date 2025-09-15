@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AddStudentForm } from "@/components/forms/AddStudentForm";
 import { LearningGroup, Student } from "@/types";
+import { getLearningGroup } from "@/lib/api/learning-groups";
 import { 
   ArrowLeft, 
   Users, 
@@ -232,21 +233,23 @@ export default function LearningGroupDetailPage() {
   };
 
   useEffect(() => {
-    // Simulate API call to fetch learning group
-    const fetchLearningGroup = async () => {
+    // Fetch learning group from API
+    const fetchLearningGroupData = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be: const response = await fetch(`/api/learning-groups/${groupId}`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setLearningGroup(sampleLearningGroup);
+        const data = await getLearningGroup(groupId);
+        setLearningGroup(data);
       } catch (error) {
         console.error("Error fetching learning group:", error);
+        // You might want to show a toast notification here
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLearningGroup();
+    if (groupId) {
+      fetchLearningGroupData();
+    }
   }, [groupId]);
 
   const handleAddStudent = (studentData: any) => {

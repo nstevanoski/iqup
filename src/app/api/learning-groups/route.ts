@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
             select: { id: true, firstName: true, lastName: true, email: true }
           },
           program: {
-            select: { id: true, name: true, code: true }
+            select: { id: true, name: true }
           },
           subProgram: {
             select: { id: true, name: true }
@@ -358,7 +358,7 @@ export async function POST(request: NextRequest) {
           select: { id: true, firstName: true, lastName: true, email: true }
         },
         program: {
-          select: { id: true, name: true, code: true }
+          select: { id: true, name: true }
         },
         subProgram: {
           select: { id: true, name: true }

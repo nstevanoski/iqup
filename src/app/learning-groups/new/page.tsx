@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { LearningGroup } from "@/types";
 import { ArrowLeft, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users, User, Building, AlertCircle } from "lucide-react";
 import { useUser } from "@/store/auth";
+import { createLearningGroup, CreateLearningGroupData } from "@/lib/api/learning-groups";
 
 interface FormData {
   name: string;
@@ -199,25 +200,32 @@ export default function NewLearningGroupPage() {
     setLoading(true);
     
     try {
-      // Convert form data to LearningGroup format
-      const learningGroupData: Omit<LearningGroup, "id" | "createdAt" | "updatedAt"> = {
-        ...formData,
-        studentIds: [],
-        startDate: new Date(formData.dates.startDate),
-        endDate: new Date(formData.dates.endDate),
+      // Convert form data to API format
+      const learningGroupData: CreateLearningGroupData = {
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        maxStudents: formData.maxStudents,
+        startDate: formData.dates.startDate,
+        endDate: formData.dates.endDate,
+        location: formData.location,
+        notes: formData.notes,
+        schedule: formData.schedule,
+        pricingSnapshot: formData.pricingSnapshot,
+        programId: formData.programId,
+        subProgramId: formData.subProgramId || undefined,
+        teacherId: formData.teacherId,
         students: [],
       };
 
-      // In a real app, this would make an API call
-      console.log("Creating learning group:", learningGroupData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create learning group via API
+      await createLearningGroup(learningGroupData);
       
       // Navigate back to learning groups list
       router.push("/learning-groups");
     } catch (error) {
       console.error("Error creating learning group:", error);
+      // You might want to show a toast notification here
     } finally {
       setLoading(false);
     }
