@@ -86,6 +86,7 @@ model HQ {
   teacherTrainers   TeacherTrainer[]
   students          Student[]
   teachers          Teacher[]
+  learningGroups    LearningGroup[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,6 +117,7 @@ model MasterFranchisee {
   learningCenters LearningCenter[]
   students       Student[]
   teachers       Teacher[]
+  learningGroups LearningGroup[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -145,6 +147,7 @@ model LearningCenter {
   users      User[]
   students   Student[]
   teachers   Teacher[]
+  learningGroups LearningGroup[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -202,6 +205,7 @@ model Program {
   // Relationships
   creator           User     @relation(fields: [createdBy], references: [id])
   subPrograms       SubProgram[]
+  learningGroups    LearningGroup[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -235,6 +239,7 @@ model SubProgram {
   // Relationships
   program           Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
   creator           User     @relation(fields: [createdBy], references: [id])
+  learningGroups    LearningGroup[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -378,6 +383,9 @@ model Teacher {
   mf                MasterFranchisee @relation(fields: [mfId], references: [id])
   hq                HQ @relation(fields: [hqId], references: [id])
   
+  // Learning groups taught by this teacher
+  learningGroups    LearningGroup[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -389,4 +397,59 @@ enum TeacherStatus {
   ACTIVE
   INACTIVE
   ON_LEAVE
+}
+
+// Learning Group model
+model LearningGroup {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String   @db.Text
+  status            LearningGroupStatus @default(ACTIVE)
+  maxStudents       Int
+  startDate         DateTime
+  endDate           DateTime
+  location          String
+  notes             String?  @db.Text
+  
+  // Schedule (stored as JSON)
+  schedule          Json     // Array of schedule objects
+  
+  // Pricing snapshot (stored as JSON)
+  pricingSnapshot   Json     // Pricing information at time of creation
+  
+  // Relationships to programs
+  programId         Int
+  subProgramId      Int?
+  
+  program           Program  @relation(fields: [programId], references: [id])
+  subProgram        SubProgram? @relation(fields: [subProgramId], references: [id])
+  
+  // Relationships to accounts (for RBAC)
+  lcId              Int
+  mfId              Int
+  hqId              Int
+  
+  lc                LearningCenter @relation(fields: [lcId], references: [id])
+  mf                MasterFranchisee @relation(fields: [mfId], references: [id])
+  hq                HQ @relation(fields: [hqId], references: [id])
+  
+  // Relationships to teacher and students
+  teacherId         Int
+  teacher           Teacher @relation(fields: [teacherId], references: [id])
+  
+  // Students in this learning group (stored as JSON for now)
+  students          Json     // Array of student enrollment objects
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_groups")
+}
+
+// Enums for Learning Group model
+enum LearningGroupStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  CANCELLED
 }
