@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { LearningGroup } from "@/types";
 import { ArrowLeft, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users, User, Building } from "lucide-react";
+import { getLearningGroup, updateLearningGroup, UpdateLearningGroupData } from "@/lib/api/learning-groups";
 
 interface FormData {
   name: string;
@@ -20,21 +21,14 @@ interface FormData {
   dates: {
     startDate: string;
     endDate: string;
-    registrationDeadline: string;
-    lastClassDate: string;
   };
   pricingSnapshot: {
-    programPrice: number;
-    subProgramPrice: number;
-    totalPrice: number;
-    discount?: number;
-    finalPrice: number;
-    currency: string;
+    pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
     coursePrice: number;
     numberOfPayments?: number;
-    gapBetweenPayments?: number;
+    gap?: number;
     pricePerMonth?: number;
-    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
+    pricePerSession?: number;
   };
   owner: {
     id: string;
@@ -87,21 +81,14 @@ export default function EditLearningGroupPage() {
     dates: {
       startDate: "2024-02-01",
       endDate: "2024-05-31",
-      registrationDeadline: "2024-01-25",
-      lastClassDate: "2024-05-29",
     },
     pricingSnapshot: {
-      programPrice: 299.99,
-      subProgramPrice: 149.99,
-      totalPrice: 449.98,
-      discount: 50.00,
-      finalPrice: 399.98,
-      currency: "USD",
+      pricingModel: "installments",
       coursePrice: 399.98,
       numberOfPayments: 3,
-      gapBetweenPayments: 30,
+      gap: 1,
       pricePerMonth: 133.33,
-      paymentMethod: "installments",
+      pricePerSession: undefined,
     },
     owner: {
       id: "owner_1",
@@ -136,58 +123,59 @@ export default function EditLearningGroupPage() {
   };
 
   useEffect(() => {
-    // Simulate API call to fetch learning group
-    const fetchLearningGroup = async () => {
+    // Fetch learning group from API
+    const fetchLearningGroupData = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be: const response = await fetch(`/api/learning-groups/${groupId}`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const data = await getLearningGroup(groupId);
         
         // Convert LearningGroup to FormData
         const formData: FormData = {
-          name: sampleLearningGroup.name,
-          description: sampleLearningGroup.description,
-          programId: sampleLearningGroup.programId,
-          subProgramId: sampleLearningGroup.subProgramId || "",
-          teacherId: sampleLearningGroup.teacherId,
-          maxStudents: sampleLearningGroup.maxStudents,
-          status: sampleLearningGroup.status,
-          location: sampleLearningGroup.location,
-          notes: sampleLearningGroup.notes || "",
-          dates: sampleLearningGroup.dates,
-          pricingSnapshot: sampleLearningGroup.pricingSnapshot,
-          owner: sampleLearningGroup.owner,
-          franchisee: sampleLearningGroup.franchisee,
-          schedule: sampleLearningGroup.schedule,
+          name: data.name,
+          description: data.description,
+          programId: data.programId.toString(),
+          subProgramId: data.subProgramId?.toString() || "",
+          teacherId: data.teacherId.toString(),
+          maxStudents: data.maxStudents,
+          status: data.status as any,
+          location: data.location,
+          notes: data.notes || "",
+          dates: {
+            startDate: new Date(data.startDate).toISOString().split('T')[0],
+            endDate: new Date(data.endDate).toISOString().split('T')[0],
+          },
+          pricingSnapshot: data.pricingSnapshot as any,
+          owner: {
+            id: (data as any).createdBy?.toString() || "",
+            name: (data as any).creator?.firstName + " " + (data as any).creator?.lastName || "",
+            role: (data as any).creator?.role || "",
+          },
+          franchisee: {
+            id: (data as any).lcId?.toString() || "",
+            name: (data as any).lc?.name || "",
+            location: (data as any).lc?.address || "",
+          },
+          schedule: data.schedule as any,
         };
         
         setFormData(formData);
       } catch (error) {
         console.error("Error fetching learning group:", error);
+        // You might want to show a toast notification here
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLearningGroup();
+    if (groupId) {
+      fetchLearningGroupData();
+    }
   }, [groupId]);
 
   // Calculate total price when program or subprogram price changes
   const updatePricing = () => {
-    if (!formData) return;
-    
-    const total = formData.pricingSnapshot.programPrice + formData.pricingSnapshot.subProgramPrice;
-    const discount = formData.pricingSnapshot.discount || 0;
-    const finalPrice = total - discount;
-    
-    setFormData(prev => prev ? ({
-      ...prev,
-      pricingSnapshot: {
-        ...prev.pricingSnapshot,
-        totalPrice: total,
-        finalPrice: finalPrice,
-      },
-    }) : null);
+    // no derived totals; fields mirror SubProgram
+    return;
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -289,23 +277,31 @@ export default function EditLearningGroupPage() {
     setSaving(true);
     
     try {
-      // Convert form data to LearningGroup format
-      const learningGroupData: Partial<LearningGroup> = {
-        ...formData,
-        startDate: new Date(formData.dates.startDate),
-        endDate: new Date(formData.dates.endDate),
+      // Convert form data to API format
+      const learningGroupData: UpdateLearningGroupData = {
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        maxStudents: formData.maxStudents,
+        startDate: formData.dates.startDate,
+        endDate: formData.dates.endDate,
+        location: formData.location,
+        notes: formData.notes,
+        schedule: formData.schedule,
+        pricingSnapshot: formData.pricingSnapshot,
+        programId: formData.programId,
+        subProgramId: formData.subProgramId || undefined,
+        teacherId: formData.teacherId,
       };
 
-      // In a real app, this would make an API call
-      console.log("Updating learning group:", learningGroupData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Update learning group via API
+      await updateLearningGroup(groupId, learningGroupData);
       
       // Navigate back to learning group detail
       router.push(`/learning-groups/${groupId}`);
     } catch (error) {
       console.error("Error updating learning group:", error);
+      // You might want to show a toast notification here
     } finally {
       setSaving(false);
     }
@@ -527,31 +523,6 @@ export default function EditLearningGroupPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Registration Deadline
-                </label>
-                <input
-                  type="date"
-                  value={formData.dates.registrationDeadline}
-                  onChange={(e) => handleNestedInputChange("dates", "registrationDeadline", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Class Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.dates.lastClassDate}
-                  onChange={(e) => handleNestedInputChange("dates", "lastClassDate", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
 
             {/* Schedule */}
             <div>
@@ -669,58 +640,79 @@ export default function EditLearningGroupPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Program Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Billing Type</label>
+                <select
+                  value={formData.pricingSnapshot.pricingModel}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricingModel", e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="per_month">Per month</option>
+                  <option value="per_session">Per session</option>
+                  <option value="per_course">Per course</option>
+                  <option value="installments">Installments</option>
+                  <option value="subscription">Subscription</option>
+                  <option value="program_price">Program price</option>
+                  <option value="one-time">One-time</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course Price</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.programPrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={formData.pricingSnapshot.coursePrice || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sub Program Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price per month</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.subProgramPrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={formData.pricingSnapshot.pricePerMonth || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Discount
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price per session</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.discount || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={formData.pricingSnapshot.pricePerSession || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Final Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Number of payments</label>
                 <input
                   type="number"
-                  step="0.01"
-                  value={formData.pricingSnapshot.finalPrice}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  min="1"
+                  value={formData.pricingSnapshot.numberOfPayments || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gap between payments</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.pricingSnapshot.gap || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "gap", parseInt(e.target.value) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Frequency (1 = monthly, 2 = every two months, etc.)</p>
               </div>
             </div>
           </div>

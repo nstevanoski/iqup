@@ -24,22 +24,14 @@ interface FormData {
   dates: {
     startDate: string;
     endDate: string;
-    registrationDeadline: string;
-    lastClassDate: string;
   };
   pricingSnapshot: {
-    programPrice: number;
-    subProgramPrice: number;
-    totalPrice: number;
-    discount?: number;
-    finalPrice: number;
-    currency: string;
-    // Enhanced payment information
+    pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
     coursePrice: number;
     numberOfPayments?: number;
-    gapBetweenPayments?: number; // in days
+    gap?: number;
     pricePerMonth?: number;
-    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
+    pricePerSession?: number;
   };
   owner: {
     id: string;
@@ -71,22 +63,14 @@ const initialFormData: FormData = {
   dates: {
     startDate: "",
     endDate: "",
-    registrationDeadline: "",
-    lastClassDate: "",
   },
   pricingSnapshot: {
-    programPrice: 0,
-    subProgramPrice: 0,
-    totalPrice: 0,
-    discount: 0,
-    finalPrice: 0,
-    currency: "USD",
-    // Enhanced payment information
+    pricingModel: "per_course",
     coursePrice: 0,
-    numberOfPayments: 1,
-    gapBetweenPayments: 30,
-    pricePerMonth: 0,
-    paymentMethod: "one-time",
+    numberOfPayments: undefined,
+    gap: undefined,
+    pricePerMonth: undefined,
+    pricePerSession: undefined,
   },
   owner: {
     id: "",
@@ -155,35 +139,14 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
     }
   }, [learningGroup]);
 
-  // Calculate total price when program or subprogram price changes
-  useEffect(() => {
-    const total = formData.pricingSnapshot.programPrice + formData.pricingSnapshot.subProgramPrice;
-    const discount = formData.pricingSnapshot.discount || 0;
-    const finalPrice = total - discount;
-    
-    // Calculate course price (can be different from total)
-    const coursePrice = formData.pricingSnapshot.coursePrice || total;
-    
-    // Calculate price per month for installment payments
-    const numberOfPayments = formData.pricingSnapshot.numberOfPayments || 1;
-    const pricePerMonth = numberOfPayments > 1 ? finalPrice / numberOfPayments : finalPrice;
-    
-    setFormData(prev => ({
-      ...prev,
-      pricingSnapshot: {
-        ...prev.pricingSnapshot,
-        totalPrice: total,
-        finalPrice: finalPrice,
-        coursePrice: coursePrice,
-        pricePerMonth: pricePerMonth,
-      },
-    }));
-  }, [
-    formData.pricingSnapshot.programPrice, 
-    formData.pricingSnapshot.subProgramPrice, 
-    formData.pricingSnapshot.discount,
+  // No derived totals; pricing mirrors SubProgram fields
+  useEffect(() => {}, [
+    formData.pricingSnapshot.pricingModel,
     formData.pricingSnapshot.coursePrice,
-    formData.pricingSnapshot.numberOfPayments
+    formData.pricingSnapshot.pricePerMonth,
+    formData.pricingSnapshot.pricePerSession,
+    formData.pricingSnapshot.numberOfPayments,
+    formData.pricingSnapshot.gap,
   ]);
 
   const handleInputChange = (field: string, value: any) => {
@@ -428,31 +391,6 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Registration Deadline
-              </label>
-              <input
-                type="date"
-                value={formData.dates.registrationDeadline}
-                onChange={(e) => handleNestedInputChange("dates", "registrationDeadline", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Class Date
-              </label>
-              <input
-                type="date"
-                value={formData.dates.lastClassDate}
-                onChange={(e) => handleNestedInputChange("dates", "lastClassDate", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
 
           {/* Schedule */}
           <div>
@@ -561,156 +499,81 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
             {/* Basic Pricing */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Euro className="h-4 w-4 inline mr-1" />
-                  Program Price
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.pricingSnapshot.programPrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "programPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Billing Type</label>
+                <select
+                  value={(formData as any).pricingSnapshot.pricingModel}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricingModel", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  <option value="per_month">Per month</option>
+                  <option value="per_session">Per session</option>
+                  <option value="per_course">Per course</option>
+                  <option value="installments">Installments</option>
+                  <option value="subscription">Subscription</option>
+                  <option value="program_price">Program price</option>
+                  <option value="one-time">One-time</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sub Program Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course Price</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.subProgramPrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "subProgramPrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Price
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.pricingSnapshot.coursePrice || ""}
+                  value={(formData as any).pricingSnapshot.coursePrice || ""}
                   onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Discount
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price per month</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.pricingSnapshot.discount || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "discount", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  value={(formData as any).pricingSnapshot.pricePerMonth || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-            </div>
-
-            {/* Payment Method */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Method
-                </label>
-                <select
-                  value={formData.pricingSnapshot.paymentMethod}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "paymentMethod", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="one-time">One-time Payment</option>
-                  <option value="installments">Installments</option>
-                  <option value="monthly">Monthly Subscription</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Final Price
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price per session</label>
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.pricingSnapshot.finalPrice}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  min="0"
+                  value={(formData as any).pricingSnapshot.pricePerSession || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Number of payments</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={(formData as any).pricingSnapshot.numberOfPayments || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gap between payments</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={(formData as any).pricingSnapshot.gap || ""}
+                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "gap", parseInt(e.target.value) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Frequency (1 = monthly, 2 = every two months, etc.)</p>
+              </div>
             </div>
-
-            {/* Installment Details */}
-            {formData.pricingSnapshot.paymentMethod === "installments" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-blue-50 rounded-lg">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of Payments
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.pricingSnapshot.numberOfPayments || 1}
-                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Gap Between Payments (days)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.pricingSnapshot.gapBetweenPayments || 30}
-                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "gapBetweenPayments", parseInt(e.target.value) || 30)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price per Payment
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.pricingSnapshot.pricePerMonth || 0}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Monthly Subscription Details */}
-            {formData.pricingSnapshot.paymentMethod === "monthly" && (
-              <div className="p-4 bg-green-50 rounded-lg">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Monthly Price
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.pricingSnapshot.pricePerMonth || ""}
-                    onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Owner and Franchisee */}

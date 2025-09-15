@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { AddStudentForm } from "@/components/forms/AddStudentForm";
 import { LearningGroup, Student } from "@/types";
+import { getLearningGroup } from "@/lib/api/learning-groups";
 import { 
   ArrowLeft, 
   Users, 
@@ -190,21 +191,14 @@ export default function LearningGroupDetailPage() {
     dates: {
       startDate: "2024-02-01",
       endDate: "2024-05-31",
-      registrationDeadline: "2024-01-25",
-      lastClassDate: "2024-05-29",
     },
     pricingSnapshot: {
-      programPrice: 299.99,
-      subProgramPrice: 149.99,
-      totalPrice: 449.98,
-      discount: 50.00,
-      finalPrice: 399.98,
-      currency: "USD",
+      pricingModel: "installments",
       coursePrice: 399.98,
       numberOfPayments: 3,
-      gapBetweenPayments: 30,
+      gap: 1,
       pricePerMonth: 133.33,
-      paymentMethod: "installments",
+      pricePerSession: undefined,
     },
     owner: {
       id: "owner_1",
@@ -239,21 +233,23 @@ export default function LearningGroupDetailPage() {
   };
 
   useEffect(() => {
-    // Simulate API call to fetch learning group
-    const fetchLearningGroup = async () => {
+    // Fetch learning group from API
+    const fetchLearningGroupData = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be: const response = await fetch(`/api/learning-groups/${groupId}`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setLearningGroup(sampleLearningGroup);
+        const data = await getLearningGroup(groupId);
+        setLearningGroup(data);
       } catch (error) {
         console.error("Error fetching learning group:", error);
+        // You might want to show a toast notification here
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLearningGroup();
+    if (groupId) {
+      fetchLearningGroupData();
+    }
   }, [groupId]);
 
   const handleAddStudent = (studentData: any) => {
@@ -308,7 +304,7 @@ export default function LearningGroupDetailPage() {
   }
 
   const totalRevenue = learningGroup.students.reduce((sum, student) => {
-    return sum + learningGroup.pricingSnapshot.finalPrice;
+    return sum + learningGroup.pricingSnapshot.coursePrice;
   }, 0);
 
   const paidStudents = learningGroup.students.filter(s => s.paymentStatus === "paid").length;
@@ -441,14 +437,14 @@ export default function LearningGroupDetailPage() {
               </div>
               <div className="flex items-center">
                 <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
-                <span className="text-sm text-gray-600">Final Price:</span>
-                <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.finalPrice}</span>
+                <span className="text-sm text-gray-600">Course Price:</span>
+                <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.coursePrice}</span>
               </div>
-              {learningGroup.pricingSnapshot.discount && (
+              {learningGroup.pricingSnapshot.pricingModel === "installments" && learningGroup.pricingSnapshot.numberOfPayments && (
                 <div className="flex items-center">
                   <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
-                  <span className="text-sm text-gray-600">Discount:</span>
-                  <span className="ml-2 text-sm font-medium text-green-600">-${learningGroup.pricingSnapshot.discount}</span>
+                  <span className="text-sm text-gray-600">Payments:</span>
+                  <span className="ml-2 text-sm font-medium text-blue-600">{learningGroup.pricingSnapshot.numberOfPayments} installments</span>
                 </div>
               )}
             </div>
@@ -607,7 +603,7 @@ export default function LearningGroupDetailPage() {
                           </div>
                           <div className="text-right">
                             <div className="font-medium text-gray-900">
-                              ${learningGroup.pricingSnapshot.finalPrice}
+                              ${learningGroup.pricingSnapshot.coursePrice}
                             </div>
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(studentEnrollment.paymentStatus)}`}>
                               {studentEnrollment.paymentStatus}

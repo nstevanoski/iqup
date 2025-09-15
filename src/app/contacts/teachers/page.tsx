@@ -2,6 +2,7 @@
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
+import { DeleteConfirmationModal } from "@/components/ui";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { Teacher } from "@/types";
 import { useState, useEffect } from "react";
@@ -296,6 +297,10 @@ export default function TeachersPage() {
   const token = useToken();
   const [data, setData] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [pendingDeleteName, setPendingDeleteName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -330,9 +335,9 @@ export default function TeachersPage() {
         router.push(`/contacts/teachers/${row.id}/edit`);
         break;
       case "delete":
-        if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
-          handleDeleteTeacher(row.id);
-        }
+        setPendingDeleteIds([String(row.id)]);
+        setPendingDeleteName(`${row.firstName} ${row.lastName}`);
+        setIsDeleteOpen(true);
         break;
     }
   };
@@ -357,10 +362,9 @@ export default function TeachersPage() {
     
     switch (action) {
       case "delete":
-        if (confirm(`Are you sure you want to delete ${rows.length} teachers?`)) {
-          const idsToDelete = new Set(rows.map(row => row.id));
-          setData(prev => prev.filter(item => !idsToDelete.has(item.id)));
-        }
+        setPendingDeleteIds(rows.map(r => String(r.id)));
+        setPendingDeleteName(`${rows.length} teachers`);
+        setIsDeleteOpen(true);
         break;
     }
   };
@@ -425,6 +429,39 @@ export default function TeachersPage() {
             emptyMessage="No teachers found"
           />
         </div>
+        <DeleteConfirmationModal
+          isOpen={isDeleteOpen}
+          onClose={() => {
+            if (!isDeleting) {
+              setIsDeleteOpen(false);
+              setPendingDeleteIds([]);
+              setPendingDeleteName(undefined);
+            }
+          }}
+          onConfirm={async () => {
+            if (!token || pendingDeleteIds.length === 0) return;
+            setIsDeleting(true);
+            try {
+              teachersAPI.updateToken(token);
+              await Promise.all(pendingDeleteIds.map(id => teachersAPI.deleteTeacher(id)));
+              const ids = new Set(pendingDeleteIds);
+              setData(prev => prev.filter(t => !ids.has(String(t.id))));
+              setIsDeleteOpen(false);
+              setPendingDeleteIds([]);
+              setPendingDeleteName(undefined);
+            } catch (e) {
+              console.error("Error deleting teachers:", e);
+              alert("Failed to delete teacher(s). Please try again.");
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+          itemName={pendingDeleteName}
+          isLoading={isDeleting}
+          title={pendingDeleteIds.length > 1 ? "Delete Teachers" : "Delete Teacher"}
+          confirmText="Delete"
+          variant="danger"
+        />
       </div>
     </DashboardLayout>
   );

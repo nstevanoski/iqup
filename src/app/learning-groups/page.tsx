@@ -5,220 +5,22 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { LearningGroup } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Eye, Edit, Trash2, Users, Clock, BookOpen, Euro, MapPin, Calendar, User } from "lucide-react";
+import { useUser } from "@/store/auth";
+import { getLearningGroups, deleteLearningGroup, LearningGroupsFilters } from "@/lib/api/learning-groups";
 
-// Sample data - in a real app, this would come from an API
-const sampleLearningGroups: LearningGroup[] = [
-  {
-    id: "1",
-    name: "Advanced English Group A",
-    description: "Advanced English conversation and writing group",
-    programId: "prog_1",
-    subProgramId: "sub_1",
-    teacherId: "teacher_1",
-    studentIds: ["student_1", "student_2"],
-    maxStudents: 15,
-    status: "active",
-    startDate: new Date("2024-02-01"),
-    endDate: new Date("2024-05-31"),
-    schedule: [
-      { dayOfWeek: 1, startTime: "10:00", endTime: "12:00" },
-      { dayOfWeek: 3, startTime: "10:00", endTime: "12:00" },
-    ],
-    location: "Main Campus",
-    notes: "Focus on advanced conversation skills",
-    dates: {
-      startDate: "2024-02-01",
-      endDate: "2024-05-31",
-      registrationDeadline: "2024-01-25",
-      lastClassDate: "2024-05-29",
-    },
-    pricingSnapshot: {
-      programPrice: 299.99,
-      subProgramPrice: 149.99,
-      totalPrice: 449.98,
-      discount: 50.00,
-      finalPrice: 399.98,
-      currency: "USD",
-      // Enhanced payment information
-      coursePrice: 399.98,
-      numberOfPayments: 3,
-      gapBetweenPayments: 30,
-      pricePerMonth: 133.33,
-      paymentMethod: "installments",
-    },
-    owner: {
-      id: "owner_1",
-      name: "Sarah Wilson",
-      role: "Program Director",
-    },
-    franchisee: {
-      id: "franchisee_1",
-      name: "Boston Learning Center",
-      location: "Boston, MA",
-    },
-    students: [
-      {
-        studentId: "student_1",
-        startDate: "2024-02-01",
-        endDate: "2024-05-31",
-        productId: "product_1",
-        paymentStatus: "paid",
-        enrollmentDate: "2024-01-15",
-      },
-      {
-        studentId: "student_2",
-        startDate: "2024-02-01",
-        endDate: "2024-05-31",
-        productId: "product_1",
-        paymentStatus: "partial",
-        enrollmentDate: "2024-01-20",
-      },
-    ],
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    name: "Calculus Study Group",
-    description: "Advanced calculus problem solving group",
-    programId: "prog_2",
-    teacherId: "teacher_2",
-    studentIds: ["student_3"],
-    maxStudents: 20,
-    status: "active",
-    startDate: new Date("2024-02-15"),
-    endDate: new Date("2024-06-15"),
-    schedule: [
-      { dayOfWeek: 2, startTime: "14:00", endTime: "16:00" },
-      { dayOfWeek: 4, startTime: "14:00", endTime: "16:00" },
-    ],
-    location: "Math Building",
-    dates: {
-      startDate: "2024-02-15",
-      endDate: "2024-06-15",
-      registrationDeadline: "2024-02-10",
-      lastClassDate: "2024-06-13",
-    },
-    pricingSnapshot: {
-      programPrice: 199.99,
-      subProgramPrice: 99.99,
-      totalPrice: 299.98,
-      finalPrice: 299.98,
-      currency: "USD",
-      // Enhanced payment information
-      coursePrice: 299.98,
-      numberOfPayments: 1,
-      gapBetweenPayments: 0,
-      pricePerMonth: 299.98,
-      paymentMethod: "one-time",
-    },
-    owner: {
-      id: "owner_2",
-      name: "Michael Brown",
-      role: "Mathematics Coordinator",
-    },
-    franchisee: {
-      id: "franchisee_2",
-      name: "Seattle Math Academy",
-      location: "Seattle, WA",
-    },
-    students: [
-      {
-        studentId: "student_3",
-        startDate: "2024-02-15",
-        endDate: "2024-06-15",
-        productId: "product_2",
-        paymentStatus: "paid",
-        enrollmentDate: "2024-02-01",
-      },
-    ],
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-10"),
-  },
-  {
-    id: "3",
-    name: "Physics Lab Group",
-    description: "Hands-on physics experiments and theory",
-    programId: "prog_3",
-    subProgramId: "sub_3",
-    teacherId: "teacher_3",
-    studentIds: ["student_4"],
-    maxStudents: 12,
-    status: "completed",
-    startDate: new Date("2023-09-01"),
-    endDate: new Date("2023-12-15"),
-    schedule: [
-      { dayOfWeek: 1, startTime: "10:00", endTime: "12:00" },
-      { dayOfWeek: 5, startTime: "10:00", endTime: "12:00" },
-    ],
-    location: "Physics Lab",
-    notes: "Advanced physics concepts with practical experiments",
-    dates: {
-      startDate: "2023-09-01",
-      endDate: "2023-12-15",
-      registrationDeadline: "2023-08-25",
-      lastClassDate: "2023-12-13",
-    },
-    pricingSnapshot: {
-      programPrice: 399.99,
-      subProgramPrice: 199.99,
-      totalPrice: 599.98,
-      discount: 100.00,
-      finalPrice: 499.98,
-      currency: "USD",
-      // Enhanced payment information
-      coursePrice: 499.98,
-      numberOfPayments: 6,
-      gapBetweenPayments: 15,
-      pricePerMonth: 83.33,
-      paymentMethod: "installments",
-    },
-    owner: {
-      id: "owner_3",
-      name: "Emily Davis",
-      role: "Physics Department Head",
-    },
-    franchisee: {
-      id: "franchisee_3",
-      name: "Austin Science Center",
-      location: "Austin, TX",
-    },
-    students: [
-      {
-        studentId: "student_4",
-        startDate: "2023-09-01",
-        endDate: "2023-12-15",
-        productId: "product_3",
-        paymentStatus: "paid",
-        enrollmentDate: "2023-08-20",
-      },
-    ],
-    createdAt: new Date("2023-08-01"),
-    updatedAt: new Date("2023-12-15"),
-  },
-];
-
-// Helper function to get program name
-const getProgramName = (programId: string): string => {
-  const programMap: Record<string, string> = {
-    "prog_1": "English Language Program",
-    "prog_2": "Mathematics Program",
-    "prog_3": "Physics Program",
-  };
-  return programMap[programId] || programId;
+// Helper function to get program name from program object
+const getProgramName = (program: any): string => {
+  return program?.name || 'Unknown Program';
 };
 
-// Helper function to get teacher name
-const getTeacherName = (teacherId: string): string => {
-  const teacherMap: Record<string, string> = {
-    "teacher_1": "Sarah Wilson",
-    "teacher_2": "Michael Brown",
-    "teacher_3": "Emily Davis",
-  };
-  return teacherMap[teacherId] || teacherId;
+// Helper function to get teacher name from teacher object
+const getTeacherName = (teacher: any): string => {
+  if (!teacher) return 'Unknown Teacher';
+  return `${teacher.firstName} ${teacher.lastName}`;
 };
+
 
 // Helper function to format schedule
 const formatSchedule = (schedule: LearningGroup["schedule"]): string => {
@@ -242,25 +44,71 @@ const getPaymentStatusColor = (status: string) => {
   }
 };
 
-// Column definitions
-const columns: Column<LearningGroup>[] = [
-  {
-    key: "name",
-    label: "Group Name",
-    sortable: true,
-    searchable: true,
-    filterable: true,
-    render: (value, row) => (
-      <div>
-        <div className="font-medium text-gray-900">{value}</div>
-        <div className="text-sm text-gray-500">{row.description}</div>
-        <div className="text-xs text-blue-600 mt-1">
-          {getProgramName(row.programId)}
+export default function LearningGroupsPage() {
+  const router = useRouter();
+  const user = useUser();
+  const [data, setData] = useState<LearningGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+
+  // Only LC users can create learning groups
+  const canCreateLearningGroup = user?.role === "LC";
+
+  // Fetch learning groups from API
+  const fetchLearningGroups = async (filters: LearningGroupsFilters = {}) => {
+    try {
+      setLoading(true);
+      const response = await getLearningGroups({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters
+      });
+      
+      setData(response.learningGroups);
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error('Error fetching learning groups:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLearningGroups();
+  }, []);
+
+  // Column definitions with access to router
+  const columns: Column<LearningGroup>[] = [
+    {
+      key: "name",
+      label: "Group Name",
+      sortable: true,
+      searchable: true,
+      filterable: true,
+      render: (value, row) => (
+        <div>
+          <button
+            onClick={() => router.push(`/learning-groups/${row.id}`)}
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+          >
+            {value}
+          </button>
+          <div className="text-sm text-gray-500">{row.description}</div>
+          <div className="text-xs text-blue-600 mt-1">
+            {getProgramName((row as any).program)}
+          </div>
         </div>
-      </div>
-    ),
-  },
-  {
+      ),
+    },
+    {
     key: "status",
     label: "Status",
     sortable: true,
@@ -283,14 +131,11 @@ const columns: Column<LearningGroup>[] = [
     key: "dates",
     label: "Dates",
     sortable: false,
-    render: (value) => (
+    render: (value, row) => (
       <div className="text-sm">
         <div className="flex items-center">
           <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-          <span>{value.startDate} - {value.endDate}</span>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Reg. deadline: {value.registrationDeadline}
+          <span>{new Date(row.startDate).toLocaleDateString()} - {new Date(row.endDate).toLocaleDateString()}</span>
         </div>
       </div>
     ),
@@ -299,10 +144,10 @@ const columns: Column<LearningGroup>[] = [
     key: "teacherId",
     label: "Teacher",
     sortable: true,
-    render: (value) => (
+    render: (value, row) => (
       <div className="flex items-center text-sm">
         <User className="h-4 w-4 mr-1 text-gray-400" />
-        <span>{getTeacherName(value)}</span>
+        <span>{getTeacherName((row as any).teacher)}</span>
       </div>
     ),
   },
@@ -327,17 +172,20 @@ const columns: Column<LearningGroup>[] = [
     key: "students",
     label: "Students",
     sortable: false,
-    render: (value, row) => (
-      <div className="space-y-1">
-        <div className="flex items-center text-sm">
-          <Users className="h-4 w-4 mr-1 text-gray-400" />
-          <span>{value.length}/{row.maxStudents}</span>
+    render: (value, row) => {
+      const students = Array.isArray(value) ? value : [];
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center text-sm">
+            <Users className="h-4 w-4 mr-1 text-gray-400" />
+            <span>{students.length}/{row.maxStudents}</span>
+          </div>
+          <div className="text-xs text-gray-500">
+            {students.filter((s: any) => s.paymentStatus === "paid").length} paid
+          </div>
         </div>
-        <div className="text-xs text-gray-500">
-          {value.filter((s: any) => s.paymentStatus === "paid").length} paid
-        </div>
-      </div>
-    ),
+      );
+    },
   },
   {
     key: "pricingSnapshot",
@@ -347,11 +195,16 @@ const columns: Column<LearningGroup>[] = [
       <div className="text-sm">
         <div className="flex items-center font-medium">
           <Euro className="h-4 w-4 mr-1 text-gray-400" />
-          <span>€{value.finalPrice}</span>
+          <span>€{value.coursePrice}</span>
         </div>
-        {value.discount && (
+        {value.pricingModel === "installments" && value.numberOfPayments && (
+          <div className="text-xs text-blue-600">
+            {value.numberOfPayments} payments
+          </div>
+        )}
+        {value.pricingModel === "per_month" && value.pricePerMonth && (
           <div className="text-xs text-green-600">
-            €{value.discount} discount
+            €{value.pricePerMonth}/month
           </div>
         )}
       </div>
@@ -361,21 +214,16 @@ const columns: Column<LearningGroup>[] = [
     key: "franchisee",
     label: "Franchisee",
     sortable: false,
-    render: (value) => (
+    render: (value, row) => (
       <div className="text-sm">
-        <div className="font-medium text-gray-900">{value.name}</div>
-        <div className="text-xs text-gray-500">{value.location}</div>
+        <div className="font-medium text-gray-900">{(row as any).lc?.name || 'Unknown LC'}</div>
+        <div className="text-xs text-gray-500">{(row as any).lc?.code || ''}</div>
       </div>
     ),
   },
 ];
 
-export default function LearningGroupsPage() {
-  const router = useRouter();
-  const [data, setData] = useState<LearningGroup[]>(sampleLearningGroups);
-  const [loading, setLoading] = useState(false);
-
-  const handleRowAction = (action: string, row: LearningGroup) => {
+  const handleRowAction = async (action: string, row: LearningGroup) => {
     console.log(`${action} action for learning group:`, row);
     
     switch (action) {
@@ -387,20 +235,34 @@ export default function LearningGroupsPage() {
         break;
       case "delete":
         if (confirm(`Are you sure you want to delete ${row.name}?`)) {
-          setData(prev => prev.filter(item => item.id !== row.id));
+          try {
+            await deleteLearningGroup(row.id.toString());
+            // Refresh the data
+            fetchLearningGroups();
+          } catch (error) {
+            console.error('Error deleting learning group:', error);
+            // You might want to show a toast notification here
+          }
         }
         break;
     }
   };
 
-  const handleBulkAction = (action: string, rows: LearningGroup[]) => {
+  const handleBulkAction = async (action: string, rows: LearningGroup[]) => {
     console.log(`${action} action for ${rows.length} learning groups:`, rows);
     
     switch (action) {
       case "delete":
         if (confirm(`Are you sure you want to delete ${rows.length} learning groups?`)) {
-          const idsToDelete = new Set(rows.map(row => row.id));
-          setData(prev => prev.filter(item => !idsToDelete.has(item.id)));
+          try {
+            // Delete all selected learning groups
+            await Promise.all(rows.map(row => deleteLearningGroup(row.id.toString())));
+            // Refresh the data
+            fetchLearningGroups();
+          } catch (error) {
+            console.error('Error deleting learning groups:', error);
+            // You might want to show a toast notification here
+          }
         }
         break;
     }
@@ -411,13 +273,13 @@ export default function LearningGroupsPage() {
       { key: "name", label: "Group Name" },
       { key: "description", label: "Description" },
       { key: "status", label: "Status" },
-      { key: "dates.startDate", label: "Start Date" },
-      { key: "dates.endDate", label: "End Date" },
-      { key: "teacherId", label: "Teacher" },
+      { key: "startDate", label: "Start Date" },
+      { key: "endDate", label: "End Date" },
+      { key: "teacher", label: "Teacher" },
       { key: "location", label: "Location" },
       { key: "maxStudents", label: "Max Students" },
-      { key: "pricingSnapshot.finalPrice", label: "Final Price" },
-      { key: "franchisee.name", label: "Franchisee" },
+      { key: "pricingSnapshot.coursePrice", label: "Course Price" },
+      { key: "lc.name", label: "Learning Center" },
     ];
     
     downloadCSV(rows, exportColumns, {
@@ -437,13 +299,15 @@ export default function LearningGroupsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Learning Groups</h1>
             <p className="text-gray-600">Manage learning groups and student enrollments</p>
           </div>
-          <button 
-            onClick={handleAddGroup}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Learning Group
-          </button>
+          {canCreateLearningGroup && (
+            <button 
+              onClick={handleAddGroup}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Learning Group
+            </button>
+          )}
         </div>
         
         <div>

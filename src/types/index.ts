@@ -246,22 +246,15 @@ export interface LearningGroup extends BaseEntity {
   dates: {
     startDate: string;
     endDate: string;
-    registrationDeadline: string;
-    lastClassDate: string;
   };
   pricingSnapshot: {
-    programPrice: number;
-    subProgramPrice: number;
-    totalPrice: number;
-    discount?: number;
-    finalPrice: number;
-    currency: string;
-    // Enhanced payment information
+    // Pricing aligned with SubProgram pricing
+    pricingModel: "per_course" | "per_month" | "per_session" | "subscription" | "program_price" | "one-time" | "installments";
     coursePrice: number;
-    numberOfPayments?: number;
-    gapBetweenPayments?: number; // in days
-    pricePerMonth?: number;
-    paymentMethod?: "one-time" | "installments" | "monthly" | "custom";
+    numberOfPayments?: number; // for installments
+    gap?: number; // frequency of payments (1 = monthly, 2 = every two months, etc.)
+    pricePerMonth?: number; // for per_month/subscription
+    pricePerSession?: number; // for per_session
   };
   owner: {
     id: string;
