@@ -2,6 +2,7 @@
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTable, Column } from "@/components/ui/DataTable";
+import { DeleteConfirmationModal } from "@/components/ui";
 import { downloadCSV, generateFilename } from "@/lib/csv-export";
 import { useUser, useSelectedScope } from "@/store/auth";
 import { useState, useEffect, useCallback } from "react";
@@ -69,6 +70,10 @@ export default function StudentsPage() {
   const [data, setData] = useState<StudentListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [pendingDeleteName, setPendingDeleteName] = useState<string | undefined>(undefined);
   
   // Backend search state
   const [searchTerm, setSearchTerm] = useState("");
@@ -186,20 +191,9 @@ export default function StudentsPage() {
         router.push(`/contacts/students/${row.id}/certificates`);
         break;
       case "delete":
-        if (confirm(`Are you sure you want to delete ${row.firstName} ${row.lastName}?`)) {
-          try {
-            const response = await deleteStudent(row.id);
-            if (response.success) {
-              // Refresh the data
-              fetchStudents({ page: currentPage, isSearch: true });
-            } else {
-              alert("Failed to delete student. Please try again.");
-            }
-          } catch (error) {
-            console.error("Error deleting student:", error);
-            alert("Failed to delete student. Please try again.");
-          }
-        }
+        setPendingDeleteIds([row.id]);
+        setPendingDeleteName(`${row.firstName} ${row.lastName}`);
+        setIsDeleteOpen(true);
         break;
     }
   };
@@ -209,23 +203,9 @@ export default function StudentsPage() {
     
     switch (action) {
       case "delete":
-        if (confirm(`Are you sure you want to delete ${rows.length} students?`)) {
-          try {
-            // Delete all selected students
-            const responses = await Promise.all(rows.map(row => deleteStudent(row.id)));
-            const allSuccessful = responses.every(response => response.success);
-            
-            if (allSuccessful) {
-              // Refresh the data
-              fetchStudents({ page: currentPage, isSearch: true });
-            } else {
-              alert("Failed to delete some students. Please try again.");
-            }
-          } catch (error) {
-            console.error("Error deleting students:", error);
-            alert("Failed to delete some students. Please try again.");
-          }
-        }
+        setPendingDeleteIds(rows.map(r => r.id));
+        setPendingDeleteName(`${rows.length} students`);
+        setIsDeleteOpen(true);
         break;
     }
   };
@@ -299,6 +279,41 @@ export default function StudentsPage() {
             totalItems={totalItems}
           />
         </div>
+        <DeleteConfirmationModal
+          isOpen={isDeleteOpen}
+          onClose={() => {
+            if (!isDeleting) {
+              setIsDeleteOpen(false);
+              setPendingDeleteIds([]);
+              setPendingDeleteName(undefined);
+            }
+          }}
+          onConfirm={async () => {
+            if (pendingDeleteIds.length === 0) return;
+            setIsDeleting(true);
+            try {
+              const responses = await Promise.all(pendingDeleteIds.map(id => deleteStudent(id)));
+              const allSuccessful = responses.every(r => r.success);
+              if (!allSuccessful) {
+                alert("Failed to delete some students. Please try again.");
+              }
+              await fetchStudents({ page: currentPage, isSearch: true });
+              setIsDeleteOpen(false);
+              setPendingDeleteIds([]);
+              setPendingDeleteName(undefined);
+            } catch (e) {
+              console.error("Error deleting students:", e);
+              alert("Failed to delete students. Please try again.");
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+          itemName={pendingDeleteName}
+          isLoading={isDeleting}
+          title={pendingDeleteIds.length > 1 ? "Delete Students" : "Delete Student"}
+          confirmText="Delete"
+          variant="danger"
+        />
       </div>
     </DashboardLayout>
   );
