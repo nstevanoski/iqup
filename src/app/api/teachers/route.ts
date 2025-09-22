@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true, code: true }
           }
         },
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: { [sortBy]: ['asc', 'desc'].includes(sortOrder.toLowerCase()) ? sortOrder.toLowerCase() : 'desc' },
         skip,
         take: limit
       }),

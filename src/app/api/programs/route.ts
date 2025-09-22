@@ -93,7 +93,17 @@ export async function GET(request: NextRequest) {
       const validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT']
       const upperStatus = status.toUpperCase()
       if (validStatuses.includes(upperStatus)) {
-        whereClause.status = upperStatus
+        // Add status filter to existing where clause
+        if (whereClause.AND) {
+          whereClause.AND.push({ status: upperStatus });
+        } else if (whereClause.OR) {
+          // Create a new AND clause with the existing OR clause and status filter
+          const existingOr = whereClause.OR;
+          whereClause.AND = [{ OR: existingOr }, { status: upperStatus }];
+          delete whereClause.OR;
+        } else {
+          whereClause.status = upperStatus;
+        }
       }
     }
 
@@ -116,7 +126,8 @@ export async function GET(request: NextRequest) {
 
     // Build orderBy clause
     const orderBy: any = {}
-    orderBy[sortBy] = sortOrder
+    const validSortOrder = ['asc', 'desc'].includes(sortOrder.toLowerCase()) ? sortOrder.toLowerCase() : 'desc'
+    orderBy[sortBy] = validSortOrder
 
     // Get programs with pagination
     const [programs, total] = await Promise.all([

@@ -161,10 +161,13 @@ export async function GET(request: NextRequest) {
       const validStatuses = ['ACTIVE', 'INACTIVE', 'DRAFT']
       const upperStatus = status.toUpperCase()
       if (validStatuses.includes(upperStatus)) {
+        // Add status filter to existing where clause
         if (whereClause.AND) {
           whereClause.AND.push({ status: upperStatus });
         } else if (whereClause.OR) {
-          whereClause.AND = [whereClause, { status: upperStatus }];
+          // Create a new AND clause with the existing OR clause and status filter
+          const existingOr = whereClause.OR;
+          whereClause.AND = [{ OR: existingOr }, { status: upperStatus }];
           delete whereClause.OR;
         } else {
           whereClause.status = upperStatus;
@@ -177,7 +180,9 @@ export async function GET(request: NextRequest) {
       if (whereClause.AND) {
         whereClause.AND.push({ programId: parseInt(programId) });
       } else if (whereClause.OR) {
-        whereClause.AND = [whereClause, { programId: parseInt(programId) }];
+        // Create a new AND clause with the existing OR clause and program filter
+        const existingOr = whereClause.OR;
+        whereClause.AND = [{ OR: existingOr }, { programId: parseInt(programId) }];
         delete whereClause.OR;
       } else {
         whereClause.programId = parseInt(programId);
@@ -192,7 +197,9 @@ export async function GET(request: NextRequest) {
         if (whereClause.AND) {
           whereClause.AND.push({ pricingModel: upperPricingModel });
         } else if (whereClause.OR) {
-          whereClause.AND = [whereClause, { pricingModel: upperPricingModel }];
+          // Create a new AND clause with the existing OR clause and pricing model filter
+          const existingOr = whereClause.OR;
+          whereClause.AND = [{ OR: existingOr }, { pricingModel: upperPricingModel }];
           delete whereClause.OR;
         } else {
           whereClause.pricingModel = upperPricingModel;
@@ -205,7 +212,8 @@ export async function GET(request: NextRequest) {
 
     // Build orderBy clause
     const orderBy: any = {}
-    orderBy[sortBy] = sortOrder
+    const validSortOrder = ['asc', 'desc'].includes(sortOrder.toLowerCase()) ? sortOrder.toLowerCase() : 'desc'
+    orderBy[sortBy] = validSortOrder
 
     // Get subprograms with pagination
     const [subPrograms, total] = await Promise.all([

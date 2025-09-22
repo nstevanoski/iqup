@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { LearningGroup } from "@/types";
 import { ArrowLeft, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users, User, Building } from "lucide-react";
+import { useUser, useSelectedScope } from "@/store/auth";
 import { getLearningGroup, updateLearningGroup, UpdateLearningGroupData } from "@/lib/api/learning-groups";
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
+import { getPrograms } from "@/lib/api/programs";
+import { getSubPrograms, getSubProgram } from "@/lib/api/subprograms";
+import { teachersAPI } from "@/lib/api/teachers";
+import { Program, SubProgram, Teacher } from "@/types";
 
 interface FormData {
   name: string;
@@ -38,7 +44,6 @@ interface FormData {
   franchisee: {
     id: string;
     name: string;
-    location: string;
   };
   schedule: {
     dayOfWeek: number;
@@ -53,11 +58,21 @@ export default function EditLearningGroupPage() {
   const router = useRouter();
   const params = useParams();
   const groupId = params.id as string;
+  const user = useUser();
+  const selectedScope = useSelectedScope();
   
   const [formData, setFormData] = useState<FormData | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // State for programs, subprograms, and teachers data
+  const [programs, setPrograms] = useState<SearchableSelectOption[]>([]);
+  const [subPrograms, setSubPrograms] = useState<SearchableSelectOption[]>([]);
+  const [teachers, setTeachers] = useState<SearchableSelectOption[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+  const [subProgramsLoading, setSubProgramsLoading] = useState(false);
+  const [teachersLoading, setTeachersLoading] = useState(false);
 
   // Sample learning group data - in a real app, this would come from an API
   const sampleLearningGroup: LearningGroup = {
@@ -144,7 +159,18 @@ export default function EditLearningGroupPage() {
             startDate: new Date(data.startDate).toISOString().split('T')[0],
             endDate: new Date(data.endDate).toISOString().split('T')[0],
           },
-          pricingSnapshot: data.pricingSnapshot as any,
+          pricingSnapshot: typeof data.pricingSnapshot === 'string' ? 
+            (() => {
+              try {
+                return JSON.parse(data.pricingSnapshot);
+              } catch (e) {
+                console.error('Error parsing pricingSnapshot:', e);
+                return {
+                  pricingModel: "per_course",
+                  coursePrice: 0,
+                };
+              }
+            })() : data.pricingSnapshot,
           owner: {
             id: (data as any).createdBy?.toString() || "",
             name: (data as any).creator?.firstName + " " + (data as any).creator?.lastName || "",
@@ -153,9 +179,16 @@ export default function EditLearningGroupPage() {
           franchisee: {
             id: (data as any).lcId?.toString() || "",
             name: (data as any).lc?.name || "",
-            location: (data as any).lc?.address || "",
           },
-          schedule: data.schedule as any,
+          schedule: typeof data.schedule === 'string' ? 
+            (() => {
+              try {
+                return JSON.parse(data.schedule);
+              } catch (e) {
+                console.error('Error parsing schedule:', e);
+                return [];
+              }
+            })() : (Array.isArray(data.schedule) ? data.schedule : []),
         };
         
         setFormData(formData);
@@ -172,10 +205,208 @@ export default function EditLearningGroupPage() {
     }
   }, [groupId]);
 
-  // Calculate total price when program or subprogram price changes
-  const updatePricing = () => {
-    // no derived totals; fields mirror SubProgram
-    return;
+  // Load initial programs
+  const loadInitialPrograms = useCallback(async () => {
+    try {
+      setProgramsLoading(true);
+      const response = await getPrograms({ 
+        limit: 100, 
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      const programOptions: SearchableSelectOption[] = response.data.data.map((program: Program) => ({
+        id: program.id,
+        label: program.name,
+        description: program.description,
+        metadata: `${program.category} • ${program.duration} weeks`
+      }));
+      
+      setPrograms(programOptions);
+    } catch (error) {
+      console.error('Error loading programs:', error);
+      setPrograms([]);
+    } finally {
+      setProgramsLoading(false);
+    }
+  }, []);
+
+  // Load subprograms for selected program
+  const loadSubPrograms = useCallback(async (programId: string) => {
+    try {
+      setSubProgramsLoading(true);
+      const response = await getSubPrograms({ 
+        programId,
+        limit: 100,
+        status: 'active',
+        sortBy: 'order',
+        sortOrder: 'asc'
+      });
+      
+      const subProgramOptions: SearchableSelectOption[] = response.data.data.map((subProgram: SubProgram) => ({
+        id: subProgram.id,
+        label: subProgram.name,
+        description: subProgram.description,
+        metadata: `Order: ${subProgram.order} • ${subProgram.duration} weeks • ${subProgram.pricingModel}`
+      }));
+      
+      setSubPrograms(subProgramOptions);
+    } catch (error) {
+      console.error('Error loading subprograms:', error);
+      setSubPrograms([]);
+    } finally {
+      setSubProgramsLoading(false);
+    }
+  }, []);
+
+  // Load initial teachers
+  const loadInitialTeachers = useCallback(async () => {
+    try {
+      setTeachersLoading(true);
+      const response = await teachersAPI.getTeachers({ 
+        limit: 100, 
+        status: 'active',
+        sortBy: 'firstName',
+        sortOrder: 'asc'
+      });
+      
+      const teacherOptions: SearchableSelectOption[] = response.data.teachers.map((teacher: Teacher) => ({
+        id: teacher.id.toString(),
+        label: `${teacher.firstName} ${teacher.lastName}`,
+        description: teacher.email,
+        metadata: `${teacher.specialization?.join(', ') || 'No specialization'} • ${teacher.experience || 0} years exp`
+      }));
+      
+      setTeachers(teacherOptions);
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+      setTeachers([]);
+    } finally {
+      setTeachersLoading(false);
+    }
+  }, []);
+
+  // Load initial programs data
+  useEffect(() => {
+    loadInitialPrograms();
+  }, [loadInitialPrograms]);
+
+  // Load initial teachers data
+  useEffect(() => {
+    loadInitialTeachers();
+  }, [loadInitialTeachers]);
+
+  // Auto-populate owner and franchisee fields based on logged-in user
+  useEffect(() => {
+    if (user && selectedScope && formData) {
+      setFormData(prev => prev ? ({
+        ...prev,
+        owner: {
+          id: user.id,
+          name: user.name,
+          role: user.role
+        },
+        franchisee: {
+          id: selectedScope.id,
+          name: selectedScope.name
+        }
+      }) : null);
+    }
+  }, [user, selectedScope, formData]);
+
+  // Load subprograms when program is selected
+  useEffect(() => {
+    if (formData?.programId) {
+      loadSubPrograms(formData.programId);
+    } else {
+      setSubPrograms([]);
+    }
+  }, [formData?.programId, loadSubPrograms]);
+
+  // Search programs function
+  const searchPrograms = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    try {
+      const response = await getPrograms({ 
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.data.map((program: Program) => ({
+        id: program.id,
+        label: program.name,
+        description: program.description,
+        metadata: `${program.category} • ${program.duration} weeks`
+      }));
+    } catch (error) {
+      console.error('Error searching programs:', error);
+      return [];
+    }
+  }, []);
+
+  // Search subprograms function
+  const searchSubPrograms = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    if (!formData?.programId) return [];
+    
+    try {
+      const response = await getSubPrograms({ 
+        programId: formData.programId,
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'order',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.data.map((subProgram: SubProgram) => ({
+        id: subProgram.id,
+        label: subProgram.name,
+        description: subProgram.description,
+        metadata: `Order: ${subProgram.order} • ${subProgram.duration} weeks • ${subProgram.pricingModel}`
+      }));
+    } catch (error) {
+      console.error('Error searching subprograms:', error);
+      return [];
+    }
+  }, [formData?.programId]);
+
+  // Search teachers function
+  const searchTeachers = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    try {
+      const response = await teachersAPI.getTeachers({ 
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'firstName',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.teachers.map((teacher: Teacher) => ({
+        id: teacher.id.toString(),
+        label: `${teacher.firstName} ${teacher.lastName}`,
+        description: teacher.email,
+        metadata: `${teacher.specialization?.join(', ') || 'No specialization'} • ${teacher.experience || 0} years exp`
+      }));
+    } catch (error) {
+      console.error('Error searching teachers:', error);
+      return [];
+    }
+  }, []);
+
+  // Update pricing based on user changes
+  const updatePricing = (field: string, value: any) => {
+    if (!formData) return;
+    
+    setFormData(prev => prev ? ({
+      ...prev,
+      pricingSnapshot: {
+        ...prev.pricingSnapshot,
+        [field]: value
+      }
+    }) : null);
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -194,9 +425,86 @@ export default function EditLearningGroupPage() {
       }));
     }
 
-    // Update pricing if relevant fields change
-    if (field === "pricingSnapshot") {
-      updatePricing();
+    // No need to update pricing here as we're using the direct updatePricing function now
+  };
+
+  // Handle program selection - clear subprogram when program changes
+  const handleProgramSelect = (programId: string) => {
+    if (!formData) return;
+    
+    setFormData(prev => prev ? ({
+      ...prev,
+      programId,
+      subProgramId: "", // Clear subprogram when program changes
+    }) : null);
+    
+    // Clear subprogram error
+    if (errors.subProgramId) {
+      setErrors(prev => ({
+        ...prev,
+        subProgramId: "",
+      }));
+    }
+  };
+
+  // Handle subprogram selection
+  const handleSubProgramSelect = async (subProgramId: string) => {
+    if (!formData) return;
+    
+    setFormData(prev => prev ? ({
+      ...prev,
+      subProgramId,
+    }) : null);
+    
+    // Clear subprogram error
+    if (errors.subProgramId) {
+      setErrors(prev => ({
+        ...prev,
+        subProgramId: "",
+      }));
+    }
+
+    // Fetch subprogram details to populate pricing fields
+    if (subProgramId) {
+      try {
+        const response = await getSubProgram(subProgramId);
+        if (response.success && response.data) {
+          const subProgram = response.data;
+          
+          // Update pricing fields based on subprogram data
+          setFormData(prev => prev ? ({
+            ...prev,
+            pricingSnapshot: {
+              pricingModel: subProgram.pricingModel,
+              coursePrice: subProgram.coursePrice || 0,
+              numberOfPayments: subProgram.numberOfPayments,
+              gap: subProgram.gap,
+              pricePerMonth: subProgram.pricePerMonth,
+              pricePerSession: subProgram.pricePerSession
+            }
+          }) : null);
+        }
+      } catch (error) {
+        console.error('Error fetching subprogram details:', error);
+      }
+    }
+  };
+
+  // Handle teacher selection
+  const handleTeacherSelect = (teacherId: string) => {
+    if (!formData) return;
+    
+    setFormData(prev => prev ? ({
+      ...prev,
+      teacherId,
+    }) : null);
+    
+    // Clear teacher error
+    if (errors.teacherId) {
+      setErrors(prev => ({
+        ...prev,
+        teacherId: "",
+      }));
     }
   };
 
@@ -211,10 +519,7 @@ export default function EditLearningGroupPage() {
       },
     }) : null);
 
-    // Update pricing if relevant fields change
-    if (parent === "pricingSnapshot") {
-      updatePricing();
-    }
+    // No need to update pricing here as we're using the direct updatePricing function now
   };
 
   const addScheduleSlot = () => {
@@ -432,54 +737,49 @@ export default function EditLearningGroupPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Program *
                 </label>
-                <select
+                <SearchableSelect
+                  options={programs}
                   value={formData.programId}
-                  onChange={(e) => handleInputChange("programId", e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.programId ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select Program</option>
-                  <option value="prog_1">English Language Program</option>
-                  <option value="prog_2">Mathematics Program</option>
-                  <option value="prog_3">Physics Program</option>
-                </select>
-                {errors.programId && <p className="text-red-500 text-sm mt-1">{errors.programId}</p>}
+                  placeholder="Search and select a program..."
+                  onSelect={handleProgramSelect}
+                  onSearch={searchPrograms}
+                  loading={programsLoading}
+                  error={errors.programId}
+                  className="w-full"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sub Program
                 </label>
-                <select
+                <SearchableSelect
+                  options={subPrograms}
                   value={formData.subProgramId}
-                  onChange={(e) => handleInputChange("subProgramId", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Sub Program</option>
-                  <option value="sub_1">Beginner English</option>
-                  <option value="sub_2">Advanced English</option>
-                  <option value="sub_3">Basic Math</option>
-                </select>
+                  placeholder={formData.programId ? "Search and select a sub program..." : "Select a program first"}
+                  onSelect={handleSubProgramSelect}
+                  onSearch={searchSubPrograms}
+                  loading={subProgramsLoading}
+                  disabled={!formData.programId}
+                  error={errors.subProgramId}
+                  className="w-full"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Teacher *
                 </label>
-                <select
+                <SearchableSelect
+                  options={teachers}
                   value={formData.teacherId}
-                  onChange={(e) => handleInputChange("teacherId", e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.teacherId ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select Teacher</option>
-                  <option value="teacher_1">Sarah Wilson</option>
-                  <option value="teacher_2">Michael Brown</option>
-                  <option value="teacher_3">Emily Davis</option>
-                </select>
-                {errors.teacherId && <p className="text-red-500 text-sm mt-1">{errors.teacherId}</p>}
+                  placeholder="Search and select a teacher..."
+                  onSelect={handleTeacherSelect}
+                  onSearch={searchTeachers}
+                  loading={teachersLoading}
+                  error={errors.teacherId}
+                  className="w-full"
+                />
               </div>
             </div>
           </div>
@@ -643,7 +943,7 @@ export default function EditLearningGroupPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Billing Type</label>
                 <select
                   value={formData.pricingSnapshot.pricingModel}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricingModel", e.target.value)}
+                  onChange={(e) => updatePricing("pricingModel", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="per_month">Per month</option>
@@ -663,7 +963,7 @@ export default function EditLearningGroupPage() {
                   step="0.01"
                   min="0"
                   value={formData.pricingSnapshot.coursePrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  onChange={(e) => updatePricing("coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -675,7 +975,7 @@ export default function EditLearningGroupPage() {
                   step="0.01"
                   min="0"
                   value={formData.pricingSnapshot.pricePerMonth || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  onChange={(e) => updatePricing("pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -687,7 +987,7 @@ export default function EditLearningGroupPage() {
                   step="0.01"
                   min="0"
                   value={formData.pricingSnapshot.pricePerSession || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  onChange={(e) => updatePricing("pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -698,7 +998,7 @@ export default function EditLearningGroupPage() {
                   type="number"
                   min="1"
                   value={formData.pricingSnapshot.numberOfPayments || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || undefined)}
+                  onChange={(e) => updatePricing("numberOfPayments", parseInt(e.target.value) || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -709,7 +1009,7 @@ export default function EditLearningGroupPage() {
                   type="number"
                   min="1"
                   value={formData.pricingSnapshot.gap || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "gap", parseInt(e.target.value) || undefined)}
+                  onChange={(e) => updatePricing("gap", parseInt(e.target.value) || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">Frequency (1 = monthly, 2 = every two months, etc.)</p>
@@ -737,6 +1037,7 @@ export default function EditLearningGroupPage() {
                     errors["owner.name"] ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter owner name"
+                  readOnly
                 />
                 {errors["owner.name"] && <p className="text-red-500 text-sm mt-1">{errors["owner.name"]}</p>}
               </div>
@@ -751,11 +1052,12 @@ export default function EditLearningGroupPage() {
                   onChange={(e) => handleNestedInputChange("owner", "role", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter owner role"
+                  readOnly
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div className="mt-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Building className="h-4 w-4 inline mr-1" />
@@ -769,22 +1071,11 @@ export default function EditLearningGroupPage() {
                     errors["franchisee.name"] ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter franchisee name"
+                  readOnly
                 />
                 {errors["franchisee.name"] && <p className="text-red-500 text-sm mt-1">{errors["franchisee.name"]}</p>}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Franchisee Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.franchisee.location}
-                  onChange={(e) => handleNestedInputChange("franchisee", "location", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter franchisee location"
-                />
-              </div>
             </div>
           </div>
 
