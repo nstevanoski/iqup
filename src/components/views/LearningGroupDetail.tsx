@@ -157,7 +157,28 @@ const getPaymentStatusColor = (status: string) => {
 
 const formatSchedule = (schedule: LearningGroup["schedule"]): string => {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return schedule.map(s => `${dayNames[s.dayOfWeek]} ${s.startTime}-${s.endTime}`).join(", ");
+  
+  // Handle case where schedule might be a JSON string from the database
+  let scheduleArray: Array<{dayOfWeek: number, startTime: string, endTime: string}>;
+  
+  if (typeof schedule === 'string') {
+    try {
+      scheduleArray = JSON.parse(schedule);
+    } catch (error) {
+      console.error('Error parsing schedule:', error);
+      return 'Invalid schedule';
+    }
+  } else if (Array.isArray(schedule)) {
+    scheduleArray = schedule;
+  } else {
+    return 'No schedule';
+  }
+  
+  if (!scheduleArray || scheduleArray.length === 0) {
+    return 'No schedule';
+  }
+  
+  return scheduleArray.map(s => `${dayNames[s.dayOfWeek]} ${s.startTime}-${s.endTime}`).join(", ");
 };
 
 export function LearningGroupDetail({ learningGroup, onClose, onUpdateStudent, onRemoveStudent }: LearningGroupDetailProps) {

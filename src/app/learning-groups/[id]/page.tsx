@@ -156,7 +156,28 @@ const getPaymentStatusColor = (status: string) => {
 
 const formatSchedule = (schedule: LearningGroup["schedule"]): string => {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return schedule.map(s => `${dayNames[s.dayOfWeek]} ${s.startTime}-${s.endTime}`).join(", ");
+  
+  // Handle case where schedule might be a JSON string from the database
+  let scheduleArray: Array<{dayOfWeek: number, startTime: string, endTime: string}>;
+  
+  if (typeof schedule === 'string') {
+    try {
+      scheduleArray = JSON.parse(schedule);
+    } catch (error) {
+      console.error('Error parsing schedule:', error);
+      return 'Invalid schedule';
+    }
+  } else if (Array.isArray(schedule)) {
+    scheduleArray = schedule;
+  } else {
+    return 'No schedule';
+  }
+  
+  if (!scheduleArray || scheduleArray.length === 0) {
+    return 'No schedule';
+  }
+  
+  return scheduleArray.map(s => `${dayNames[s.dayOfWeek]} ${s.startTime}-${s.endTime}`).join(", ");
 };
 
 export default function LearningGroupDetailPage() {
@@ -303,12 +324,54 @@ export default function LearningGroupDetailPage() {
     );
   }
 
-  const totalRevenue = learningGroup.students.reduce((sum, student) => {
-    return sum + learningGroup.pricingSnapshot.coursePrice;
+  // Parse students data if it's a string
+  interface StudentEnrollment {
+    studentId: string;
+    enrollmentDate: string;
+    paymentStatus: string;
+    paymentHistory?: any[];
+    productId?: string;
+  }
+  
+  let studentsArray: StudentEnrollment[] = [];
+  if (typeof learningGroup.students === 'string') {
+    try {
+      studentsArray = JSON.parse(learningGroup.students);
+    } catch (error) {
+      console.error('Error parsing students data:', error);
+      studentsArray = [];
+    }
+  } else if (Array.isArray(learningGroup.students)) {
+    studentsArray = learningGroup.students;
+  }
+
+  // Parse pricing snapshot if it's a string
+  interface PricingSnapshot {
+    coursePrice: number;
+    pricingModel?: string;
+    numberOfPayments?: number;
+    gap?: number;
+    pricePerMonth?: number;
+    pricePerSession?: number;
+  }
+  
+  let pricingSnapshot: PricingSnapshot = { coursePrice: 0 };
+  if (typeof learningGroup.pricingSnapshot === 'string') {
+    try {
+      pricingSnapshot = JSON.parse(learningGroup.pricingSnapshot);
+    } catch (error) {
+      console.error('Error parsing pricing snapshot:', error);
+    }
+  } else if (learningGroup.pricingSnapshot && typeof learningGroup.pricingSnapshot === 'object') {
+    pricingSnapshot = learningGroup.pricingSnapshot as PricingSnapshot;
+  }
+
+  const totalRevenue = studentsArray.reduce((sum: number, student: StudentEnrollment) => {
+    return sum + (pricingSnapshot.coursePrice || 0);
   }, 0);
 
-  const paidStudents = learningGroup.students.filter(s => s.paymentStatus === "paid").length;
-  const pendingPayments = learningGroup.students.filter(s => s.paymentStatus === "pending").length;
+  const paidStudents = studentsArray.filter((s: StudentEnrollment) => s.paymentStatus === "paid").length;
+  const pendingPayments = studentsArray.filter((s: StudentEnrollment) => s.paymentStatus === "pending").length;
 
   return (
     <DashboardLayout>
@@ -358,7 +421,7 @@ export default function LearningGroupDetailPage() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-blue-600">Students</p>
                 <p className="text-2xl font-bold text-blue-900">
-                  {learningGroup.students.length}/{learningGroup.maxStudents}
+                  {studentsArray.length}/{learningGroup.maxStudents}
                 </p>
               </div>
             </div>
@@ -382,7 +445,7 @@ export default function LearningGroupDetailPage() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-purple-600">Duration</p>
                 <p className="text-2xl font-bold text-purple-900">
-                  {Math.ceil((new Date(learningGroup.dates.endDate).getTime() - new Date(learningGroup.dates.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                  {Math.ceil((new Date(learningGroup.endDate).getTime() - new Date(learningGroup.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
                 </p>
               </div>
             </div>
@@ -397,12 +460,12 @@ export default function LearningGroupDetailPage() {
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 text-gray-400 mr-3" />
                 <span className="text-sm text-gray-600">Start Date:</span>
-                <span className="ml-2 text-sm font-medium">{learningGroup.dates.startDate}</span>
+                <span className="ml-2 text-sm font-medium">{new Date(learningGroup.startDate).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 text-gray-400 mr-3" />
                 <span className="text-sm text-gray-600">End Date:</span>
-                <span className="ml-2 text-sm font-medium">{learningGroup.dates.endDate}</span>
+                <span className="ml-2 text-sm font-medium">{new Date(learningGroup.endDate).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center">
                 <Clock className="h-4 w-4 text-gray-400 mr-3" />
@@ -428,23 +491,27 @@ export default function LearningGroupDetailPage() {
               <div className="flex items-center">
                 <User className="h-4 w-4 text-gray-400 mr-3" />
                 <span className="text-sm text-gray-600">Owner:</span>
-                <span className="ml-2 text-sm font-medium">{learningGroup.owner.name}</span>
+                <span className="ml-2 text-sm font-medium">
+                  {learningGroup.owner ? learningGroup.owner.name : 'Not assigned'}
+                </span>
               </div>
               <div className="flex items-center">
                 <Building className="h-4 w-4 text-gray-400 mr-3" />
                 <span className="text-sm text-gray-600">Franchisee:</span>
-                <span className="ml-2 text-sm font-medium">{learningGroup.franchisee.name}</span>
+                <span className="ml-2 text-sm font-medium">
+                  {learningGroup.franchisee ? learningGroup.franchisee.name : 'Not assigned'}
+                </span>
               </div>
               <div className="flex items-center">
                 <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
                 <span className="text-sm text-gray-600">Course Price:</span>
-                <span className="ml-2 text-sm font-medium">${learningGroup.pricingSnapshot.coursePrice}</span>
+                <span className="ml-2 text-sm font-medium">${pricingSnapshot.coursePrice}</span>
               </div>
-              {learningGroup.pricingSnapshot.pricingModel === "installments" && learningGroup.pricingSnapshot.numberOfPayments && (
+              {pricingSnapshot.pricingModel === "installments" && pricingSnapshot.numberOfPayments && (
                 <div className="flex items-center">
                   <DollarSign className="h-4 w-4 text-gray-400 mr-3" />
                   <span className="text-sm text-gray-600">Payments:</span>
-                  <span className="ml-2 text-sm font-medium text-blue-600">{learningGroup.pricingSnapshot.numberOfPayments} installments</span>
+                  <span className="ml-2 text-sm font-medium text-blue-600">{pricingSnapshot.numberOfPayments} installments</span>
                 </div>
               )}
             </div>
@@ -464,7 +531,7 @@ export default function LearningGroupDetailPage() {
                 }`}
               >
                 <Users className="h-4 w-4 inline mr-2" />
-                Students ({learningGroup.students.length})
+                Students ({studentsArray.length})
               </button>
               <button
                 onClick={() => setActiveTab("payments")}
@@ -517,7 +584,7 @@ export default function LearningGroupDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {learningGroup.students.map((studentEnrollment) => {
+                      {studentsArray.map((studentEnrollment: StudentEnrollment) => {
                         const student = getStudentById(studentEnrollment.studentId);
                         if (!student) return null;
 
@@ -589,7 +656,7 @@ export default function LearningGroupDetailPage() {
                 <div className="bg-gray-50 p-6 rounded-lg">
                   <h4 className="text-md font-semibold text-gray-900 mb-4">Payment Details</h4>
                   <div className="space-y-3">
-                    {learningGroup.students.map((studentEnrollment) => {
+                    {studentsArray.map((studentEnrollment: StudentEnrollment) => {
                       const student = getStudentById(studentEnrollment.studentId);
                       if (!student) return null;
 
@@ -603,7 +670,7 @@ export default function LearningGroupDetailPage() {
                           </div>
                           <div className="text-right">
                             <div className="font-medium text-gray-900">
-                              ${learningGroup.pricingSnapshot.coursePrice}
+                              ${pricingSnapshot.coursePrice}
                             </div>
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(studentEnrollment.paymentStatus)}`}>
                               {studentEnrollment.paymentStatus}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -8,6 +8,11 @@ import { LearningGroup } from "@/types";
 import { ArrowLeft, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users, User, Building, AlertCircle } from "lucide-react";
 import { useUser } from "@/store/auth";
 import { createLearningGroup, CreateLearningGroupData } from "@/lib/api/learning-groups";
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
+import { getPrograms } from "@/lib/api/programs";
+import { getSubPrograms } from "@/lib/api/subprograms";
+import { teachersAPI } from "@/lib/api/teachers";
+import { Program, SubProgram, Teacher } from "@/types";
 
 interface FormData {
   name: string;
@@ -92,26 +97,186 @@ export default function NewLearningGroupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  // Only LC users can create learning groups
-  if (user?.role !== "LC") {
-    return (
-      <DashboardLayout>
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>Only Learning Center (LC) users can create learning groups.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // State for programs, subprograms, and teachers data
+  const [programs, setPrograms] = useState<SearchableSelectOption[]>([]);
+  const [subPrograms, setSubPrograms] = useState<SearchableSelectOption[]>([]);
+  const [teachers, setTeachers] = useState<SearchableSelectOption[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+  const [subProgramsLoading, setSubProgramsLoading] = useState(false);
+  const [teachersLoading, setTeachersLoading] = useState(false);
+
+  // Load initial programs
+  const loadInitialPrograms = useCallback(async () => {
+    try {
+      setProgramsLoading(true);
+      const response = await getPrograms({ 
+        limit: 100, 
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      const programOptions: SearchableSelectOption[] = response.data.data.map((program: Program) => ({
+        id: program.id,
+        label: program.name,
+        description: program.description,
+        metadata: `${program.category} • ${program.duration} weeks`
+      }));
+      
+      setPrograms(programOptions);
+    } catch (error) {
+      console.error('Error loading programs:', error);
+      setPrograms([]);
+    } finally {
+      setProgramsLoading(false);
+    }
+  }, []);
+
+  // Load subprograms for selected program
+  const loadSubPrograms = useCallback(async (programId: string) => {
+    try {
+      setSubProgramsLoading(true);
+      const response = await getSubPrograms({
+        programId: programId,
+        limit: 100,
+        status: 'active',
+        sortBy: 'order',
+        sortOrder: 'asc'
+      });
+      
+      const subProgramOptions: SearchableSelectOption[] = response.data.data.map((subProgram: SubProgram) => ({
+        id: subProgram.id,
+        label: subProgram.name,
+        description: subProgram.description,
+        metadata: `Order: ${subProgram.order} • ${subProgram.duration} weeks • ${subProgram.pricingModel}`
+      }));
+      
+      setSubPrograms(subProgramOptions);
+    } catch (error) {
+      console.error('Error loading subprograms:', error);
+      setSubPrograms([]);
+    } finally {
+      setSubProgramsLoading(false);
+    }
+  }, []);
+
+  // Load initial programs data
+  useEffect(() => {
+    loadInitialPrograms();
+  }, [loadInitialPrograms]);
+
+  // Load subprograms when program is selected
+  useEffect(() => {
+    if (formData.programId) {
+      loadSubPrograms(formData.programId);
+    } else {
+      setSubPrograms([]);
+    }
+  }, [formData.programId, loadSubPrograms]);
+
+  // Search programs function
+  const searchPrograms = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    try {
+      const response = await getPrograms({ 
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.data.map((program: Program) => ({
+        id: program.id,
+        label: program.name,
+        description: program.description,
+        metadata: `${program.category} • ${program.duration} weeks`
+      }));
+    } catch (error) {
+      console.error('Error searching programs:', error);
+      return [];
+    }
+  }, []);
+
+  // Search subprograms function
+  const searchSubPrograms = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    if (!formData.programId) return [];
+    
+    try {
+      const response = await getSubPrograms({
+        programId: formData.programId,
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'order',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.data.map((subProgram: SubProgram) => ({
+        id: subProgram.id,
+        label: subProgram.name,
+        description: subProgram.description,
+        metadata: `Order: ${subProgram.order} • ${subProgram.duration} weeks • ${subProgram.pricingModel}`
+      }));
+    } catch (error) {
+      console.error('Error searching subprograms:', error);
+      return [];
+    }
+  }, [formData.programId]);
+
+  // Load initial teachers
+  const loadInitialTeachers = useCallback(async () => {
+    try {
+      setTeachersLoading(true);
+      const response = await teachersAPI.getTeachers({ 
+        limit: 100, 
+        status: 'active',
+        sortBy: 'firstName',
+        sortOrder: 'asc'
+      });
+      
+      const teacherOptions: SearchableSelectOption[] = response.data.teachers.map((teacher: Teacher) => ({
+        id: teacher.id.toString(),
+        label: `${teacher.firstName} ${teacher.lastName}`,
+        description: teacher.email,
+        metadata: `${teacher.specialization?.join(', ') || 'No specialization'} • ${teacher.experience || 0} years exp`
+      }));
+      
+      setTeachers(teacherOptions);
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+      setTeachers([]);
+    } finally {
+      setTeachersLoading(false);
+    }
+  }, []);
+
+  // Load initial teachers data
+  useEffect(() => {
+    loadInitialTeachers();
+  }, [loadInitialTeachers]);
+
+  // Search teachers function
+  const searchTeachers = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    try {
+      const response = await teachersAPI.getTeachers({ 
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'firstName',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.teachers.map((teacher: Teacher) => ({
+        id: teacher.id.toString(),
+        label: `${teacher.firstName} ${teacher.lastName}`,
+        description: teacher.email,
+        metadata: `${teacher.specialization?.join(', ') || 'No specialization'} • ${teacher.experience || 0} years exp`
+      }));
+    } catch (error) {
+      console.error('Error searching teachers:', error);
+      return [];
+    }
+  }, []);
 
   // No derived totals here; pricing fields mirror SubProgram directly
   const updatePricing = () => {
@@ -134,6 +299,55 @@ export default function NewLearningGroupPage() {
     }
 
     // No derived pricing updates needed
+  };
+
+  // Handle program selection - clear subprogram when program changes
+  const handleProgramSelect = (programId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      programId,
+      subProgramId: "", // Clear subprogram when program changes
+    }));
+    
+    // Clear subprogram error
+    if (errors.subProgramId) {
+      setErrors(prev => ({
+        ...prev,
+        subProgramId: "",
+      }));
+    }
+  };
+
+  // Handle subprogram selection
+  const handleSubProgramSelect = (subProgramId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subProgramId,
+    }));
+    
+    // Clear subprogram error
+    if (errors.subProgramId) {
+      setErrors(prev => ({
+        ...prev,
+        subProgramId: "",
+      }));
+    }
+  };
+
+  // Handle teacher selection
+  const handleTeacherSelect = (teacherId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      teacherId,
+    }));
+    
+    // Clear teacher error
+    if (errors.teacherId) {
+      setErrors(prev => ({
+        ...prev,
+        teacherId: "",
+      }));
+    }
   };
 
   const handleNestedInputChange = (parent: string, field: string, value: any) => {
@@ -246,21 +460,37 @@ export default function NewLearningGroupPage() {
           ]}
         />
 
-        {/* Header */}
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleCancel}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Create New Learning Group</h1>
-            <p className="text-gray-600">Set up a new learning group with all necessary details</p>
+        {user?.role !== "LC" ? (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>Only Learning Center (LC) users can create learning groups.</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleCancel}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Create New Learning Group</h1>
+                <p className="text-gray-600">Set up a new learning group with all necessary details</p>
+              </div>
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Basic Information</h2>
@@ -325,54 +555,49 @@ export default function NewLearningGroupPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Program *
                 </label>
-                <select
+                <SearchableSelect
+                  options={programs}
                   value={formData.programId}
-                  onChange={(e) => handleInputChange("programId", e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.programId ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select Program</option>
-                  <option value="prog_1">English Language Program</option>
-                  <option value="prog_2">Mathematics Program</option>
-                  <option value="prog_3">Physics Program</option>
-                </select>
-                {errors.programId && <p className="text-red-500 text-sm mt-1">{errors.programId}</p>}
+                  placeholder="Search and select a program..."
+                  onSelect={handleProgramSelect}
+                  onSearch={searchPrograms}
+                  loading={programsLoading}
+                  error={errors.programId}
+                  className="w-full"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sub Program
                 </label>
-                <select
+                <SearchableSelect
+                  options={subPrograms}
                   value={formData.subProgramId}
-                  onChange={(e) => handleInputChange("subProgramId", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Sub Program</option>
-                  <option value="sub_1">Beginner English</option>
-                  <option value="sub_2">Advanced English</option>
-                  <option value="sub_3">Basic Math</option>
-                </select>
+                  placeholder={formData.programId ? "Search and select a sub program..." : "Select a program first"}
+                  onSelect={handleSubProgramSelect}
+                  onSearch={searchSubPrograms}
+                  loading={subProgramsLoading}
+                  disabled={!formData.programId}
+                  error={errors.subProgramId}
+                  className="w-full"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Teacher *
                 </label>
-                <select
+                <SearchableSelect
+                  options={teachers}
                   value={formData.teacherId}
-                  onChange={(e) => handleInputChange("teacherId", e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.teacherId ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select Teacher</option>
-                  <option value="teacher_1">Sarah Wilson</option>
-                  <option value="teacher_2">Michael Brown</option>
-                  <option value="teacher_3">Emily Davis</option>
-                </select>
-                {errors.teacherId && <p className="text-red-500 text-sm mt-1">{errors.teacherId}</p>}
+                  placeholder="Search and select a teacher..."
+                  onSelect={handleTeacherSelect}
+                  onSearch={searchTeachers}
+                  loading={teachersLoading}
+                  error={errors.teacherId}
+                  className="w-full"
+                />
               </div>
             </div>
           </div>
@@ -699,26 +924,28 @@ export default function NewLearningGroupPage() {
             </div>
           </div>
 
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Save className="h-4 w-4 mr-2" />
-              Create Learning Group
-            </button>
-          </div>
-        </form>
+              {/* Form Actions */}
+              <div className="flex justify-end space-x-4 pt-6">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Save className="h-4 w-4 mr-2" />
+                  Create Learning Group
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
 
     // Verify program exists
     const program = await prisma.program.findFirst({
-      where: { id: programId, status: 'ACTIVE' }
+      where: { id: parseInt(programId), status: 'ACTIVE' }
     })
 
     if (!program) {
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
     // Verify subprogram exists if provided
     if (subProgramId) {
       const subProgram = await prisma.subProgram.findFirst({
-        where: { id: subProgramId, status: 'ACTIVE' }
+        where: { id: parseInt(subProgramId), status: 'ACTIVE' }
       })
 
       if (!subProgram) {
@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
     // Verify teacher exists and belongs to the same LC
     const teacher = await prisma.teacher.findFirst({
       where: { 
-        id: teacherId, 
+        id: parseInt(teacherId), 
         status: 'ACTIVE',
         lcId: finalLcId
       }

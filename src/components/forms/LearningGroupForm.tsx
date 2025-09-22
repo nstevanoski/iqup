@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LearningGroup } from "@/types";
+import { LearningGroup, Program, SubProgram } from "@/types";
 import { X, Plus, Trash2, Save, Loader2, Calendar, Clock, MapPin, Euro, Users } from "lucide-react";
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
+import { getPrograms } from "@/lib/api/programs";
+import { getSubPrograms } from "@/lib/api/subprograms";
 
 interface LearningGroupFormProps {
   learningGroup?: LearningGroup;
@@ -107,6 +110,12 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
     } : initialFormData
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // State for programs and subprograms data
+  const [programs, setPrograms] = useState<SearchableSelectOption[]>([]);
+  const [subPrograms, setSubPrograms] = useState<SearchableSelectOption[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+  const [subProgramsLoading, setSubProgramsLoading] = useState(false);
 
   // Auto-assign owner and franchisee based on current user (mock implementation)
   useEffect(() => {
@@ -139,6 +148,20 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
     }
   }, [learningGroup]);
 
+  // Load initial programs data
+  useEffect(() => {
+    loadInitialPrograms();
+  }, []);
+
+  // Load subprograms when program is selected
+  useEffect(() => {
+    if (formData.programId) {
+      loadSubPrograms(formData.programId);
+    } else {
+      setSubPrograms([]);
+    }
+  }, [formData.programId]);
+
   // No derived totals; pricing mirrors SubProgram fields
   useEffect(() => {}, [
     formData.pricingSnapshot.pricingModel,
@@ -148,6 +171,110 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
     formData.pricingSnapshot.numberOfPayments,
     formData.pricingSnapshot.gap,
   ]);
+
+  // Load initial programs
+  const loadInitialPrograms = async () => {
+    try {
+      setProgramsLoading(true);
+      const response = await getPrograms({ 
+        limit: 100, 
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      const programOptions: SearchableSelectOption[] = response.data.data.map((program: Program) => ({
+        id: program.id,
+        label: program.name,
+        description: program.description,
+        metadata: `${program.category} • ${program.duration} weeks`
+      }));
+      
+      setPrograms(programOptions);
+    } catch (error) {
+      console.error('Error loading programs:', error);
+      setPrograms([]);
+    } finally {
+      setProgramsLoading(false);
+    }
+  };
+
+  // Load subprograms for selected program
+  const loadSubPrograms = async (programId: string) => {
+    try {
+      setSubProgramsLoading(true);
+      const response = await getSubPrograms({ 
+        programId,
+        limit: 100,
+        status: 'active',
+        sortBy: 'order',
+        sortOrder: 'asc'
+      });
+      
+      const subProgramOptions: SearchableSelectOption[] = response.data.data.map((subProgram: SubProgram) => ({
+        id: subProgram.id,
+        label: subProgram.name,
+        description: subProgram.description,
+        metadata: `Order: ${subProgram.order} • ${subProgram.duration} weeks • ${subProgram.pricingModel}`
+      }));
+      
+      setSubPrograms(subProgramOptions);
+    } catch (error) {
+      console.error('Error loading subprograms:', error);
+      setSubPrograms([]);
+    } finally {
+      setSubProgramsLoading(false);
+    }
+  };
+
+  // Search programs function
+  const searchPrograms = async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    try {
+      const response = await getPrograms({ 
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.data.map((program: Program) => ({
+        id: program.id,
+        label: program.name,
+        description: program.description,
+        metadata: `${program.category} • ${program.duration} weeks`
+      }));
+    } catch (error) {
+      console.error('Error searching programs:', error);
+      return [];
+    }
+  };
+
+  // Search subprograms function
+  const searchSubPrograms = async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    if (!formData.programId) return [];
+    
+    try {
+      const response = await getSubPrograms({ 
+        programId: formData.programId,
+        search: searchTerm,
+        limit: 50,
+        status: 'active',
+        sortBy: 'order',
+        sortOrder: 'asc'
+      });
+      
+      return response.data.data.map((subProgram: SubProgram) => ({
+        id: subProgram.id,
+        label: subProgram.name,
+        description: subProgram.description,
+        metadata: `Order: ${subProgram.order} • ${subProgram.duration} weeks • ${subProgram.pricingModel}`
+      }));
+    } catch (error) {
+      console.error('Error searching subprograms:', error);
+      return [];
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -160,6 +287,39 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
       setErrors(prev => ({
         ...prev,
         [field]: "",
+      }));
+    }
+  };
+
+  // Handle program selection - clear subprogram when program changes
+  const handleProgramSelect = (programId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      programId,
+      subProgramId: "", // Clear subprogram when program changes
+    }));
+    
+    // Clear subprogram error
+    if (errors.subProgramId) {
+      setErrors(prev => ({
+        ...prev,
+        subProgramId: "",
+      }));
+    }
+  };
+
+  // Handle subprogram selection
+  const handleSubProgramSelect = (subProgramId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subProgramId,
+    }));
+    
+    // Clear subprogram error
+    if (errors.subProgramId) {
+      setErrors(prev => ({
+        ...prev,
+        subProgramId: "",
       }));
     }
   };
@@ -305,35 +465,33 @@ export function LearningGroupForm({ learningGroup, onSubmit, onCancel, loading =
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Program *
               </label>
-              <select
+              <SearchableSelect
+                options={programs}
                 value={formData.programId}
-                onChange={(e) => handleInputChange("programId", e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.programId ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Select Program</option>
-                <option value="prog_1">English Language Program</option>
-                <option value="prog_2">Mathematics Program</option>
-                <option value="prog_3">Physics Program</option>
-              </select>
-              {errors.programId && <p className="text-red-500 text-sm mt-1">{errors.programId}</p>}
+                placeholder="Search and select a program..."
+                onSelect={handleProgramSelect}
+                onSearch={searchPrograms}
+                loading={programsLoading}
+                error={errors.programId}
+                className="w-full"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sub Program
               </label>
-              <select
+              <SearchableSelect
+                options={subPrograms}
                 value={formData.subProgramId}
-                onChange={(e) => handleInputChange("subProgramId", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Sub Program</option>
-                <option value="sub_1">Beginner English</option>
-                <option value="sub_2">Advanced English</option>
-                <option value="sub_3">Basic Math</option>
-              </select>
+                placeholder={formData.programId ? "Search and select a sub program..." : "Select a program first"}
+                onSelect={handleSubProgramSelect}
+                onSearch={searchSubPrograms}
+                loading={subProgramsLoading}
+                disabled={!formData.programId}
+                error={errors.subProgramId}
+                className="w-full"
+              />
             </div>
 
             <div>
