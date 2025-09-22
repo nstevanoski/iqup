@@ -6,11 +6,11 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { LearningGroup } from "@/types";
 import { ArrowLeft, Save, Loader2, Calendar, Clock, MapPin, DollarSign, Users, User, Building, AlertCircle } from "lucide-react";
-import { useUser } from "@/store/auth";
+import { useUser, useSelectedScope } from "@/store/auth";
 import { createLearningGroup, CreateLearningGroupData } from "@/lib/api/learning-groups";
 import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
 import { getPrograms } from "@/lib/api/programs";
-import { getSubPrograms } from "@/lib/api/subprograms";
+import { getSubPrograms, getSubProgram } from "@/lib/api/subprograms";
 import { teachersAPI } from "@/lib/api/teachers";
 import { Program, SubProgram, Teacher } from "@/types";
 
@@ -44,7 +44,6 @@ interface FormData {
   franchisee: {
     id: string;
     name: string;
-    location: string;
   };
   schedule: {
     dayOfWeek: number;
@@ -83,7 +82,6 @@ const initialFormData: FormData = {
   franchisee: {
     id: "",
     name: "",
-    location: "",
   },
   schedule: [],
 };
@@ -93,6 +91,7 @@ const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 export default function NewLearningGroupPage() {
   const router = useRouter();
   const user = useUser();
+  const selectedScope = useSelectedScope();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -254,6 +253,24 @@ export default function NewLearningGroupPage() {
   useEffect(() => {
     loadInitialTeachers();
   }, [loadInitialTeachers]);
+  
+  // Auto-populate owner and franchisee fields based on logged-in user
+  useEffect(() => {
+    if (user && selectedScope) {
+      setFormData(prev => ({
+        ...prev,
+        owner: {
+          id: user.id,
+          name: user.name,
+          role: user.role
+        },
+        franchisee: {
+          id: selectedScope.id,
+          name: selectedScope.name
+        }
+      }));
+    }
+  }, [user, selectedScope]);
 
   // Search teachers function
   const searchTeachers = useCallback(async (searchTerm: string): Promise<SearchableSelectOption[]> => {
@@ -278,10 +295,15 @@ export default function NewLearningGroupPage() {
     }
   }, []);
 
-  // No derived totals here; pricing fields mirror SubProgram directly
-  const updatePricing = () => {
-    // placeholder to keep dependent calls intact if any
-    return;
+  // Update pricing based on user changes
+  const updatePricing = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      pricingSnapshot: {
+        ...prev.pricingSnapshot,
+        [field]: value
+      }
+    }));
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -319,7 +341,7 @@ export default function NewLearningGroupPage() {
   };
 
   // Handle subprogram selection
-  const handleSubProgramSelect = (subProgramId: string) => {
+  const handleSubProgramSelect = async (subProgramId: string) => {
     setFormData(prev => ({
       ...prev,
       subProgramId,
@@ -331,6 +353,31 @@ export default function NewLearningGroupPage() {
         ...prev,
         subProgramId: "",
       }));
+    }
+
+    // Fetch subprogram details to populate pricing fields
+    if (subProgramId) {
+      try {
+        const response = await getSubProgram(subProgramId);
+        if (response.success && response.data) {
+          const subProgram = response.data;
+          
+          // Update pricing fields based on subprogram data
+          setFormData(prev => ({
+            ...prev,
+            pricingSnapshot: {
+              pricingModel: subProgram.pricingModel,
+              coursePrice: subProgram.coursePrice || 0,
+              numberOfPayments: subProgram.numberOfPayments,
+              gap: subProgram.gap,
+              pricePerMonth: subProgram.pricePerMonth,
+              pricePerSession: subProgram.pricePerSession
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching subprogram details:', error);
+      }
     }
   };
 
@@ -396,8 +443,6 @@ export default function NewLearningGroupPage() {
     if (!formData.location.trim()) newErrors.location = "Location is required";
     if (!formData.dates.startDate) newErrors["dates.startDate"] = "Start date is required";
     if (!formData.dates.endDate) newErrors["dates.endDate"] = "End date is required";
-    if (!formData.owner.name.trim()) newErrors["owner.name"] = "Owner name is required";
-    if (!formData.franchisee.name.trim()) newErrors["franchisee.name"] = "Franchisee name is required";
     if (formData.schedule.length === 0) newErrors.schedule = "At least one schedule slot is required";
 
     setErrors(newErrors);
@@ -761,7 +806,7 @@ export default function NewLearningGroupPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Billing Type</label>
                 <select
                   value={formData.pricingSnapshot.pricingModel}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricingModel", e.target.value)}
+                  onChange={(e) => updatePricing("pricingModel", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="per_month">Per month</option>
@@ -781,7 +826,7 @@ export default function NewLearningGroupPage() {
                   step="0.01"
                   min="0"
                   value={formData.pricingSnapshot.coursePrice || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  onChange={(e) => updatePricing("coursePrice", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -793,7 +838,7 @@ export default function NewLearningGroupPage() {
                   step="0.01"
                   min="0"
                   value={formData.pricingSnapshot.pricePerMonth || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  onChange={(e) => updatePricing("pricePerMonth", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -805,7 +850,7 @@ export default function NewLearningGroupPage() {
                   step="0.01"
                   min="0"
                   value={formData.pricingSnapshot.pricePerSession || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
+                  onChange={(e) => updatePricing("pricePerSession", e.target.value === "" ? "" : parseFloat(e.target.value) || "")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -816,7 +861,7 @@ export default function NewLearningGroupPage() {
                   type="number"
                   min="1"
                   value={formData.pricingSnapshot.numberOfPayments || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "numberOfPayments", parseInt(e.target.value) || undefined)}
+                  onChange={(e) => updatePricing("numberOfPayments", parseInt(e.target.value) || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -827,7 +872,7 @@ export default function NewLearningGroupPage() {
                   type="number"
                   min="1"
                   value={formData.pricingSnapshot.gap || ""}
-                  onChange={(e) => handleNestedInputChange("pricingSnapshot", "gap", parseInt(e.target.value) || undefined)}
+                  onChange={(e) => updatePricing("gap", parseInt(e.target.value) || undefined)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">Frequency (1 = monthly, 2 = every two months, etc.)</p>
@@ -855,6 +900,7 @@ export default function NewLearningGroupPage() {
                     errors["owner.name"] ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter owner name"
+                  readOnly
                 />
                 {errors["owner.name"] && <p className="text-red-500 text-sm mt-1">{errors["owner.name"]}</p>}
               </div>
@@ -869,11 +915,12 @@ export default function NewLearningGroupPage() {
                   onChange={(e) => handleNestedInputChange("owner", "role", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter owner role"
+                  readOnly
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div className="mt-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Building className="h-4 w-4 inline mr-1" />
@@ -887,22 +934,11 @@ export default function NewLearningGroupPage() {
                     errors["franchisee.name"] ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="Enter franchisee name"
+                  readOnly
                 />
                 {errors["franchisee.name"] && <p className="text-red-500 text-sm mt-1">{errors["franchisee.name"]}</p>}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Franchisee Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.franchisee.location}
-                  onChange={(e) => handleNestedInputChange("franchisee", "location", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter franchisee location"
-                />
-              </div>
             </div>
           </div>
 
