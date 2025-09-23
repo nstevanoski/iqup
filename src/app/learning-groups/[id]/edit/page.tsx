@@ -299,7 +299,10 @@ export default function EditLearningGroupPage() {
 
   // Auto-populate owner and franchisee fields based on logged-in user
   useEffect(() => {
-    if (user && selectedScope && formData) {
+    // Only update if user and selectedScope exist and formData is already loaded
+    if (user && selectedScope && formData && 
+        // Only update if the owner ID doesn't match the user ID or franchisee ID doesn't match selectedScope ID
+        (formData.owner.id !== user.id || formData.franchisee.id !== selectedScope.id)) {
       setFormData(prev => prev ? ({
         ...prev,
         owner: {
@@ -313,7 +316,7 @@ export default function EditLearningGroupPage() {
         }
       }) : null);
     }
-  }, [user, selectedScope, formData]);
+  }, [user, selectedScope]);
 
   // Load subprograms when program is selected
   useEffect(() => {
