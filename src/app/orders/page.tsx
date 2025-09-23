@@ -153,16 +153,16 @@ const sampleOrders: Order[] = [
       country: "USA",
     },
     processedBy: "user_1",
-    orderType: "hq_to_mf",
+    orderType: "mf_to_hq",
     fromEntity: {
-      id: "hq_main",
-      name: "Headquarters",
-      type: "HQ",
-    },
-    toEntity: {
       id: "mf_region_1",
       name: "Boston MF Region",
       type: "MF",
+    },
+    toEntity: {
+      id: "hq_main",
+      name: "Headquarters",
+      type: "HQ",
     },
     isConsolidated: false,
     priority: "high",
@@ -202,16 +202,16 @@ const sampleOrders: Order[] = [
       zipCode: "02102",
       country: "USA",
     },
-    orderType: "mf_to_lc",
+    orderType: "lc_to_mf",
     fromEntity: {
-      id: "mf_region_1",
-      name: "Boston MF Region",
-      type: "MF",
-    },
-    toEntity: {
       id: "lc_region_1",
       name: "Boston Learning Center",
       type: "LC",
+    },
+    toEntity: {
+      id: "mf_region_1",
+      name: "Boston MF Region",
+      type: "MF",
     },
     isConsolidated: false,
     priority: "medium",
@@ -287,10 +287,10 @@ const getPriorityColor = (priority: string) => {
 // Helper function to get order type icon
 const getOrderTypeIcon = (orderType: string) => {
   switch (orderType) {
-    case "hq_to_mf":
-      return <Building className="h-4 w-4" />;
-    case "mf_to_lc":
+    case "lc_to_mf":
       return <User className="h-4 w-4" />;
+    case "mf_to_hq":
+      return <Building className="h-4 w-4" />;
     case "lc_to_student":
       return <Package className="h-4 w-4" />;
     default:
@@ -526,11 +526,11 @@ export default function OrdersPage() {
   const getRoleBasedMessage = () => {
     switch (user?.role) {
       case "HQ":
-        return "Manage all orders across the organization. Create product lists and share with MFs.";
+        return "Manage all orders across the organization. Receive consolidated orders from MFs and create product lists.";
       case "MF":
-        return "View product lists, set LC prices, and place orders to HQ. Consolidate LC orders.";
+        return "Receive orders from LCs, consolidate them, and place orders to HQ. Set LC prices and manage regional inventory.";
       case "LC":
-        return "View prices and place orders to MF. Orders will be consolidated by your MF.";
+        return "Place orders to your MF. Orders will be consolidated by your MF before being sent to HQ.";
       case "TT":
         return "Limited access to order information.";
       default:

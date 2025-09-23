@@ -43,7 +43,7 @@ interface FormData {
     country: string;
   };
   notes?: string;
-  orderType: "hq_to_mf" | "mf_to_lc" | "lc_to_student";
+  orderType: "lc_to_mf" | "mf_to_hq" | "lc_to_student";
   fromEntity: {
     id: string;
     name: string;
@@ -146,11 +146,11 @@ const initialFormData: FormData = {
     country: "USA",
   },
   notes: "",
-  orderType: "hq_to_mf",
+  orderType: "lc_to_mf",
   fromEntity: {
     id: "",
     name: "",
-    type: "HQ",
+    type: "LC",
   },
   toEntity: {
     id: "",
@@ -205,30 +205,34 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
   // Set order type based on user role
   useEffect(() => {
     if (!order) {
-      let orderType: "hq_to_mf" | "mf_to_lc" | "lc_to_student" = "hq_to_mf";
-      let fromType: "HQ" | "MF" | "LC" = "HQ";
+      let orderType: "lc_to_mf" | "mf_to_hq" | "lc_to_student" = "lc_to_mf";
+      let fromType: "HQ" | "MF" | "LC" = "LC";
       let toType: "HQ" | "MF" | "LC" = "MF";
 
       switch (userRole) {
         case "HQ":
-          orderType = "hq_to_mf";
-          fromType = "HQ";
-          toType = "MF";
+          // HQ doesn't create orders directly - they receive from MF
+          orderType = "mf_to_hq";
+          fromType = "MF";
+          toType = "HQ";
           break;
         case "MF":
-          orderType = "mf_to_lc";
+          // MF creates orders to HQ (consolidated from LC orders)
+          orderType = "mf_to_hq";
           fromType = "MF";
-          toType = "LC";
+          toType = "HQ";
           break;
         case "LC":
-          orderType = "lc_to_student";
+          // LC creates orders to MF
+          orderType = "lc_to_mf";
           fromType = "LC";
-          toType = "LC";
+          toType = "MF";
           break;
         case "TT":
-          orderType = "lc_to_student";
+          // TT creates orders to MF (same as LC)
+          orderType = "lc_to_mf";
           fromType = "LC";
-          toType = "LC";
+          toType = "MF";
           break;
       }
 
@@ -356,10 +360,10 @@ export function OrderForm({ order, onSubmit, onCancel, loading = false, userRole
 
   const getOrderTypeIcon = (orderType: string) => {
     switch (orderType) {
-      case "hq_to_mf":
-        return <Building className="h-4 w-4" />;
-      case "mf_to_lc":
+      case "lc_to_mf":
         return <User className="h-4 w-4" />;
+      case "mf_to_hq":
+        return <Building className="h-4 w-4" />;
       case "lc_to_student":
         return <Package className="h-4 w-4" />;
       default:

@@ -361,7 +361,7 @@ export interface Order extends BaseEntity {
   notes?: string;
   processedBy?: string; // User ID
   // New fields for enhanced order management
-  orderType: "hq_to_mf" | "mf_to_lc" | "lc_to_student";
+  orderType: "lc_to_mf" | "mf_to_hq" | "lc_to_student";
   fromEntity: {
     id: string;
     name: string;

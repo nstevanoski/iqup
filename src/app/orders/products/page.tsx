@@ -270,15 +270,6 @@ const getColumns = (): Column<Product>[] => [
     ),
   },
   {
-    key: "supplier",
-    label: "Supplier",
-    sortable: true,
-    searchable: true,
-    render: (value) => (
-      <div className="text-sm text-gray-900">{value}</div>
-    ),
-  },
-  {
     key: "productLists",
     label: "Product Lists",
     sortable: false,
@@ -385,7 +376,6 @@ export default function ProductsPage() {
       { key: "qty", label: "Quantity" },
       { key: "cost", label: "Cost" },
       { key: "sellingPrice", label: "Selling Price" },
-      { key: "supplier", label: "Supplier" },
       { key: "status", label: "Status" },
     ];
     
