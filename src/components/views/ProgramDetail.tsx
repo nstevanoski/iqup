@@ -139,7 +139,7 @@ export function ProgramDetail({ program, onEdit, mfAccounts = [] }: ProgramDetai
               </div>
             </div>
 
-            {program.visibility === "shared" && program.sharedWithMFs.length > 0 && (
+            {user?.role === "HQ" && program.visibility === "shared" && program.sharedWithMFs.length > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Shared with:</span>
                 <div className="text-right">
