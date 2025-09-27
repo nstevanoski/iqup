@@ -387,7 +387,7 @@ model Teacher {
   learningGroups    LearningGroup[]
   
   // Contract information
-  contractFile      String?   // Path to uploaded contract file
+  contractFile      String?   @db.Text // Path to uploaded contract file
   contractDate      DateTime? // Date when contract was signed
   contractUploadedBy Int?     // User ID who uploaded the contract
   contractUploadedAt DateTime? // When contract was uploaded
