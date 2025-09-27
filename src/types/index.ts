@@ -199,7 +199,7 @@ export interface Teacher extends BaseEntity, ContactInfo {
   specialization: string[];
   experience: number; // years
   qualifications: string[];
-  status: "active" | "inactive" | "on_leave";
+  status: "process" | "active" | "inactive" | "on_leave";
   hourlyRate: number;
   availability: Availability[];
   bio?: string;
@@ -218,6 +218,13 @@ export interface Teacher extends BaseEntity, ContactInfo {
     status: "completed" | "in_progress" | "scheduled";
     certification?: string;
   }[];
+  // Contract information
+  contractFile?: string;
+  contractDate?: Date;
+  contractUploadedBy?: number;
+  contractUploadedAt?: Date;
+  approvedBy?: number;
+  approvedAt?: Date;
   // centers field removed per requirements
 }
 

@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         experience: experience || 0,
-        status: status ? status.toUpperCase() : 'ACTIVE',
+        status: 'PROCESS', // New teachers start in PROCESS status
         bio,
         avatar,
         address,

@@ -8,7 +8,7 @@ import { Teacher } from "@/types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useSelectedScope, useToken } from "@/store/auth";
-import { Plus, Eye, Edit, Trash2, Users, Clock } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Users, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { teachersAPI } from "@/lib/api/teachers";
 
@@ -265,8 +265,9 @@ const columns: Column<Teacher>[] = [
     filterable: true,
     render: (value) => {
       const statusColors = {
+        process: "bg-yellow-100 text-yellow-800",
         active: "bg-green-100 text-green-800",
-        inactive: "bg-yellow-100 text-yellow-800",
+        inactive: "bg-gray-100 text-gray-800",
         on_leave: "bg-red-100 text-red-800",
       };
       return (
@@ -275,6 +276,25 @@ const columns: Column<Teacher>[] = [
         </span>
       );
     },
+  },
+  {
+    key: "contract",
+    label: "Contract",
+    render: (_, row) => (
+      <div className="flex items-center space-x-2">
+        {row.contractFile ? (
+          <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Uploaded
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Pending
+          </span>
+        )}
+      </div>
+    ),
   },
   {
     key: "experience",

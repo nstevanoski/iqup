@@ -4,19 +4,17 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { TeacherDetail } from "@/components/views/TeacherDetail";
-import { ContractPreviewModal } from "@/components/ui/ContractPreviewModal";
+import { TeacherApprovalForm } from "@/components/forms/TeacherApprovalForm";
 import { Teacher } from "@/types";
 import { ArrowLeft } from "lucide-react";
 import { teachersAPI } from "@/lib/api/teachers";
 import { useUser, useSelectedScope, useToken } from "@/store/auth";
 
-
-interface TeacherDetailPageProps {
+interface TeacherApprovalPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
+export default function TeacherApprovalPage({ params }: TeacherApprovalPageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
   const user = useUser();
@@ -24,7 +22,7 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
   const token = useToken();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTeacher = async () => {
@@ -51,36 +49,43 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
     }
   }, [resolvedParams.id, user, selectedScope, token]);
 
-  const handleEdit = () => {
-    router.push(`/contacts/teachers/${resolvedParams.id}/edit`);
-  };
-
-  const handleDelete = async () => {
+  const handleApprove = async () => {
     if (!teacher || !token) return;
     
-    if (confirm(`Are you sure you want to delete ${teacher.firstName} ${teacher.lastName}?`)) {
-      try {
-        // Ensure API has the latest token
-        teachersAPI.updateToken(token);
-        await teachersAPI.deleteTeacher(resolvedParams.id);
-        router.push("/contacts/teachers");
-      } catch (error) {
-        console.error("Error deleting teacher:", error);
-        alert("Failed to delete teacher. Please try again.");
+    try {
+      setSubmitting(true);
+      
+      // Call the approval API
+      const response = await fetch(`/api/teachers/${resolvedParams.id}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to approve teacher');
       }
+
+      const result = await response.json();
+      
+      // Update the teacher data
+      setTeacher(result.data);
+      
+      // Redirect back to teacher detail page
+      router.push(`/contacts/teachers/${resolvedParams.id}`);
+    } catch (error) {
+      console.error("Error approving teacher:", error);
+      alert("Failed to approve teacher. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleUploadContract = () => {
-    router.push(`/contacts/teachers/${resolvedParams.id}/contract`);
-  };
-
-  const handleApprove = () => {
-    router.push(`/contacts/teachers/${resolvedParams.id}/approve`);
-  };
-
-  const handleViewContract = () => {
-    setIsContractModalOpen(true);
+  const handleCancel = () => {
+    router.push(`/contacts/teachers/${resolvedParams.id}`);
   };
 
   if (loading) {
@@ -103,6 +108,17 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
     );
   }
 
+  // Check if user has permission to approve teachers (HQ users only)
+  if (!user || (user.role !== 'HQ_ADMIN' && user.role !== 'HQ_STAFF' && user.role !== 'HQ')) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-500">Access denied. Only HQ users can approve teachers.</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -110,11 +126,11 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.push("/contacts/teachers")}
+              onClick={() => router.push(`/contacts/teachers/${resolvedParams.id}`)}
               className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Teachers
+              Back to Teacher
             </button>
           </div>
         </div>
@@ -125,30 +141,19 @@ export default function TeacherDetailPage({ params }: TeacherDetailPageProps) {
             { label: "Contacts", href: "/contacts" },
             { label: "Teachers", href: "/contacts/teachers" },
             { label: `${teacher.firstName} ${teacher.lastName}`, href: `/contacts/teachers/${resolvedParams.id}` },
+            { label: "Approve Teacher", href: `/contacts/teachers/${resolvedParams.id}/approve` },
           ]}
         />
 
-        {/* Teacher Detail */}
-        <TeacherDetail
-          teacher={teacher}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onUploadContract={handleUploadContract}
-          onApprove={handleApprove}
-          onViewContract={handleViewContract}
-          userRole={user?.role}
-        />
-
-        {/* Contract Preview Modal */}
-        {teacher && (
-          <ContractPreviewModal
-            isOpen={isContractModalOpen}
-            onClose={() => setIsContractModalOpen(false)}
-            contractFile={teacher.contractFile || ''}
-            contractDate={teacher.contractDate}
-            teacherName={`${teacher.firstName} ${teacher.lastName}`}
+        {/* Approval Form */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <TeacherApprovalForm
+            teacher={teacher}
+            onSubmit={handleApprove}
+            onCancel={handleCancel}
+            loading={submitting}
           />
-        )}
+        </div>
       </div>
     </DashboardLayout>
   );

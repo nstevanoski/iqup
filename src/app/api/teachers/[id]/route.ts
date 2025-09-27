@@ -131,7 +131,9 @@ export async function PUT(
       education,
       trainings,
       specialization,
-      qualifications
+      qualifications,
+      contractFile,
+      contractDate
     } = body
 
     // Validation
@@ -161,7 +163,9 @@ export async function PUT(
         education: education ? JSON.stringify(education) : undefined,
         trainings: trainings ? JSON.stringify(trainings) : undefined,
         specialization: specialization ? JSON.stringify(specialization) : undefined,
-        qualifications: qualifications ? JSON.stringify(qualifications) : undefined
+        qualifications: qualifications ? JSON.stringify(qualifications) : undefined,
+        contractFile: contractFile !== undefined ? contractFile : existingTeacher.contractFile,
+        contractDate: contractDate ? new Date(contractDate) : existingTeacher.contractDate
       },
       include: {
         lc: {

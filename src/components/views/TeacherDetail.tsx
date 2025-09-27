@@ -8,16 +8,24 @@ import {
   MapPin, 
   Clock, 
   Edit,
-  Trash2
+  Trash2,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Eye
 } from "lucide-react";
 
 interface TeacherDetailProps {
   teacher: Teacher;
   onEdit?: () => void;
   onDelete?: () => void;
+  onUploadContract?: () => void;
+  onApprove?: () => void;
+  onViewContract?: () => void;
+  userRole?: string;
 }
 
-export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps) {
+export function TeacherDetail({ teacher, onEdit, onDelete, onUploadContract, onApprove, onViewContract, userRole }: TeacherDetailProps) {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
@@ -36,10 +44,12 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'process':
+        return 'bg-yellow-100 text-yellow-800';
       case 'active':
         return 'bg-green-100 text-green-800';
       case 'inactive':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-100 text-gray-800';
       case 'on_leave':
         return 'bg-red-100 text-red-800';
       default:
@@ -98,6 +108,33 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
             >
               <Edit className="h-4 w-4 mr-2" />
               Edit
+            </button>
+          )}
+          {onUploadContract && userRole && (userRole === 'MF_ADMIN' || userRole === 'MF_STAFF' || userRole === 'MF') && teacher.status === 'process' && !teacher.contractFile && (
+            <button
+              onClick={onUploadContract}
+              className="flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Upload Contract
+            </button>
+          )}
+          {onViewContract && teacher.contractFile && (
+            <button
+              onClick={onViewContract}
+              className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Contract
+            </button>
+          )}
+          {onApprove && userRole && (userRole === 'HQ_ADMIN' || userRole === 'HQ_STAFF' || userRole === 'HQ') && teacher.status === 'process' && teacher.contractFile && (
+            <button
+              onClick={onApprove}
+              className="flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Approve
             </button>
           )}
           {onDelete && (
@@ -168,6 +205,76 @@ export function TeacherDetail({ teacher, onEdit, onDelete }: TeacherDetailProps)
       {/* Education and Trainings removed per requirements */}
 
       {/* Active Centers section removed per requirements */}
+
+      {/* Contract Information */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <FileText className="h-5 w-5 mr-2" />
+          Contract Information
+        </h2>
+        
+        {teacher.contractFile ? (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Contract Uploaded</p>
+                <p className="text-sm text-gray-600">{teacher.contractFile}</p>
+              </div>
+            </div>
+            
+            {teacher.contractDate && (
+              <div className="flex items-center space-x-3">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Contract Date</p>
+                  <p className="text-sm text-gray-600">
+                    {typeof teacher.contractDate === 'string' 
+                      ? formatDate(new Date(teacher.contractDate))
+                      : formatDate(teacher.contractDate)}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {teacher.contractUploadedAt && (
+              <div className="flex items-center space-x-3">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Uploaded</p>
+                  <p className="text-sm text-gray-600">
+                    {typeof teacher.contractUploadedAt === 'string' 
+                      ? formatDate(new Date(teacher.contractUploadedAt))
+                      : formatDate(teacher.contractUploadedAt)}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {teacher.approvedAt && (
+              <div className="flex items-center space-x-3">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Approved</p>
+                  <p className="text-sm text-gray-600">
+                    {typeof teacher.approvedAt === 'string' 
+                      ? formatDate(new Date(teacher.approvedAt))
+                      : formatDate(teacher.approvedAt)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="h-5 w-5 text-yellow-500" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">No Contract Uploaded</p>
+              <p className="text-sm text-gray-600">Contract must be uploaded before teacher can be approved</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Availability */}
       {teacher.availability && teacher.availability.length > 0 && (

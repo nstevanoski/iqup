@@ -350,7 +350,7 @@ model Teacher {
   email             String
   phone             String?
   experience        Int      @default(0) // years
-  status            TeacherStatus @default(ACTIVE)
+  status            TeacherStatus @default(PROCESS)
   bio               String?  @db.Text
   avatar            String?
   
@@ -386,6 +386,14 @@ model Teacher {
   // Learning groups taught by this teacher
   learningGroups    LearningGroup[]
   
+  // Contract information
+  contractFile      String?   // Path to uploaded contract file
+  contractDate      DateTime? // Date when contract was signed
+  contractUploadedBy Int?     // User ID who uploaded the contract
+  contractUploadedAt DateTime? // When contract was uploaded
+  approvedBy        Int?      // User ID who approved the teacher
+  approvedAt        DateTime? // When teacher was approved
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -394,6 +402,7 @@ model Teacher {
 
 // Enums for Teacher model
 enum TeacherStatus {
+  PROCESS
   ACTIVE
   INACTIVE
   ON_LEAVE

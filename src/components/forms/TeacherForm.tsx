@@ -21,7 +21,7 @@ interface FormData {
   // specialization removed per requirements
   experience: number;
   // qualifications removed per requirements
-  status: "active" | "inactive" | "on_leave";
+  status: "process" | "active" | "inactive" | "on_leave";
   // hourlyRate removed per requirements
   bio: string;
   availability: {
@@ -49,7 +49,7 @@ const initialFormData: FormData = {
   // specialization removed per requirements
   experience: 0,
   // qualifications removed per requirements
-  status: "active",
+  status: "process",
   // hourlyRate removed per requirements
   bio: "",
   availability: [],
@@ -242,20 +242,23 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
               {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="on_leave">On Leave</option>
-              </select>
-            </div>
+            {teacher && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="process">Process</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="on_leave">On Leave</option>
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
