@@ -44,10 +44,11 @@ export async function GET(request: NextRequest) {
     // Apply search filter
     if (search) {
       whereClause.OR = [
-        { name: { startsWith: search } },
-        { address: { startsWith: search } },
-        { city: { startsWith: search } },
-        { state: { startsWith: search } }
+        { name: { contains: search } },
+        { address: { contains: search } },
+        { city: { contains: search } },
+        { state: { contains: search } },
+        { code: { contains: search } }
       ]
     }
 

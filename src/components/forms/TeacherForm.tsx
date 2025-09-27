@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Teacher } from "@/types";
+import { SearchableSelect, SearchableSelectOption } from "@/components/ui/SearchableSelect";
+import { learningCentersAPI } from "@/lib/api/learning-centers";
+import { useSelectedScope, useUser } from "@/store/auth";
 // Removed unused imports: Plus, Trash2, MapPin
 
 interface TeacherFormProps {
@@ -37,6 +40,7 @@ interface FormData {
     country: string;
   };
   // education, trainings, and centers removed per requirements
+  lcId: string; // Learning Center ID
 }
 
 const initialFormData: FormData = {
@@ -61,9 +65,12 @@ const initialFormData: FormData = {
     country: "USA",
   },
   // education, trainings, and centers removed per requirements
+  lcId: "",
 };
 
 export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: TeacherFormProps) {
+  const user = useUser();
+  const selectedScope = useSelectedScope();
   const [formData, setFormData] = useState<FormData>(
     teacher ? {
       firstName: teacher.firstName,
@@ -87,11 +94,82 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
         country: "USA",
       },
       // education, trainings, and centers removed per requirements
+      lcId: teacher.lcId?.toString() || "",
     } : initialFormData
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [learningCenters, setLearningCenters] = useState<SearchableSelectOption[]>([]);
+  const [lcLoading, setLcLoading] = useState(false);
+  const [lcError, setLcError] = useState<string | null>(null);
   // removed specialization/qualification local state
+
+  // Load initial learning centers when component mounts (only for MF users)
+  useEffect(() => {
+    const loadInitialLearningCenters = async () => {
+      if (!selectedScope || selectedScope.type !== 'MF') {
+        return; // Only load for MF users
+      }
+
+      try {
+        setLcLoading(true);
+        setLcError(null);
+        
+        const response = await learningCentersAPI.getLearningCenters({
+          mfId: selectedScope.id,
+          limit: 20, // Load first 20 for initial display
+        });
+
+        if (response.success) {
+          const options: SearchableSelectOption[] = response.data.data.map(lc => ({
+            id: lc.id,
+            label: lc.name,
+            description: `${lc.address}, ${lc.city}, ${lc.state}`,
+            metadata: `Code: ${lc.code}`,
+          }));
+          setLearningCenters(options);
+        } else {
+          setLcError('Failed to load learning centers');
+        }
+      } catch (error) {
+        console.error('Error loading learning centers:', error);
+        setLcError('Failed to load learning centers');
+      } finally {
+        setLcLoading(false);
+      }
+    };
+
+    loadInitialLearningCenters();
+  }, [selectedScope]);
+
+  // Search function for learning centers
+  const searchLearningCenters = async (searchTerm: string): Promise<SearchableSelectOption[]> => {
+    if (!selectedScope || selectedScope.type !== 'MF') {
+      return [];
+    }
+
+    try {
+      const response = await learningCentersAPI.getLearningCenters({
+        mfId: selectedScope.id,
+        search: searchTerm,
+        limit: 50, // Increase limit for search results
+      });
+
+      if (response.success) {
+        return response.data.data.map(lc => ({
+          id: lc.id,
+          label: lc.name,
+          description: `${lc.address}, ${lc.city}, ${lc.state}`,
+          metadata: `Code: ${lc.code}`,
+        }));
+      } else {
+        throw new Error('Failed to search learning centers');
+      }
+    } catch (error) {
+      console.error('Error searching learning centers:', error);
+      throw error;
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -108,6 +186,11 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
     if (!formData.address.city.trim()) newErrors.city = "City is required";
     if (!formData.address.state.trim()) newErrors.state = "State is required";
     if (!formData.address.zipCode.trim()) newErrors.zipCode = "ZIP code is required";
+    
+    // Learning center validation (only for MF users)
+    if (selectedScope?.type === 'MF' && !formData.lcId.trim()) {
+      newErrors.lcId = "Learning center is required";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -119,6 +202,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
       const teacherData = {
         ...formData,
         dateOfBirth: new Date(formData.dateOfBirth),
+        lcId: formData.lcId ? parseInt(formData.lcId) : undefined,
         // Provide omitted fields to satisfy Teacher type
         specialization: [],
         qualifications: [],
@@ -142,6 +226,26 @@ export function TeacherForm({ teacher, onSubmit, onCancel, loading = false }: Te
   return (
     <div className="p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Learning Center Selection (Only for MF users) */}
+          {selectedScope?.type === 'MF' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Learning Center *
+              </label>
+              <SearchableSelect
+                options={learningCenters}
+                value={formData.lcId}
+                placeholder="Search and select a learning center..."
+                onSelect={(value) => setFormData(prev => ({ ...prev, lcId: value }))}
+                onSearch={searchLearningCenters}
+                loading={lcLoading}
+                error={lcError || errors.lcId}
+                className="w-full"
+              />
+              {errors.lcId && <p className="text-red-500 text-xs mt-1">{errors.lcId}</p>}
+            </div>
+          )}
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

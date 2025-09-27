@@ -226,6 +226,8 @@ export interface Teacher extends BaseEntity, ContactInfo {
   approvedBy?: number;
   approvedAt?: Date;
   // centers field removed per requirements
+  // Learning Center association
+  lcId?: number;
 }
 
 export interface Availability {

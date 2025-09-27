@@ -214,9 +214,9 @@ export async function POST(request: NextRequest) {
       return errorResponse('First name, last name, date of birth, gender, and email are required', 400)
     }
 
-    // Only LC users can create teachers
-    if (user?.role !== 'LC_ADMIN' && user?.role !== 'LC_STAFF') {
-      return errorResponse('Only LC users can create teachers', 403)
+    // Only LC and MF users can create teachers
+    if (!['LC_ADMIN', 'LC_STAFF', 'MF_ADMIN', 'MF_STAFF'].includes(user?.role || '')) {
+      return errorResponse('Only LC and MF users can create teachers', 403)
     }
 
     // Use user's LC, MF, and HQ IDs if not provided
@@ -259,6 +259,26 @@ export async function POST(request: NextRequest) {
 
     if (!finalLcId || !finalMfId || !finalHqId) {
       return errorResponse('Learning Center, Master Franchisee, and HQ information is required', 400)
+    }
+
+    // Additional validation for MF users - ensure they can only create teachers for their own LCs
+    if (user?.role === 'MF_ADMIN' || user?.role === 'MF_STAFF') {
+      if (finalMfId !== user.mfId) {
+        return errorResponse('MF users can only create teachers for learning centers under their account', 403)
+      }
+      
+      // Verify the specified LC actually belongs to this MF
+      const lcBelongsToMF = await prisma.learningCenter.findFirst({
+        where: { 
+          id: finalLcId, 
+          mfId: user.mfId,
+          status: 'ACTIVE'
+        }
+      })
+      
+      if (!lcBelongsToMF) {
+        return errorResponse('The specified learning center does not belong to your account', 403)
+      }
     }
 
     // Verify LC exists and is active

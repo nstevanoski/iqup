@@ -38,21 +38,37 @@ interface AuthState {
 
 // Real scopes based on actual account data - these will be populated from the backend
 const getAccountScopes = (backendUser: any): AuthScope | null => {
-  if (backendUser.account.hq) {
+  // Debug logging to understand the backend user structure
+  console.log('Backend user data for scope determination:', {
+    role: backendUser.role,
+    account: backendUser.account,
+    hq: backendUser.account?.hq,
+    mf: backendUser.account?.mf,
+    lc: backendUser.account?.lc,
+    tt: backendUser.account?.tt
+  });
+  
+  // Determine scope based on user's role rather than just checking existence of account properties
+  // This is important because MF users might have both hq and mf properties (parent HQ + their MF)
+  
+  if (backendUser.role.startsWith('HQ') && backendUser.account.hq) {
+    console.log('Setting HQ scope');
     return {
       id: backendUser.account.hq.id.toString(),
       name: backendUser.account.hq.name,
       type: "HQ" as Role,
       description: `Headquarters: ${backendUser.account.hq.code}`,
     };
-  } else if (backendUser.account.mf) {
+  } else if (backendUser.role.startsWith('MF') && backendUser.account.mf) {
+    console.log('Setting MF scope');
     return {
       id: backendUser.account.mf.id.toString(),
       name: backendUser.account.mf.name,
       type: "MF" as Role,
       description: `Master Franchisee: ${backendUser.account.mf.code}`,
     };
-  } else if (backendUser.account.lc) {
+  } else if (backendUser.role.startsWith('LC') && backendUser.account.lc) {
+    console.log('Setting LC scope');
     return {
       id: backendUser.account.lc.id.toString(),
       name: backendUser.account.lc.name,
@@ -64,7 +80,8 @@ const getAccountScopes = (backendUser: any): AuthScope | null => {
         code: backendUser.account.lc.mf.code,
       } : undefined,
     };
-  } else if (backendUser.account.tt) {
+  } else if (backendUser.role.startsWith('TT') && backendUser.account.tt) {
+    console.log('Setting TT scope');
     return {
       id: backendUser.account.tt.id.toString(),
       name: backendUser.account.tt.name,
@@ -72,6 +89,8 @@ const getAccountScopes = (backendUser: any): AuthScope | null => {
       description: `Teacher Trainer: ${backendUser.account.tt.code}`,
     };
   }
+  
+  console.log('No matching scope found, returning null');
   return null;
 };
 
