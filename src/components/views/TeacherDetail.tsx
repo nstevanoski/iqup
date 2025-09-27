@@ -219,7 +219,16 @@ export function TeacherDetail({ teacher, onEdit, onDelete, onUploadContract, onA
               <CheckCircle className="h-5 w-5 text-green-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">Contract Uploaded</p>
-                <p className="text-sm text-gray-600">{teacher.contractFile}</p>
+                <p className="text-sm text-gray-600">
+                  {(() => {
+                    try {
+                      const fileData = JSON.parse(teacher.contractFile);
+                      return fileData.name;
+                    } catch {
+                      return teacher.contractFile;
+                    }
+                  })()}
+                </p>
               </div>
             </div>
             

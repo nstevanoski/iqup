@@ -22,13 +22,17 @@ interface FormData {
 }
 
 export function TeacherContractForm({ teacher, onSubmit, onCancel, loading = false }: TeacherContractFormProps) {
+  const getContractDateString = (): string => {
+    if (!teacher.contractDate) return "";
+    if (typeof teacher.contractDate === 'string') {
+      return (teacher.contractDate as string).split('T')[0];
+    }
+    return new Date(teacher.contractDate as Date).toISOString().split('T')[0];
+  };
+
   const [formData, setFormData] = useState<FormData>({
     contractFile: teacher.contractFile || "",
-    contractDate: teacher.contractDate ? 
-      (typeof teacher.contractDate === 'string' 
-        ? teacher.contractDate.split('T')[0] 
-        : teacher.contractDate.toISOString().split('T')[0]) 
-      : ""
+    contractDate: getContractDateString()
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,8 +67,21 @@ export function TeacherContractForm({ teacher, onSubmit, onCancel, loading = fal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
+      // In a real implementation, you would upload the file to a storage service
+      // and get back a URL or file path
+      const fileData = selectedFile ? {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+        // In production, this would be the actual file URL/path after upload
+        url: URL.createObjectURL(selectedFile) // Temporary for demo
+      } : {
+        name: formData.contractFile,
+        url: null
+      };
+
       onSubmit({
-        contractFile: selectedFile ? selectedFile.name : formData.contractFile,
+        contractFile: JSON.stringify(fileData), // Store file metadata as JSON
         contractDate: formData.contractDate
       });
     }

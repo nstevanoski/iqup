@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ContractPreviewModal } from "@/components/ui/ContractPreviewModal";
 
 interface TeacherApprovalFormProps {
   teacher: {
@@ -20,6 +21,7 @@ interface TeacherApprovalFormProps {
 
 export function TeacherApprovalForm({ teacher, onSubmit, onCancel, loading = false }: TeacherApprovalFormProps) {
   const [isApproving, setIsApproving] = useState(false);
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
 
   const handleApprove = () => {
     setIsApproving(true);
@@ -27,6 +29,21 @@ export function TeacherApprovalForm({ teacher, onSubmit, onCancel, loading = fal
   };
 
   const canApprove = (teacher.status === 'PROCESS' || teacher.status === 'process') && teacher.contractFile && teacher.contractDate;
+
+  // Parse the contract file data
+  const getFileData = () => {
+    if (!teacher.contractFile) {
+      return { name: '', url: null };
+    }
+    try {
+      return JSON.parse(teacher.contractFile);
+    } catch {
+      // Fallback for old format (just filename)
+      return { name: teacher.contractFile, url: null };
+    }
+  };
+
+  const fileData = getFileData();
 
   return (
     <div className="p-6">
@@ -53,11 +70,29 @@ export function TeacherApprovalForm({ teacher, onSubmit, onCancel, loading = fal
         <h4 className="text-sm font-medium text-gray-800 mb-3">Contract Information</h4>
         
         {teacher.contractFile ? (
-          <div className="space-y-2">
-            <div className="flex items-center text-sm">
-              <span className="font-medium text-gray-700 w-24">File:</span>
-              <span className="text-gray-600">{teacher.contractFile}</span>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-sm">
+                <span className="font-medium text-gray-700 w-24">File:</span>
+                <span className="text-gray-600">{fileData.name}</span>
+              </div>
+              <button
+                onClick={() => setIsContractModalOpen(true)}
+                className="flex items-center px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View
+              </button>
             </div>
+            {fileData.size && (
+              <div className="flex items-center text-sm">
+                <span className="font-medium text-gray-700 w-24">Size:</span>
+                <span className="text-gray-600">{(fileData.size / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
+            )}
             {teacher.contractDate && (
               <div className="flex items-center text-sm">
                 <span className="font-medium text-gray-700 w-24">Date:</span>
@@ -150,6 +185,15 @@ export function TeacherApprovalForm({ teacher, onSubmit, onCancel, loading = fal
           {loading ? "Approving..." : "Approve Teacher"}
         </button>
       </div>
+
+      {/* Contract Preview Modal */}
+      <ContractPreviewModal
+        isOpen={isContractModalOpen}
+        onClose={() => setIsContractModalOpen(false)}
+        contractFile={teacher.contractFile || ''}
+        contractDate={teacher.contractDate}
+        teacherName={`${teacher.firstName} ${teacher.lastName}`}
+      />
     </div>
   );
 }
